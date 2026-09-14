@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -82,18 +83,18 @@ func validateUIDir(dir string) error {
 func (s *Server) handleStatic(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		// r.URL.Path 服务端请求恒以 / 开头；再拼前导斜杠会得到 "//x"，
-		// Clean 后与原串不等 → 所有资产被当可疑路径 404（页面全白）。
+		// 被 path.Clean 折叠后与原串不等 → 所有资产被当可疑路径 404。
+		// 净化必须用 path.Clean（URL 恒为正斜杠语义）：filepath.Clean 在
+		// Windows 会把 / 规范成 \，同样导致全部资产 404（CI 实测抓到）。
 		rel := r.URL.Path
 		if rel == "" {
 			rel = "/"
 		}
-		// 净化后路径必须与原路径一致，否则视为可疑路径直接 404（同时规避
-		// http.ServeFile 对含 .. 路径的一律 400）。
-		if rel != filepath.Clean(rel) || strings.Contains(rel, "\x00") {
+		if rel != path.Clean(rel) || strings.Contains(rel, "\x00") {
 			http.NotFound(w, r)
 			return
 		}
-		full := filepath.Join(s.uiDir, filepath.Clean(rel))
+		full := filepath.Join(s.uiDir, filepath.FromSlash(path.Clean(rel)))
 		if !strings.HasPrefix(full, filepath.Clean(s.uiDir)+string(os.PathSeparator)) {
 			http.NotFound(w, r)
 			return
