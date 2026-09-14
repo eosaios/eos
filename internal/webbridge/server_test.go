@@ -134,6 +134,27 @@ func TestHandleStaticInjectsMarker(t *testing.T) {
 	}
 }
 
+func TestHandleStaticServesAsset(t *testing.T) {
+	s := newDispatchTestServer()
+	s.uiDir = writeTestUIDir(t)
+	if err := os.MkdirAll(filepath.Join(s.uiDir, "assets"), 0o755); err != nil {
+		t.Fatalf("mkdir assets: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(s.uiDir, "assets", "app.js"), []byte("console.log(1)"), 0o644); err != nil {
+		t.Fatalf("write asset: %v", err)
+	}
+	rec := httptest.NewRecorder()
+	// 回归：r.URL.Path 已带前导斜杠，handler 若再拼 "/" 会得到 "//assets/…"，
+	// Clean 拒绝 → 所有静态资产 404、页面全白（曾全线中招）。
+	s.handleStatic(rec, httptest.NewRequest(http.MethodGet, "/assets/app.js", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 for asset, got %d body=%q", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "console.log(1)") {
+		t.Fatalf("asset body mismatch: %q", rec.Body.String())
+	}
+}
+
 func TestHandleStaticRejectsTraversal(t *testing.T) {
 	s := newDispatchTestServer()
 	s.uiDir = writeTestUIDir(t)

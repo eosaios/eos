@@ -81,7 +81,12 @@ func validateUIDir(dir string) error {
 // 资源路径按普通静态文件处理（SPA 前端无客户端路由，不存在的路径 404）。
 func (s *Server) handleStatic(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
-		rel := "/" + r.URL.Path
+		// r.URL.Path 服务端请求恒以 / 开头；再拼前导斜杠会得到 "//x"，
+		// Clean 后与原串不等 → 所有资产被当可疑路径 404（页面全白）。
+		rel := r.URL.Path
+		if rel == "" {
+			rel = "/"
+		}
 		// 净化后路径必须与原路径一致，否则视为可疑路径直接 404（同时规避
 		// http.ServeFile 对含 .. 路径的一律 400）。
 		if rel != filepath.Clean(rel) || strings.Contains(rel, "\x00") {
