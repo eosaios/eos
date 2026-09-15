@@ -149,6 +149,12 @@ func doctorCoreResolve(r *doctorReporter) sidecar.ResolvedBinary {
 	}
 	m := resolved.Manifest
 	r.pass("内核二进制：%s", resolved.Path)
+	// EOS_CORE_PATH 显式指定二进制时 resolver 不读 manifest（ResolvedBinary.Manifest
+	// 为 nil），版本/签名/最低 CLI 版本检查随之跳过——旁路本身即显式信任。
+	if m == nil {
+		r.pass("来源 %s，目标 %s（%s 旁路：无 manifest，跳过签名与版本检查）", resolved.Source, resolved.Target, sidecar.EnvCorePath)
+		return resolved
+	}
 	r.pass("来源 %s，目标 %s，core %s / api %s", resolved.Source, resolved.Target, m.CoreVersion, m.APIVersion)
 
 	switch {
