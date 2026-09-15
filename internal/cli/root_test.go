@@ -7,7 +7,6 @@ package cli
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -36,15 +35,23 @@ func isolateHome(t *testing.T) string {
 	return home
 }
 
-// wantDefaultWorkspace 返回符号链接解析后的默认工作区路径，与 os.Getwd
-// 的物理路径同口径（macOS 下 /var → /private/var）。
-func wantDefaultWorkspace(t *testing.T) string {
+// assertSameDir 断言 got 与 want 指向同一目录。cwd 与期望路径可能形态不同：
+// macOS 下 /var 是 /private/var 的符号链接，Windows 下 os.Getwd 返回 8.3
+// 短路径（golang/go#21373，如 RUNNER~1 vs runneradmin）。os.SameFile 按底层
+// 文件身份比较，两种平台差异统一覆盖。
+func assertSameDir(t *testing.T, got, want string) {
 	t.Helper()
-	want, err := filepath.EvalSymlinks(config.DefaultWorkspacePath())
+	fiGot, err := os.Stat(got)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return want
+	fiWant, err := os.Stat(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(fiGot, fiWant) {
+		t.Fatalf("cwd = %q, want default workspace %q", got, want)
+	}
 }
 
 func TestDefaultFlagRegisteredOnRoot(t *testing.T) {
@@ -65,9 +72,7 @@ func TestApplyDefaultWorkspaceFlagSwitchesCWD(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := wantDefaultWorkspace(t); wd != want {
-		t.Fatalf("cwd = %q, want default workspace %q", wd, want)
-	}
+	assertSameDir(t, wd, config.DefaultWorkspacePath())
 }
 
 func TestApplyDefaultWorkspaceFlagAppliesToSubcommandWithoutWorkspace(t *testing.T) {
@@ -82,9 +87,7 @@ func TestApplyDefaultWorkspaceFlagAppliesToSubcommandWithoutWorkspace(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := wantDefaultWorkspace(t); wd != want {
-		t.Fatalf("cwd = %q, want default workspace %q", wd, want)
-	}
+	assertSameDir(t, wd, config.DefaultWorkspacePath())
 }
 
 func TestApplyDefaultWorkspaceFlagRejectsExplicitWorkspace(t *testing.T) {
