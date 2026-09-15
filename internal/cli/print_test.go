@@ -421,8 +421,16 @@ func TestProductionSidecarProcessOptionsRequiresVerifiedArtifact(t *testing.T) {
 	if !opts.RequireSignature {
 		t.Fatal("productionSidecarProcessOptions() must require a signed manifest")
 	}
+	// dev（未设 release 门禁）：放行占位签名——dev-rebuild 内核 stage 进仓库
+	// vendored core/ 后 `go run .` 直接可用。
+	if !opts.AllowDevPlaceholder {
+		t.Fatal("productionSidecarProcessOptions() must allow dev placeholder signatures outside the release gate")
+	}
+	// release 门禁启用：必须拒绝占位签名（发布产物只认 Ed25519 签名）。
+	t.Setenv("EOS_RELEASE_ARTIFACT_CHECK", "1")
+	opts = productionSidecarProcessOptions(env)
 	if opts.AllowDevPlaceholder {
-		t.Fatal("productionSidecarProcessOptions() must not allow development placeholder signatures")
+		t.Fatal("productionSidecarProcessOptions() must reject dev placeholder signatures under the release gate")
 	}
 	if opts.Env["EOS_ACCESS_MODE"] != "workspace-write" {
 		t.Fatalf("Env was not preserved: %#v", opts.Env)

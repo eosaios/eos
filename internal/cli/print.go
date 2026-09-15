@@ -254,10 +254,14 @@ func productionSidecarProcessOptions(env map[string]string) sidecar.ProcessOptio
 		}
 	}
 	return sidecar.ProcessOptions{
-		Env:              nextEnv,
-		VerifyChecksum:   true,
+		Env:            nextEnv,
+		VerifyChecksum: true,
 		RequireSignature: true,
-		Stderr:           coreStderrWriter(),
+		// dev 模式（未设 EOS_RELEASE_ARTIFACT_CHECK）放行 dev-rebuild 内核的
+		// 占位签名，与 TUI 启动路径同口径；release 门禁由 enforceReleaseGate
+		// 强制拒绝兜底。
+		AllowDevPlaceholder: !sidecar.ReleaseArtifactCheck(),
+		Stderr:              coreStderrWriter(),
 	}
 }
 

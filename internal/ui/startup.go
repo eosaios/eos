@@ -16,6 +16,7 @@ import (
 
 	"github.com/eosaios/eos/internal/config"
 	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/pkg/coreapi/sidecar"
 	sidecarclient "github.com/eosaios/eos/pkg/coreapi/sidecar/client"
 
 	tea "charm.land/bubbletea/v2"
@@ -147,10 +148,16 @@ func StartInteractiveTUIWithOptions(opts TUIOptions) {
 
 func tuiSidecarClientOptions(opts TUIOptions, stderrWriter io.Writer) sidecarclient.Options {
 	return sidecarclient.Options{
-		Env:              tuiOptionEnv(opts),
-		Stderr:           stderrWriter,
-		VerifyChecksum:   true,
+		Env:            tuiOptionEnv(opts),
+		Stderr:         stderrWriter,
+		VerifyChecksum: true,
 		RequireSignature: true,
+		// 本地开发放行占位签名：dev-rebuild 脚本（scripts/dev_rebuild_core.go）
+		// 把本机新编译的内核 stage 进仓库 vendored core/，占位签名 + sha256
+		// 校验通过即可用，`go run .` 直接吃最新内核。release 门禁
+		// （EOS_RELEASE_ARTIFACT_CHECK）启用时 resolver 的 enforceReleaseGate
+		// 会强制改写为 false，发布产物仍只认 Ed25519 签名。
+		AllowDevPlaceholder: !sidecar.ReleaseArtifactCheck(),
 	}
 }
 
