@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/coder/websocket"
 )
@@ -198,8 +199,29 @@ func TestEventHubBroadcastsToWSClient(t *testing.T) {
 	}
 	defer conn.CloseNow()
 
+	// Dial 返回先于服务端 goroutine 的 hub.add 完成；过早 emit 会因 hub
+	// 尚无订阅者而丢帧，Read 随即永久阻塞（CI 上 5m 超时 panic）。
+	// 先轮询等连接注册进 hub 再 emit。
+	registered := false
+	for deadline := time.Now().Add(2 * time.Second); time.Now().Before(deadline); {
+		s.hub.mu.Lock()
+		n := len(s.hub.clients)
+		s.hub.mu.Unlock()
+		if n > 0 {
+			registered = true
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if !registered {
+		t.Fatal("ws client not registered in hub before deadline")
+	}
+
 	s.hub.emit("eos:bridge:shell-updated", map[string]any{"hello": "world"})
-	_, raw, err := conn.Read(ctx)
+	// 带超时读：帧丢失时快速失败，避免整包测试挂死到全局 5m 超时。
+	readCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	_, raw, err := conn.Read(readCtx)
 	if err != nil {
 		t.Fatalf("read frame: %v", err)
 	}
