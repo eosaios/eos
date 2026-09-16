@@ -265,6 +265,7 @@ func runtimeStateSyncEventTypes() []string {
 		"browser.download.started", "browser.download.progress", "browser.download.completed",
 		"browser.page.updated", "browser.frame",
 		"browser.dialog.opened", "browser.upload.needed",
+		"browser.cursor",
 	}
 }
 

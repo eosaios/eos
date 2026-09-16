@@ -1228,24 +1228,31 @@ type BrowserLiveStartRequest struct {
 }
 
 type BrowserInputRequest struct {
-	Kind       string  `json:"kind"`
-	Action     string  `json:"action,omitempty"`
-	X          float64 `json:"x"`
-	Y          float64 `json:"y"`
-	Button     string  `json:"button,omitempty"`
-	ClickCount *uint32 `json:"click_count,omitempty"`
-	DeltaX     float64 `json:"delta_x"`
-	DeltaY     float64 `json:"delta_y"`
-	Key        string  `json:"key,omitempty"`
-	Code       string  `json:"code,omitempty"`
-	KeyCode    uint32  `json:"key_code"`
-	Text       string  `json:"text,omitempty"`
-	Modifiers  uint32  `json:"modifiers"`
-	Value      string  `json:"value,omitempty"`
+	Kind           string  `json:"kind"`
+	Action         string  `json:"action,omitempty"`
+	X              float64 `json:"x"`
+	Y              float64 `json:"y"`
+	Button         string  `json:"button,omitempty"`
+	ClickCount     *uint32 `json:"click_count,omitempty"`
+	DeltaX         float64 `json:"delta_x"`
+	DeltaY         float64 `json:"delta_y"`
+	Key            string  `json:"key,omitempty"`
+	Code           string  `json:"code,omitempty"`
+	KeyCode        uint32  `json:"key_code"`
+	Text           string  `json:"text,omitempty"`
+	Modifiers      uint32  `json:"modifiers"`
+	Value          string  `json:"value,omitempty"`
+	SelectionStart *uint32 `json:"selection_start,omitempty"`
+	SelectionEnd   *uint32 `json:"selection_end,omitempty"`
 }
 
 type BrowserHistoryRequest struct {
 	Action string `json:"action"`
+}
+
+// BrowserCopySelectionResult 是 browser/copy_selection 的返回：页面当前选中文本。
+type BrowserCopySelectionResult struct {
+	Text string `json:"text"`
 }
 
 // BrowserFocusRequest 在目标 profile 打开地址（外部窗口）/置顶会话 tab。

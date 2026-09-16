@@ -152,7 +152,7 @@ func (g *StdioGateway) CoreBrowserLiveStopRPC(ctx context.Context) error {
 	return g.client.Call(ctx, protocoljsonrpc.MethodBrowserLiveStop, nil, &out)
 }
 
-// CoreBrowserInputRPC 人在内嵌视口的输入注入（mouse/wheel/key/text）。
+// CoreBrowserInputRPC 人在内嵌视口的输入注入（mouse/wheel/key/text/ime）。
 func (g *StdioGateway) CoreBrowserInputRPC(ctx context.Context, request coreapi.BrowserInputRequest) error {
 	var out map[string]any
 	return g.client.Call(ctx, protocoljsonrpc.MethodBrowserInput, request, &out)
@@ -164,6 +164,13 @@ func (g *StdioGateway) CoreBrowserHistoryRPC(ctx context.Context, action string)
 	return g.client.Call(ctx, protocoljsonrpc.MethodBrowserHistory, coreapi.BrowserHistoryRequest{
 		Action: action,
 	}, &out)
+}
+
+// CoreBrowserCopySelectionRPC 读取页面当前选中文本（空选区返回空串）。
+func (g *StdioGateway) CoreBrowserCopySelectionRPC(ctx context.Context) (coreapi.BrowserCopySelectionResult, error) {
+	var out coreapi.BrowserCopySelectionResult
+	err := g.client.Call(ctx, protocoljsonrpc.MethodBrowserCopySelection, nil, &out)
+	return out, err
 }
 
 // CoreBrowserPickStartRPC 开启元素选取模式。

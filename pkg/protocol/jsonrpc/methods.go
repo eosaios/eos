@@ -82,6 +82,7 @@ const (
 	MethodBrowserLiveStop            = "browser/live_stop"
 	MethodBrowserInput               = "browser/input"
 	MethodBrowserHistory             = "browser/history"
+	MethodBrowserCopySelection       = "browser/copy_selection"
 	MethodContextPreview             = "context/preview"
 	MethodContextStats               = "context/stats"
 	MethodContextWindow              = "context/window"
@@ -283,6 +284,7 @@ func AllCoreMethods() []string {
 		MethodBrowserLiveStop,
 		MethodBrowserInput,
 		MethodBrowserHistory,
+		MethodBrowserCopySelection,
 		MethodContextPreview,
 		MethodContextStats,
 		MethodContextWindow,

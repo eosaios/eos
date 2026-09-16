@@ -830,10 +830,16 @@ type BrowserInputRequest struct {
 	Text string `json:"text,omitempty"`
 	Modifiers uint32 `json:"modifiers"`
 	Value string `json:"value,omitempty"`
+	SelectionStart uint32 `json:"selection_start,omitempty"`
+	SelectionEnd uint32 `json:"selection_end,omitempty"`
 }
 
 type BrowserHistoryRequest struct {
 	Action string `json:"action"`
+}
+
+type BrowserCopySelectionResult struct {
+	Text string `json:"text"`
 }
 
 type BrowserFocusRequest struct {

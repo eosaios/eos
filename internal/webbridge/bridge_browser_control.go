@@ -223,6 +223,20 @@ func (s *BridgeService) BrowserHistory(action string) (map[string]interface{}, e
 	return map[string]interface{}{"ok": true, "action": trimmed}, nil
 }
 
+// BrowserCopySelection 读取页面当前选中文本（Cmd+C 系统剪贴板桥的读选区半边）。
+// 空选区返回空 text，前端据此决定是否写系统剪贴板。
+func (s *BridgeService) BrowserCopySelection() (map[string]interface{}, error) {
+	gateway, err := requireRuntimeGateway(s)
+	if err != nil {
+		return nil, err
+	}
+	result, err := gateway.CoreBrowserCopySelectionRPC(coreCtx())
+	if err != nil {
+		return nil, fmt.Errorf("读取选区失败: %w", err)
+	}
+	return map[string]interface{}{"text": result.Text}, nil
+}
+
 // BrowserPickStart 开启元素选取模式（真实浏览器 hover 高亮 + 点击捕获；
 // browser.pick.selected 事件回传结构化引用）。
 func (s *BridgeService) BrowserPickStart() (map[string]interface{}, error) {

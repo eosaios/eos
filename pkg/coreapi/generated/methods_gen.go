@@ -84,6 +84,7 @@ const (
 	MethodBrowserLiveStop = "browser/live_stop"
 	MethodBrowserInput = "browser/input"
 	MethodBrowserHistory = "browser/history"
+	MethodBrowserCopySelection = "browser/copy_selection"
 	MethodContextPreview = "context/preview"
 	MethodContextStats = "context/stats"
 	MethodContextWindow = "context/window"
@@ -273,6 +274,7 @@ func CoreMethods() []string {
 		MethodBrowserLiveStop,
 		MethodBrowserInput,
 		MethodBrowserHistory,
+		MethodBrowserCopySelection,
 		MethodContextPreview,
 		MethodContextStats,
 		MethodContextWindow,
@@ -451,6 +453,7 @@ func MethodGroups() map[string][]string {
 			MethodBrowserLiveStop,
 			MethodBrowserInput,
 			MethodBrowserHistory,
+			MethodBrowserCopySelection,
 			MethodPluginInstall,
 			MethodPluginList,
 			MethodPluginRemove,

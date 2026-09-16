@@ -89,6 +89,7 @@
     "browser/live_stop",
     "browser/input",
     "browser/history",
+    "browser/copy_selection",
     "context/preview",
     "context/stats",
     "context/window",

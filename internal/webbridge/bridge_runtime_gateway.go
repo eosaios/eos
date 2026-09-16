@@ -25,6 +25,7 @@ type bridgeRuntimeGateway interface {
 	CoreBrowserLiveStopRPC(context.Context) error
 	CoreBrowserInputRPC(context.Context, coreapi.BrowserInputRequest) error
 	CoreBrowserHistoryRPC(context.Context, string) error
+	CoreBrowserCopySelectionRPC(context.Context) (coreapi.BrowserCopySelectionResult, error)
 	CoreBrowserProfilesRPC(context.Context) ([]coreapi.BrowserProfileRecord, error)
 	CoreBrowserPickStartRPC(context.Context) error
 	CoreBrowserPickStopRPC(context.Context) error

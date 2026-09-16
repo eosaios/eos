@@ -28,8 +28,11 @@ func TestAllCoreMethodsFreezesMigrationSurface(t *testing.T) {
 	//     注册表条目，headless 按 profile 决定内置视口/外部窗口）
 	//   + 1 browser/credentials_import（登录态导入：外部 Chrome cookie →
 	//     内置 profile，自动模式拷贝临时调试实例 / 手动 endpoint）
-	if len(methods) != 185 {
-		t.Fatalf("AllCoreMethods() len=%d, want 185", len(methods))
+	//   + 1 browser/copy_selection（内嵌视口选区读取：Runtime.evaluate 取
+	//     Selection/Input 选中文本，壳层写系统剪贴板——headless 剪贴板与
+	//     系统剪贴板分离的桥）
+	if len(methods) != 186 {
+		t.Fatalf("AllCoreMethods() len=%d, want 186", len(methods))
 	}
 
 	seen := make(map[string]bool, len(methods))
