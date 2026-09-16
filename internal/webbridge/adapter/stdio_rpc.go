@@ -92,10 +92,10 @@ func (g *StdioGateway) CoreBrowserUploadProvideRPC(ctx context.Context, requestI
 	}, &out)
 }
 
-// CoreBrowserFocusRPC 置顶会话 tab。
-func (g *StdioGateway) CoreBrowserFocusRPC(ctx context.Context) error {
+// CoreBrowserFocusRPC 置顶会话 tab；url 非空时在目标 profile 新开 tab 打开（外部窗口）。
+func (g *StdioGateway) CoreBrowserFocusRPC(ctx context.Context, req coreapi.BrowserFocusRequest) error {
 	var out map[string]any
-	return g.client.Call(ctx, protocoljsonrpc.MethodBrowserFocus, nil, &out)
+	return g.client.Call(ctx, protocoljsonrpc.MethodBrowserFocus, req, &out)
 }
 
 // CoreBrowserSetDefaultProfileRPC 切换默认 profile。
@@ -182,6 +182,15 @@ func (g *StdioGateway) CoreBrowserPickStopRPC(ctx context.Context) error {
 func (g *StdioGateway) CoreBrowserProfilesRPC(ctx context.Context) ([]coreapi.BrowserProfileRecord, error) {
 	var out []coreapi.BrowserProfileRecord
 	if err := g.client.Call(ctx, protocoljsonrpc.MethodBrowserProfiles, nil, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+// CoreBrowserProfileUpsertRPC 创建/更新 profile 注册表条目。
+// params 用 map 构造：headless=false 必须显式可达（struct+omitempty 会丢）。
+func (g *StdioGateway) CoreBrowserProfileUpsertRPC(ctx context.Context, params map[string]any) ([]coreapi.BrowserProfileRecord, error) {
+	var out []coreapi.BrowserProfileRecord
+	if err := g.client.Call(ctx, protocoljsonrpc.MethodBrowserProfileUpsert, params, &out); err != nil {
 		return nil, err
 	}
 	return out, nil

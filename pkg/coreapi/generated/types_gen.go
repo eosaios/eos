@@ -736,6 +736,7 @@ type BrowserProfileRecord struct {
 	Dir string `json:"dir"`
 	CreatedAt int64 `json:"created_at"`
 	Note string `json:"note,omitempty"`
+	Headless bool `json:"headless,omitempty"`
 }
 
 type BrowserRuntimeStatus struct {
@@ -833,6 +834,17 @@ type BrowserInputRequest struct {
 
 type BrowserHistoryRequest struct {
 	Action string `json:"action"`
+}
+
+type BrowserFocusRequest struct {
+	URL string `json:"url,omitempty"`
+	Profile string `json:"profile,omitempty"`
+}
+
+type BrowserProfileUpsertRequest struct {
+	Name string `json:"name"`
+	Headless bool `json:"headless,omitempty"`
+	Note string `json:"note,omitempty"`
 }
 
 type ElementPick struct {

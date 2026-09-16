@@ -24,8 +24,10 @@ func TestAllCoreMethodsFreezesMigrationSurface(t *testing.T) {
 	//   + 1 lsp/install（语言服务一键安装：语言 → 生态安装命令映射，装后重探测）
 	//   + 1 insight/refine_input（输入框 AI 优化表达：一次性 LLM 改写用户草稿，
 	//     桌面端发送按钮旁的润色入口）
-	if len(methods) != 183 {
-		t.Fatalf("AllCoreMethods() len=%d, want 183", len(methods))
+	//   + 1 browser/profile_upsert（内置/外部浏览器 profile 管理：创建/更新
+	//     注册表条目，headless 按 profile 决定内置视口/外部窗口）
+	if len(methods) != 184 {
+		t.Fatalf("AllCoreMethods() len=%d, want 184", len(methods))
 	}
 
 	seen := make(map[string]bool, len(methods))

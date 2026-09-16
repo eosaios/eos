@@ -67,6 +67,7 @@ const (
 	MethodBrowserClose = "browser/close"
 	MethodBrowserTabs = "browser/tabs"
 	MethodBrowserProfiles = "browser/profiles"
+	MethodBrowserProfileUpsert = "browser/profile_upsert"
 	MethodBrowserControlTakeover = "browser/control_takeover"
 	MethodBrowserControlResume = "browser/control_resume"
 	MethodBrowserPickStart = "browser/pick_start"
@@ -254,6 +255,7 @@ func CoreMethods() []string {
 		MethodBrowserClose,
 		MethodBrowserTabs,
 		MethodBrowserProfiles,
+		MethodBrowserProfileUpsert,
 		MethodBrowserControlTakeover,
 		MethodBrowserControlResume,
 		MethodBrowserPickStart,
@@ -430,6 +432,7 @@ func MethodGroups() map[string][]string {
 			MethodBrowserClose,
 			MethodBrowserTabs,
 			MethodBrowserProfiles,
+			MethodBrowserProfileUpsert,
 			MethodBrowserControlTakeover,
 			MethodBrowserControlResume,
 			MethodBrowserPickStart,

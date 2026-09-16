@@ -13,7 +13,8 @@ type bridgeRuntimeGateway interface {
 	CoreBrowserControlTakeoverRPC(context.Context, coreapi.BrowserControlTakeoverRequest) error
 	CoreBrowserControlResumeRPC(context.Context) error
 	CoreBrowserUploadProvideRPC(context.Context, string, []string) error
-	CoreBrowserFocusRPC(context.Context) error
+	CoreBrowserFocusRPC(context.Context, coreapi.BrowserFocusRequest) error
+	CoreBrowserProfileUpsertRPC(context.Context, map[string]any) ([]coreapi.BrowserProfileRecord, error)
 	CoreBrowserSetDefaultProfileRPC(context.Context, string) error
 	CoreBrowserNavigateRPC(context.Context, string) error
 	CoreBrowserTabNewRPC(context.Context, string) (coreapi.BrowserTabInfo, error)

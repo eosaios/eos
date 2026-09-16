@@ -58,14 +58,19 @@ func (s *BridgeService) BrowserControlResume() (map[string]interface{}, error) {
 	return map[string]interface{}{"resumed": true}, nil
 }
 
-// BrowserFocus 置顶会话 tab（「打开/置顶浏览器窗口」）。
-func (s *BridgeService) BrowserFocus() (map[string]interface{}, error) {
+// BrowserFocus 「在外部窗口打开/置顶」：url 非空 = 在目标 profile（缺省
+// external 有头实例）新开 tab 打开；空 = 置顶默认 profile 会话 tab。
+func (s *BridgeService) BrowserFocus(url string, profile string) (map[string]interface{}, error) {
 	gateway, err := requireRuntimeGateway(s)
 	if err != nil {
 		return nil, err
 	}
-	if err := gateway.CoreBrowserFocusRPC(coreCtx()); err != nil {
-		return nil, fmt.Errorf("置顶浏览器窗口失败: %w", err)
+	req := coreapi.BrowserFocusRequest{
+		URL:    strings.TrimSpace(url),
+		Profile: strings.TrimSpace(profile),
+	}
+	if err := gateway.CoreBrowserFocusRPC(coreCtx(), req); err != nil {
+		return nil, fmt.Errorf("打开外部浏览器失败: %w", err)
 	}
 	return map[string]interface{}{"focused": true}, nil
 }
@@ -244,6 +249,31 @@ func (s *BridgeService) BrowserPickStop() (map[string]interface{}, error) {
 }
 
 // BrowserProfiles 列出 profile 注册表。
+// BrowserProfileUpsert 设置页：创建/更新浏览器 profile（headless=nil 不更新；
+// 内置无头视口 / external 有头外部窗口）。
+func (s *BridgeService) BrowserProfileUpsert(name string, headless *bool, note string) (map[string]interface{}, error) {
+	gateway, err := requireRuntimeGateway(s)
+	if err != nil {
+		return nil, err
+	}
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return nil, fmt.Errorf("profile 名不能为空")
+	}
+	params := map[string]interface{}{"name": trimmed}
+	if headless != nil {
+		params["headless"] = *headless
+	}
+	if trimmedNote := strings.TrimSpace(note); trimmedNote != "" {
+		params["note"] = trimmedNote
+	}
+	profiles, err := gateway.CoreBrowserProfileUpsertRPC(coreCtx(), params)
+	if err != nil {
+		return nil, fmt.Errorf("保存 profile 失败: %w", err)
+	}
+	return map[string]interface{}{"profiles": profiles}, nil
+}
+
 func (s *BridgeService) BrowserProfiles() ([]coreapi.BrowserProfileRecord, error) {
 	gateway, err := requireRuntimeGateway(s)
 	if err != nil {

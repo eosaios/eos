@@ -1248,11 +1248,28 @@ type BrowserHistoryRequest struct {
 	Action string `json:"action"`
 }
 
+// BrowserFocusRequest 在目标 profile 打开地址（外部窗口）/置顶会话 tab。
+type BrowserFocusRequest struct {
+	URL     string `json:"url,omitempty"`
+	Profile string `json:"profile,omitempty"`
+}
+
+// BrowserProfileUpsertRequest 创建/更新 profile 注册表条目（browser/profile_upsert）。
+// 零值字段 = 不更新（新建时按全局默认无头）。
+type BrowserProfileUpsertRequest struct {
+	Name     string `json:"name"`
+	Headless bool   `json:"headless,omitempty"`
+	Note     string `json:"note,omitempty"`
+}
+
 type BrowserProfileRecord struct {
 	Name      string `json:"name"`
 	Dir       string `json:"dir"`
 	CreatedAt int64  `json:"created_at"`
 	Note      string `json:"note,omitempty"`
+	// Headless 启动模式：nil = 按全局配置（新默认无头）；内置 default 无头、
+	// external 有头。
+	Headless *bool `json:"headless,omitempty"`
 }
 
 type ContextStats struct {
