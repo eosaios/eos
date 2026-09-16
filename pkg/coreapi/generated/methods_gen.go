@@ -85,6 +85,9 @@ const (
 	MethodBrowserInput = "browser/input"
 	MethodBrowserHistory = "browser/history"
 	MethodBrowserCopySelection = "browser/copy_selection"
+	MethodBrowserHostRegister = "browser/host_register"
+	MethodBrowserHostRespond = "browser/host_respond"
+	MethodBrowserHostState = "browser/host_state"
 	MethodContextPreview = "context/preview"
 	MethodContextStats = "context/stats"
 	MethodContextWindow = "context/window"
@@ -275,6 +278,9 @@ func CoreMethods() []string {
 		MethodBrowserInput,
 		MethodBrowserHistory,
 		MethodBrowserCopySelection,
+		MethodBrowserHostRegister,
+		MethodBrowserHostRespond,
+		MethodBrowserHostState,
 		MethodContextPreview,
 		MethodContextStats,
 		MethodContextWindow,
@@ -454,6 +460,9 @@ func MethodGroups() map[string][]string {
 			MethodBrowserInput,
 			MethodBrowserHistory,
 			MethodBrowserCopySelection,
+			MethodBrowserHostRegister,
+			MethodBrowserHostRespond,
+			MethodBrowserHostState,
 			MethodPluginInstall,
 			MethodPluginList,
 			MethodPluginRemove,

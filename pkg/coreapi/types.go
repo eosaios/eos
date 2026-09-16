@@ -1161,6 +1161,8 @@ type BrowserRuntimeStatus struct {
 	CurrentURL     string              `json:"current_url,omitempty"`
 	Control        BrowserControlState `json:"control"`
 	LastError      string              `json:"last_error,omitempty"`
+	Backend        string              `json:"backend,omitempty"`
+	Phase          string              `json:"phase,omitempty"`
 }
 
 type BrowserTabInfo struct {

@@ -750,6 +750,8 @@ type BrowserRuntimeStatus struct {
 	CurrentURL string `json:"current_url,omitempty"`
 	Control BrowserControlState `json:"control"`
 	LastError string `json:"last_error,omitempty"`
+	Backend string `json:"backend,omitempty"`
+	Phase string `json:"phase,omitempty"`
 }
 
 type BrowserTabInfo struct {
@@ -840,6 +842,39 @@ type BrowserHistoryRequest struct {
 
 type BrowserCopySelectionResult struct {
 	Text string `json:"text"`
+}
+
+type BrowserHostRegisterRequest struct {
+	Profile string `json:"profile,omitempty"`
+	Backend string `json:"backend,omitempty"`
+	Capabilities []string `json:"capabilities,omitempty"`
+}
+
+type BrowserHostRespondRequest struct {
+	RequestID string `json:"request_id"`
+	Ok bool `json:"ok"`
+	Result map[string]any `json:"result,omitempty"`
+	Error string `json:"error,omitempty"`
+}
+
+type BrowserHostStateRequest struct {
+	Profile string `json:"profile,omitempty"`
+	Running bool `json:"running"`
+	Backend string `json:"backend,omitempty"`
+	Phase string `json:"phase,omitempty"`
+	URL string `json:"url,omitempty"`
+	Title string `json:"title,omitempty"`
+	Error string `json:"error,omitempty"`
+	Tabs []BrowserTabInfo `json:"tabs"`
+	ActiveTabID string `json:"active_tab_id,omitempty"`
+}
+
+type BrowserHostCommand struct {
+	RequestID string `json:"request_id"`
+	Action string `json:"action"`
+	Session string `json:"session,omitempty"`
+	TabID string `json:"tab_id,omitempty"`
+	Args map[string]any `json:"args,omitempty"`
 }
 
 type BrowserFocusRequest struct {
