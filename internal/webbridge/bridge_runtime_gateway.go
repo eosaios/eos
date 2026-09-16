@@ -15,6 +15,7 @@ type bridgeRuntimeGateway interface {
 	CoreBrowserUploadProvideRPC(context.Context, string, []string) error
 	CoreBrowserFocusRPC(context.Context, coreapi.BrowserFocusRequest) error
 	CoreBrowserProfileUpsertRPC(context.Context, map[string]any) ([]coreapi.BrowserProfileRecord, error)
+	CoreBrowserCredentialsImportRPC(context.Context, coreapi.BrowserCredentialsImportRequest) (coreapi.BrowserCredentialsImportResult, error)
 	CoreBrowserSetDefaultProfileRPC(context.Context, string) error
 	CoreBrowserNavigateRPC(context.Context, string) error
 	CoreBrowserTabNewRPC(context.Context, string) (coreapi.BrowserTabInfo, error)

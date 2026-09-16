@@ -847,6 +847,21 @@ type BrowserProfileUpsertRequest struct {
 	Note string `json:"note,omitempty"`
 }
 
+type BrowserCredentialsImportRequest struct {
+	Endpoint string `json:"endpoint,omitempty"`
+	Profile string `json:"profile,omitempty"`
+	Domains []string `json:"domains,omitempty"`
+	DryRun bool `json:"dry_run,omitempty"`
+}
+
+type BrowserCredentialsImportResult struct {
+	Imported uint64 `json:"imported"`
+	Skipped uint64 `json:"skipped"`
+	Total uint64 `json:"total"`
+	Source string `json:"source"`
+	DryRun bool `json:"dry_run"`
+}
+
 type ElementPick struct {
 	Ref string `json:"ref,omitempty"`
 	Selector string `json:"selector,omitempty"`

@@ -249,6 +249,36 @@ func (s *BridgeService) BrowserPickStop() (map[string]interface{}, error) {
 }
 
 // BrowserProfiles 列出 profile 注册表。
+// BrowserCredentialsImport 设置页「从外部浏览器导入登录态」：endpoint 空 =
+// 自动模式（拷贝默认 Chrome cookie 到临时调试实例后导入，macOS/Linux）；
+// 非空 = 手动模式（浏览器以 --remote-debugging-port 启动后填 host:port）。
+// 导入耗时可到几十秒（冷启动+Keychain 授权），前端需异步等待并给反馈。
+func (s *BridgeService) BrowserCredentialsImport(endpoint string, profile string, domains []string, dryRun bool) (map[string]interface{}, error) {
+	gateway, err := requireRuntimeGateway(s)
+	if err != nil {
+		return nil, err
+	}
+	req := coreapi.BrowserCredentialsImportRequest{
+		Endpoint: strings.TrimSpace(endpoint),
+		Profile:  strings.TrimSpace(profile),
+		Domains:  domains,
+		DryRun:   dryRun,
+	}
+	result, err := gateway.CoreBrowserCredentialsImportRPC(coreCtx(), req)
+	if err != nil {
+		return nil, fmt.Errorf("导入登录态失败: %w", err)
+	}
+	payload, err := json.Marshal(result)
+	if err != nil {
+		return nil, fmt.Errorf("序列化导入结果失败: %w", err)
+	}
+	var out map[string]interface{}
+	if err := json.Unmarshal(payload, &out); err != nil {
+		return nil, fmt.Errorf("解析导入结果失败: %w", err)
+	}
+	return out, nil
+}
+
 // BrowserProfileUpsert 设置页：创建/更新浏览器 profile（headless=nil 不更新；
 // 内置无头视口 / external 有头外部窗口）。
 func (s *BridgeService) BrowserProfileUpsert(name string, headless *bool, note string) (map[string]interface{}, error) {
@@ -330,6 +360,11 @@ func (s *BridgeService) startBrowserEventPump() {
 			// 让工具立刻明确失败而非等超时）
 			if topic == "browser.upload.needed" {
 				s.handleUploadNeeded(payload)
+			}
+			// frame：缓存帧本体、转发轻载荷（meta/ts）——大 base64 不走
+			// 消息通道（见 browser_frame_route.go）
+			if topic == "browser.frame" {
+				payload = s.captureBrowserFrame(payload)
 			}
 			s.emitBrowserEvent(BrowserEventPayload{
 				Type:    topic,

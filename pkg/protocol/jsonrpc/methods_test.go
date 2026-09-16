@@ -26,8 +26,10 @@ func TestAllCoreMethodsFreezesMigrationSurface(t *testing.T) {
 	//     桌面端发送按钮旁的润色入口）
 	//   + 1 browser/profile_upsert（内置/外部浏览器 profile 管理：创建/更新
 	//     注册表条目，headless 按 profile 决定内置视口/外部窗口）
-	if len(methods) != 184 {
-		t.Fatalf("AllCoreMethods() len=%d, want 184", len(methods))
+	//   + 1 browser/credentials_import（登录态导入：外部 Chrome cookie →
+	//     内置 profile，自动模式拷贝临时调试实例 / 手动 endpoint）
+	if len(methods) != 185 {
+		t.Fatalf("AllCoreMethods() len=%d, want 185", len(methods))
 	}
 
 	seen := make(map[string]bool, len(methods))

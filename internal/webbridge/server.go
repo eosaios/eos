@@ -121,6 +121,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("POST /wails/call", s.handleCall)
 	mux.HandleFunc("GET /wails/ws", s.handleWS)
 	mux.Handle("GET "+AttachmentImageRoutePath, http.HandlerFunc(s.bridge.serveAttachmentImage))
+	mux.Handle("GET "+BrowserFrameRoutePath, http.HandlerFunc(s.bridge.serveBrowserFrame))
 	mux.HandleFunc("GET /", s.handleStatic)
 	return mux
 }

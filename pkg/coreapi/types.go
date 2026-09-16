@@ -1262,6 +1262,24 @@ type BrowserProfileUpsertRequest struct {
 	Note     string `json:"note,omitempty"`
 }
 
+// BrowserCredentialsImportRequest 外部浏览器登录态导入（browser/credentials_import）。
+// Endpoint 空 = 自动模式（拷贝默认 Chrome cookie 到临时调试实例，macOS/Linux）。
+type BrowserCredentialsImportRequest struct {
+	Endpoint string   `json:"endpoint,omitempty"`
+	Profile  string   `json:"profile,omitempty"`
+	Domains  []string `json:"domains,omitempty"`
+	DryRun   bool     `json:"dry_run,omitempty"`
+}
+
+// BrowserCredentialsImportResult 登录态导入结果。
+type BrowserCredentialsImportResult struct {
+	Imported uint64 `json:"imported"`
+	Skipped  uint64 `json:"skipped"`
+	Total    uint64 `json:"total"`
+	Source   string `json:"source"`
+	DryRun   bool   `json:"dry_run"`
+}
+
 type BrowserProfileRecord struct {
 	Name      string `json:"name"`
 	Dir       string `json:"dir"`

@@ -6,6 +6,7 @@ package webbridge
 // 商业使用请联系版权人获得商业授权。
 
 import (
+	"sync/atomic"
 	"context"
 	"sync"
 	"time"
@@ -30,6 +31,8 @@ const (
 type BridgeService struct {
 	// stayInTrayListener 是「驻留系统托盘」开关变更回调（web 模式下无托盘，恒为空）。
 	stayInTrayListener           func(enabled bool)
+	// browserFrame 最新 screencast 帧缓存（HTTP 路由拉取；事件通道只发轻载荷）
+	browserFrame                 atomic.Pointer[browserFrameCache]
 	runtimeGateway               bridgeRuntimeGateway
 	runtimeGatewayMode           string
 	runtimeGatewayClose          func() error

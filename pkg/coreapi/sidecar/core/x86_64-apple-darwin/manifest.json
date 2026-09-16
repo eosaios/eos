@@ -73,6 +73,7 @@
     "browser/tabs",
     "browser/profiles",
     "browser/profile_upsert",
+    "browser/credentials_import",
     "browser/control_takeover",
     "browser/control_resume",
     "browser/pick_start",

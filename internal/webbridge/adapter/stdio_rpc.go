@@ -186,6 +186,15 @@ func (g *StdioGateway) CoreBrowserProfilesRPC(ctx context.Context) ([]coreapi.Br
 	}
 	return out, nil
 }
+// CoreBrowserCredentialsImportRPC 外部浏览器登录态导入。
+func (g *StdioGateway) CoreBrowserCredentialsImportRPC(ctx context.Context, req coreapi.BrowserCredentialsImportRequest) (coreapi.BrowserCredentialsImportResult, error) {
+	var out coreapi.BrowserCredentialsImportResult
+	if err := g.client.Call(ctx, protocoljsonrpc.MethodBrowserCredentialsImport, req, &out); err != nil {
+		return out, err
+	}
+	return out, nil
+}
+
 // CoreBrowserProfileUpsertRPC 创建/更新 profile 注册表条目。
 // params 用 map 构造：headless=false 必须显式可达（struct+omitempty 会丢）。
 func (g *StdioGateway) CoreBrowserProfileUpsertRPC(ctx context.Context, params map[string]any) ([]coreapi.BrowserProfileRecord, error) {
