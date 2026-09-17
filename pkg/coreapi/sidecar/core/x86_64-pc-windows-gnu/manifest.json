@@ -4,8 +4,8 @@
   "api_version": "v1",
   "target": "x86_64-pc-windows-gnu",
   "binary": "eos-core.exe",
-  "sha256": "sha256:0fa4d7ecf25801ba40c46eb6d260fd9d8b4a8757a59e55ea1edb71dbb6887c18",
-  "signature": "ed25519:MBdRCuZCYHVoWVfsMlMoCEqyLQlcJWhNdkyIwbUgBiJZsNjHGyk1zfTwhOMQ4K2hsnJ6h8+POU8s2kmlRM+ZBg==",
+  "sha256": "sha256:a1cb2228823e972e8e1e7ef5addf639287f2ea665b121a02ae1bf5c48eacc244",
+  "signature": "ed25519:+ckbewk61W9EzB/DhIo+JfbmPzrfksS+HzIiDtIwTT64wKpkHwplGYipc93BEcfSGEfkJ5D3I2nqS8z+KcXqBw==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "initialize",
@@ -162,6 +162,7 @@
     "git/merge_abort",
     "git/suggest_message",
     "insight/predict_next_user_message",
+    "insight/refine_input",
     "insight/plan_snapshot",
     "memory/snapshot",
     "memory/save",

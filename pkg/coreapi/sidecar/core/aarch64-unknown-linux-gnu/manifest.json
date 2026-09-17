@@ -4,8 +4,8 @@
   "api_version": "v1",
   "target": "aarch64-unknown-linux-gnu",
   "binary": "eos-core",
-  "sha256": "sha256:fc5e3f0433e5b4ddedaff572dffcb3919f013222fe812ea7aca84da39c3e9159",
-  "signature": "ed25519:sfOQM9MSpNgzx087y3drrzhFVsbKaZDtRLJVcUOrsSwEGskuZo4h4sfO13Ul/VwO7BsInAFGIbUksMHdLXT5Aw==",
+  "sha256": "sha256:907b9d76363bae0b6fbc6b196d217a5e57f7e4ef70b32886135d8e08f1ddb833",
+  "signature": "ed25519:mpYBafGUXasTUMEVTRdKFnq33mlWGHwguY6y2BPQF345fXCa6V3lnBqegv0U6eE6H75wi9l5XFkeOX37fVWAAw==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "initialize",
@@ -162,6 +162,7 @@
     "git/merge_abort",
     "git/suggest_message",
     "insight/predict_next_user_message",
+    "insight/refine_input",
     "insight/plan_snapshot",
     "memory/snapshot",
     "memory/save",

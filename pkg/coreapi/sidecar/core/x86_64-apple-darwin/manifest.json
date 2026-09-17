@@ -4,8 +4,8 @@
   "api_version": "v1",
   "target": "x86_64-apple-darwin",
   "binary": "eos-core",
-  "sha256": "sha256:d2cb4bff963b78863dd1b03d5d07650c64724afca50714f579441cd4d1708c8b",
-  "signature": "ed25519:DFr8hhCKkc7CzkIAaavaSBB5/gnkp92Nq36buRU4S54rBwJkJI0+qXNrRm2UBA5KGkoTxahEpALSJj7a/tC8AQ==",
+  "sha256": "sha256:243394951982fd7863ee842ad0f512f565d84cc5dd1f7b594e80b83521b1608e",
+  "signature": "ed25519:NA22yeGonkC0YmMyf4VC4amxlzvcvb7yMShPN4L80fmWPWsjcAslegjMT5bs/zdK9SyIShyBikzBn0m49VD1CQ==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "initialize",
@@ -162,6 +162,7 @@
     "git/merge_abort",
     "git/suggest_message",
     "insight/predict_next_user_message",
+    "insight/refine_input",
     "insight/plan_snapshot",
     "memory/snapshot",
     "memory/save",
