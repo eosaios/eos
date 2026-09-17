@@ -31,8 +31,10 @@ func TestAllCoreMethodsFreezesMigrationSurface(t *testing.T) {
 	//   + 1 browser/copy_selection（内嵌视口选区读取：Runtime.evaluate 取
 	//     Selection/Input 选中文本，壳层写系统剪贴板——headless 剪贴板与
 	//     系统剪贴板分离的桥）
-	if len(methods) != 186 {
-		t.Fatalf("AllCoreMethods() len=%d, want 186", len(methods))
+	//   + 3 browser/host_*（桌面内置宿主协议：原生壳注册为宿主 / 应答注入
+	//     结果 / 广播标签页状态，AI 与人共用同一原生标签页）
+	if len(methods) != 189 {
+		t.Fatalf("AllCoreMethods() len=%d, want 189", len(methods))
 	}
 
 	seen := make(map[string]bool, len(methods))
