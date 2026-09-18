@@ -31,6 +31,12 @@ type Options struct {
 	WorkspaceRoot string
 	// SessionID 显式指定会话 ID；为空则在首次工具调用时懒创建默认会话。
 	SessionID string
+	// ChatTimeoutSecs 是 eos_chat / eos_task_wait 的默认阻塞/等待上限
+	//（秒）。<=0 用 control.go 的 defaultChatTimeoutSecs。
+	ChatTimeoutSecs int
+	// ModelOverride 是 --model 覆盖（条目名/模型 ID/套餐 label）；对每个
+	// 会话在首次 eos_chat 前应用一次。
+	ModelOverride string
 }
 
 // MCPHost 持有装配 MCP server 所需的会话上下文。
@@ -38,18 +44,25 @@ type MCPHost struct {
 	engine        coreapi.Engine
 	session       string // 连接默认会话 ID（懒初始化）
 	workspaceRoot string
-	mu            sync.Mutex // 保护 session 懒初始化
+	// modelOverride / modelApplied / chatTimeoutSecs 驱动 eos_chat 语义。
+	modelOverride string
+	modelApplied  map[string]bool
+	chatTimeout   int
+	mu            sync.Mutex // 保护 session 懒初始化与 modelApplied
 }
 
-// New 装配一个 MCP server：创建 mark3labs MCPServer 并注册 EOS 工具。
+// New 装配一个 MCP server：创建 mark3labs MCPServer 并注册 EOS 工具
+// （原子工具直通 + eos_* 控制/委托工具集）。
 // 不在此启动 transport（由调用方按 stdio/sse 选择）。
 func New(ctx context.Context, opts Options) (*server.MCPServer, *MCPHost, error) {
 	if opts.Engine == nil {
 		return nil, nil, errors.New("mcp server: engine is required")
 	}
 	host := &MCPHost{
-		engine:   opts.Engine,
-		session:  strings.TrimSpace(opts.SessionID),
+		engine:        opts.Engine,
+		session:       strings.TrimSpace(opts.SessionID),
+		modelOverride: strings.TrimSpace(opts.ModelOverride),
+		chatTimeout:   opts.ChatTimeoutSecs,
 	}
 	if ws := strings.TrimSpace(opts.WorkspaceRoot); ws != "" {
 		host.workspaceRoot = ws
@@ -59,7 +72,16 @@ func New(ctx context.Context, opts Options) (*server.MCPServer, *MCPHost, error)
 	if err := host.registerTools(ctx, s); err != nil {
 		return nil, nil, fmt.Errorf("mcp server: register tools: %w", err)
 	}
+	host.registerControlTools(s)
 	return s, host, nil
+}
+
+// chatTimeoutSecs 归一默认聊天超时（<=0 → defaultChatTimeoutSecs）。
+func (h *MCPHost) chatTimeoutSecs() int {
+	if h.chatTimeout <= 0 {
+		return defaultChatTimeoutSecs
+	}
+	return h.chatTimeout
 }
 
 // ensureSession 懒创建连接默认会话（Current 失败则 Create），返回 session ID。

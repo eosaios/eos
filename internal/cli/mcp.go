@@ -36,25 +36,30 @@ func newMcpServeCmd() *cobra.Command {
 		skipPermission bool
 		transport      string
 		listen         string
+		modelOverride  string
+		chatTimeout    int
 	)
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Short: "Run EOS as a standard MCP server (stdio or sse).",
-		Long: "Expose EOS tools via the Model Context Protocol. Default session is created\n" +
-			"per connection; callers may override via _meta.session_id. High-risk approvals\n" +
-			"are not auto-approved. See internal/docs/mcp/SERVER.md.",
+		Long: "Expose EOS via the Model Context Protocol: atomic tools (tools/list + tools/call),\n" +
+			"agent delegation (eos_chat / eos_task_*), session management and the approval loop\n" +
+			"(eos_approval_respond). Default session is created per connection; callers may\n" +
+			"override via _meta.session_id or per-tool session_id. See internal/docs/mcp/SERVER.md.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			access, approval := mergeConfigPermissions(cmd.Flags(), "sandbox-mode", accessMode, approvalMode)
 			modes := resolveModeConfig(access, approval, sandboxMode, skipPermission)
 			return runMcpServe(cmd.Context(), mcpServeOptions{
-				Workspace:    strings.TrimSpace(workspace),
-				AccessMode:   modes.AccessMode,
-				ApprovalMode: modes.ApprovalMode,
-				SandboxMode:  modes.SandboxMode,
-				SkipAll:      modes.SkipAllChecks,
-				Transport:    strings.TrimSpace(transport),
-				Listen:       strings.TrimSpace(listen),
+				Workspace:      strings.TrimSpace(workspace),
+				AccessMode:     modes.AccessMode,
+				ApprovalMode:   modes.ApprovalMode,
+				SandboxMode:    modes.SandboxMode,
+				SkipAll:        modes.SkipAllChecks,
+				Transport:      strings.TrimSpace(transport),
+				Listen:         strings.TrimSpace(listen),
+				ModelOverride:  strings.TrimSpace(modelOverride),
+				ChatTimeoutSec: chatTimeout,
 			})
 		},
 	}
@@ -65,17 +70,21 @@ func newMcpServeCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&skipPermission, "dangerously-skip-permissions", false, "Full-access preset: --access-mode danger-full-access --approval-mode never")
 	cmd.Flags().StringVar(&transport, "transport", "stdio", "Transport: stdio or sse")
 	cmd.Flags().StringVar(&listen, "listen", "127.0.0.1:8765", "SSE listen address (only used when --transport sse)")
+	cmd.Flags().StringVar(&modelOverride, "model", "", "Model override (entry name / model ID / plan label) applied to each session's first eos_chat")
+	cmd.Flags().IntVar(&chatTimeout, "chat-timeout", 600, "Default eos_chat / eos_task_wait blocking timeout in seconds (per-call timeout_secs overrides)")
 	return cmd
 }
 
 type mcpServeOptions struct {
-	Workspace    string
-	AccessMode   string
-	ApprovalMode string
-	SandboxMode  string
-	SkipAll      bool
-	Transport    string
-	Listen       string
+	Workspace      string
+	AccessMode     string
+	ApprovalMode   string
+	SandboxMode    string
+	SkipAll        bool
+	Transport      string
+	Listen         string
+	ModelOverride  string
+	ChatTimeoutSec int
 }
 
 func runMcpServe(ctx context.Context, opts mcpServeOptions) error {
@@ -97,8 +106,10 @@ func runMcpServe(ctx context.Context, opts mcpServeOptions) error {
 	defer selected.Close()
 
 	mcpSrv, _, err := mcpserver.New(ctx, mcpserver.Options{
-		Engine:       selected.Engine,
-		WorkspaceRoot: opts.Workspace,
+		Engine:          selected.Engine,
+		WorkspaceRoot:   opts.Workspace,
+		ChatTimeoutSecs: opts.ChatTimeoutSec,
+		ModelOverride:   opts.ModelOverride,
 	})
 	if err != nil {
 		return fmt.Errorf("mcp serve: %w", err)

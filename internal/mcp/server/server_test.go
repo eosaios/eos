@@ -39,9 +39,9 @@ func (m mockCatalog) List(_ context.Context, _ coreapi.ListToolCatalogRequest) (
 }
 
 type mockToolExecutor struct {
-	calls    []coreapi.ToolRequest
-	result   coreapi.ToolResult
-	execErr  error
+	calls   []coreapi.ToolRequest
+	result  coreapi.ToolResult
+	execErr error
 }
 
 func (m *mockToolExecutor) Execute(_ context.Context, req coreapi.ToolRequest) (coreapi.ToolResult, error) {
