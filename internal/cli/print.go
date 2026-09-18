@@ -18,15 +18,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"maps"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/eosaios/eos/internal/ai"
 	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/headless"
 	"github.com/eosaios/eos/pkg/coreapi"
 	"github.com/eosaios/eos/pkg/coreapi/engineprovider"
 	"github.com/eosaios/eos/pkg/coreapi/sidecar"
@@ -105,7 +104,7 @@ func RunPrintMode(opts PrintOptions) error {
 	if err != nil {
 		usage = coreapi.UsageSummary{}
 	}
-	modelName, _ := resolveActiveModelName(ctx, engine)
+	modelName, _ := headless.ResolveActiveModelName(ctx, engine)
 
 	result := PrintResult{
 		Content:     content,
@@ -254,8 +253,8 @@ func productionSidecarProcessOptions(env map[string]string) sidecar.ProcessOptio
 		}
 	}
 	return sidecar.ProcessOptions{
-		Env:            nextEnv,
-		VerifyChecksum: true,
+		Env:              nextEnv,
+		VerifyChecksum:   true,
 		RequireSignature: true,
 		// dev 模式（未设 EOS_RELEASE_ARTIFACT_CHECK）放行 dev-rebuild 内核的
 		// 占位签名，与 TUI 启动路径同口径；release 门禁由 enforceReleaseGate
@@ -293,19 +292,18 @@ func runSingleTurn(ctx context.Context, engine coreapi.Engine, query, outputForm
 	if strings.TrimSpace(query) == "" {
 		return "", fmt.Errorf("query is required")
 	}
-	session, err := ensureHeadlessSession(ctx, engine)
+	session, err := headless.EnsureSession(ctx, engine)
 	if err != nil {
 		return "", err
 	}
-	if err := applyModelOverride(ctx, engine, session, modelOverride); err != nil {
+	if err := headless.ApplyModelOverride(ctx, engine, session, modelOverride); err != nil {
 		return "", err
 	}
 
-	turnID := fmt.Sprintf("cli_turn_%d", time.Now().UnixNano())
-	events, unsubscribe := subscribeTurnEvents(ctx, engine, session.ID, turnID)
-	defer unsubscribe()
+	turnID := headless.NewTurnID("cli_turn")
+	events := headless.SubscribeTurnEvents(ctx, engine, session.ID, turnID)
 
-	startDone := startTurnAsync(ctx, engine, coreapi.StartTurnRequest{
+	startDone := headless.StartTurnAsync(ctx, engine, coreapi.StartTurnRequest{
 		SessionID: session.ID,
 		TurnID:    turnID,
 		Input:     query,
@@ -314,59 +312,37 @@ func runSingleTurn(ctx context.Context, engine coreapi.Engine, query, outputForm
 	// text 格式实时打印 delta；其它格式只累积，turn 结束后统一输出。
 	streamLive := strings.EqualFold(strings.TrimSpace(outputFormat), "text")
 	var content string
-	eventsCh := events
-	startDoneCh := startDone
-	for {
-		select {
-		case <-ctx.Done():
-			return content, ctx.Err()
-		case result := <-startDoneCh:
-			startDoneCh = nil
-			if result.err != nil {
-				return content, result.err
+	err = headless.AwaitTurn(ctx, startDone, events, func(eventType protocol.EventType, payload map[string]any, raw protocol.EventType) (bool, error) {
+		switch eventType {
+		case protocol.EventTypeItemDelta:
+			if dt := headless.PayloadText("", payload, "delta_type"); dt != "" && dt != "text" {
+				return false, nil // skip reasoning/tool_args deltas
 			}
-			// turn/start is non-blocking; the turn runs on a background thread
-			// and delivers results via events (item.delta / item.completed /
-			// request.completed). No fallback timer needed — request.done or
-			// request.failed is the termination signal.
-		case ev, ok := <-eventsCh:
-			if !ok {
-				eventsCh = nil
-				if startDoneCh == nil {
-					return content, nil
-				}
-				continue
+			text := headless.PayloadText("", payload, "delta", "text", "message")
+			content += text
+			if streamLive && text != "" {
+				fmt.Fprint(os.Stdout, text)
 			}
-			eventType, payload, rawEventType := normalizePrintEvent(ev)
-			switch eventType {
-			case protocol.EventTypeItemDelta:
-				if dt := firstNonEmpty("", payload, "delta_type"); dt != "" && dt != "text" {
-					continue // skip reasoning/tool_args deltas
-				}
-				text := firstNonEmpty("", payload, "delta", "text", "message")
-				content += text
-				if streamLive && text != "" {
-					fmt.Fprint(os.Stdout, text)
-				}
-			case protocol.EventTypeItemCompleted:
-				if item, ok := payload["item"].(map[string]any); ok {
-					if k, _ := item["kind"].(string); k == "agent_message" {
-						if text, _ := item["text"].(string); text != "" {
-							content = text
-						}
+		case protocol.EventTypeItemCompleted:
+			if item, ok := payload["item"].(map[string]any); ok {
+				if k, _ := item["kind"].(string); k == "agent_message" {
+					if text, _ := item["text"].(string); text != "" {
+						content = text
 					}
 				}
-			case protocol.EventTypeTextFinal:
-				if text := firstNonEmpty("", payload, "text", "message"); text != "" {
-					content = text
-				}
-			case protocol.EventTypeRequestDone:
-				return content, nil
-			case protocol.EventTypeRequestFailed:
-				return content, fmt.Errorf("%s", printFailureMessage(rawEventType, payload))
 			}
+		case protocol.EventTypeTextFinal:
+			if text := headless.PayloadText("", payload, "text", "message"); text != "" {
+				content = text
+			}
+		case protocol.EventTypeRequestDone:
+			return true, nil
+		case protocol.EventTypeRequestFailed:
+			return true, fmt.Errorf("%s", headless.FailureMessage(raw, payload))
 		}
-	}
+		return false, nil
+	})
+	return content, err
 }
 
 // runStreamJSONTurn 以真增量 JSONL 流式输出一个 turn（exec --json 契约）。
@@ -386,19 +362,18 @@ func runStreamJSONTurn(ctx context.Context, engine coreapi.Engine, query string,
 	if strings.TrimSpace(query) == "" {
 		return fmt.Errorf("query is required")
 	}
-	session, err := ensureHeadlessSession(ctx, engine)
+	session, err := headless.EnsureSession(ctx, engine)
 	if err != nil {
 		return err
 	}
-	if err := applyModelOverride(ctx, engine, session, modelOverride); err != nil {
+	if err := headless.ApplyModelOverride(ctx, engine, session, modelOverride); err != nil {
 		return err
 	}
 
-	turnID := fmt.Sprintf("cli_stream_%d", time.Now().UnixNano())
-	events, unsubscribe := subscribeTurnEvents(ctx, engine, session.ID, turnID)
-	defer unsubscribe()
+	turnID := headless.NewTurnID("cli_stream")
+	events := headless.SubscribeTurnEvents(ctx, engine, session.ID, turnID)
 
-	startDone := startTurnAsync(ctx, engine, coreapi.StartTurnRequest{
+	startDone := headless.StartTurnAsync(ctx, engine, coreapi.StartTurnRequest{
 		SessionID: session.ID,
 		TurnID:    turnID,
 		Input:     query,
@@ -412,43 +387,22 @@ func runStreamJSONTurn(ctx context.Context, engine coreapi.Engine, query string,
 	// turn.started 作为流的第一行（turn 生命周期起始标记）。
 	writeJSONL(map[string]any{"type": "turn.started", "session_id": session.ID, "turn_id": turnID})
 
-	eventsCh := events
-	startDoneCh := startDone
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case result := <-startDoneCh:
-			startDoneCh = nil
-			if result.err != nil {
-				writeJSONL(map[string]any{"type": "turn.failed", "error": map[string]string{"message": result.err.Error()}})
-				return result.err
-			}
-			// turn/start 非阻塞；靠 request.completed/failed 终止。
-		case ev, ok := <-eventsCh:
-			if !ok {
-				eventsCh = nil
-				if startDoneCh == nil {
-					return nil
-				}
-				continue
-			}
-			eventType, payload, _ := normalizePrintEvent(ev)
-			switch eventType {
-			case protocol.EventTypeItemStarted, protocol.EventTypeItemDelta, protocol.EventTypeItemCompleted:
-				// item.* 事件原样透传：type + 完整 payload（含 item/delta/text 等字段）。
-				writeJSONL(buildItemEvent(string(eventType), payload))
-			case protocol.EventTypeRequestDone:
-				usage, _ := engine.Usage().Summary(ctx)
-				writeJSONL(buildTurnCompletedEvent(time.Since(startedAt), usage))
-				return nil
-			case protocol.EventTypeRequestFailed:
-				msg := printFailureMessage(ev.EventType, payload)
-				writeJSONL(map[string]any{"type": "turn.failed", "error": map[string]string{"message": msg}})
-				return fmt.Errorf("%s", msg)
-			}
+	return headless.AwaitTurn(ctx, startDone, events, func(eventType protocol.EventType, payload map[string]any, raw protocol.EventType) (bool, error) {
+		switch eventType {
+		case protocol.EventTypeItemStarted, protocol.EventTypeItemDelta, protocol.EventTypeItemCompleted:
+			// item.* 事件原样透传：type + 完整 payload（含 item/delta/text 等字段）。
+			writeJSONL(buildItemEvent(string(eventType), payload))
+		case protocol.EventTypeRequestDone:
+			usage, _ := engine.Usage().Summary(ctx)
+			writeJSONL(buildTurnCompletedEvent(time.Since(startedAt), usage))
+			return true, nil
+		case protocol.EventTypeRequestFailed:
+			msg := headless.FailureMessage(raw, payload)
+			writeJSONL(map[string]any{"type": "turn.failed", "error": map[string]string{"message": msg}})
+			return true, fmt.Errorf("%s", msg)
 		}
-	}
+		return false, nil
+	})
 }
 
 // buildItemEvent 把 item.* 事件的 payload 装配成 JSONL 行：顶层 type + payload 全字段。
@@ -461,196 +415,4 @@ func buildItemEvent(eventType string, payload map[string]any) map[string]any {
 	}
 	event["type"] = eventType
 	return event
-}
-
-type asyncTurnStartResult struct {
-	turn coreapi.Turn
-	err  error
-}
-
-func startTurnAsync(ctx context.Context, engine coreapi.Engine, req coreapi.StartTurnRequest) <-chan asyncTurnStartResult {
-	ch := make(chan asyncTurnStartResult, 1)
-	go func() {
-		if engine == nil {
-			ch <- asyncTurnStartResult{err: fmt.Errorf("core engine unavailable")}
-			return
-		}
-		// 请求级记忆注入开关：headless CLI 与 TUI 共用同一全局配置
-		//（~/.eos.json memory_injection_enabled，默认开），壳层只透传，
-		// 注入裁决在内核。
-		cfg, _ := config.Load()
-		useMemory := config.MemoryInjectionEnabled(&cfg)
-		req.UseMemory = &useMemory
-		turn, err := engine.Turns().Start(ctx, req)
-		ch <- asyncTurnStartResult{turn: turn, err: err}
-	}()
-	return ch
-}
-
-func ensureHeadlessSession(ctx context.Context, engine coreapi.Engine) (coreapi.Session, error) {
-	if engine == nil {
-		return coreapi.Session{}, fmt.Errorf("core engine unavailable")
-	}
-	workspaceRoot := headlessWorkspaceRoot(ctx, engine)
-	session, err := engine.Sessions().Current(ctx, coreapi.CurrentSessionRequest{WorkspaceRoot: workspaceRoot})
-	if err == nil && strings.TrimSpace(session.ID) != "" {
-		// 会话自愈：历史版本（桌面端 GUI）曾把目录 label（如 "MiniMax M3"）
-		// 写进 model_name，内核按条目名精确匹配会 NotFound，每次对话必炸。
-		// 这里归一化修复或清除无效覆盖，避免复用旧会话时阻断。
-		if note := ai.HealSessionModelOverride(ctx, engine.Models(), session); note != "" {
-			slog.Warn("print.session.model.healed", "session_id", session.ID, "note", note)
-		}
-		return session, nil
-	}
-	session, err = engine.Sessions().Create(ctx, coreapi.CreateSessionRequest{
-		WorkspaceRoot: workspaceRoot,
-		Title:         "Headless session",
-		Metadata:      map[string]any{"source": "cli"},
-	})
-	if err != nil {
-		return coreapi.Session{}, fmt.Errorf("create headless session: %w", err)
-	}
-	if strings.TrimSpace(session.ID) == "" {
-		return coreapi.Session{}, fmt.Errorf("create headless session returned empty id")
-	}
-	return session, nil
-}
-
-// applyModelOverride 把 --model 的值解析并写入会话模型覆盖。
-// EOS_MODEL_OVERRIDE 环境变量内核并不消费（历史遗留），--model 必须走
-// model/session/set 才真正生效；输入支持条目名/模型 ID/套餐模型 label。
-func applyModelOverride(ctx context.Context, engine coreapi.Engine, session coreapi.Session, override string) error {
-	override = strings.TrimSpace(override)
-	if override == "" {
-		return nil
-	}
-	entries, err := engine.Models().List(ctx)
-	if err != nil {
-		return fmt.Errorf("--model: list models: %w", err)
-	}
-	var catalog *coreapi.ModelCatalogState
-	if c, catErr := engine.Models().Catalog(ctx); catErr == nil {
-		catalog = &c
-	}
-	res, err := ai.ResolveModelInput(override, entries, catalog)
-	if err != nil {
-		return fmt.Errorf("--model: %v", err)
-	}
-	if res.NeedsPlanSwitch {
-		// 与 adapter.SaveModel 相同的明文 key 维护：内核保存会把 eos.json
-		// api_key 覆写成 masked，旧内核加载时会把 masked 当真实 key（401）。
-		plaintext := config.SnapshotPlaintextAPIKeys()
-		if err := engine.Models().Save(ctx, coreapi.ModelSaveRequest{
-			OriginalName: res.EntryName,
-			Mode:         "preset",
-			ProviderID:   res.ProviderID,
-			PresetID:     res.PresetID,
-			Name:         res.EntryName,
-			Model:        res.PlanModelID,
-		}); err != nil {
-			return fmt.Errorf("--model: switch plan model: %w", err)
-		}
-		config.RestorePlaintextAPIKeys(plaintext)
-	}
-	if err := engine.Models().SetSession(ctx, coreapi.SetSessionModelRequest{
-		SessionID: session.ID,
-		ModelName: res.EntryName,
-	}); err != nil {
-		return fmt.Errorf("--model: set session model: %w", err)
-	}
-	return nil
-}
-
-func headlessWorkspaceRoot(ctx context.Context, engine coreapi.Engine) string {
-	if engine != nil {
-		if snapshot, err := engine.State().Snapshot(ctx, coreapi.StateSnapshotRequest{}); err == nil {
-			if root := strings.TrimSpace(snapshot.ForegroundWorkspace); root != "" {
-				return root
-			}
-		}
-	}
-	if cwd, err := os.Getwd(); err == nil {
-		return cwd
-	}
-	return ""
-}
-
-// subscribeTurnEvents 复用 engine 的事件总线，filter 当前 session + turn ID。
-// 返回的 channel 在 sidecar 进程退出或 ctx cancel 时自动关闭。
-func subscribeTurnEvents(ctx context.Context, engine coreapi.Engine, sessionID, turnID string) (<-chan protocol.Envelope, func()) {
-	noop := func() {}
-	if engine == nil {
-		ch := make(chan protocol.Envelope)
-		close(ch)
-		return ch, noop
-	}
-	ch, err := engine.Events().Subscribe(ctx, coreapi.EventFilter{SessionID: sessionID, TurnID: turnID})
-	if err != nil {
-		// Subscribe 失败：返回已关闭的 channel，调用方在 turn.Start 失败时能直接感知。
-		closed := make(chan protocol.Envelope)
-		close(closed)
-		return closed, noop
-	}
-	return ch, noop
-}
-
-func resolveActiveModelName(ctx context.Context, engine coreapi.Engine) (string, error) {
-	if engine == nil {
-		return "", nil
-	}
-	items, err := engine.Models().List(ctx)
-	if err != nil {
-		return "", err
-	}
-	for _, item := range items {
-		if item.Active {
-			return strings.TrimSpace(item.Model), nil
-		}
-	}
-	return "", nil
-}
-
-func firstNonEmpty(fallback string, data map[string]any, keys ...string) string {
-	for _, k := range keys {
-		if v, ok := data[k].(string); ok && strings.TrimSpace(v) != "" {
-			return strings.TrimSpace(v)
-		}
-	}
-	return strings.TrimSpace(fallback)
-}
-
-func normalizePrintEvent(ev protocol.Envelope) (protocol.EventType, map[string]any, protocol.EventType) {
-	payload := protocol.ClonePayload(ev.Payload)
-	if payload == nil {
-		payload = map[string]any{}
-	}
-	rawEventType := ev.EventType
-	eventType := protocol.NormalizeEventType(rawEventType)
-	if rawEventType != eventType {
-		payload["original_event_type"] = string(rawEventType)
-	}
-	if eventType == protocol.EventTypeRequestFailed && firstNonEmpty("", payload, "error", "summary", "message", "text") == "" {
-		switch rawEventType {
-		case protocol.EventTypeTurnCancelled:
-			payload["error"] = "request cancelled"
-		case protocol.EventTypeTurnInterrupted:
-			payload["error"] = "request interrupted"
-		}
-	}
-	return eventType, payload, rawEventType
-}
-
-func printFailureMessage(rawEventType protocol.EventType, payload map[string]any) string {
-	msg := firstNonEmpty("", payload, "error", "summary", "message", "text")
-	if msg != "" {
-		return msg
-	}
-	switch rawEventType {
-	case protocol.EventTypeTurnCancelled:
-		return "request cancelled"
-	case protocol.EventTypeTurnInterrupted:
-		return "request interrupted"
-	default:
-		return "request failed"
-	}
 }

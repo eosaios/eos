@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/eosaios/eos/internal/headless"
 	"github.com/eosaios/eos/pkg/coreapi"
 	"github.com/spf13/cobra"
 )
@@ -154,7 +155,7 @@ func runExec(ctx context.Context, opts execOptions) error {
 	if summary, err := engine.Usage().Summary(ctx); err == nil {
 		usage = summary
 	}
-	modelName, _ := resolveActiveModelName(ctx, engine)
+	modelName, _ := headless.ResolveActiveModelName(ctx, engine)
 
 	result := ExecResult{
 		Content:     content,

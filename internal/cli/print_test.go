@@ -19,7 +19,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -27,7 +26,6 @@ import (
 	"github.com/eosaios/eos/pkg/coreapi/engineprovider"
 	"github.com/eosaios/eos/pkg/coreapi/sidecar"
 	"github.com/eosaios/eos/pkg/protocol"
-	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
 
 func TestPrintResult_JSONOutput(t *testing.T) {
@@ -108,10 +106,10 @@ func TestBuildTurnCompletedEvent_AcceptsCoreAPIUsageSummary(t *testing.T) {
 	total := 500
 	cost := 0.01
 	usage := coreapi.UsageSummary{
-		InputTokens:  &input,
-		ReplyTokens:  &reply,
-		TotalTokens:  &total,
-		CostUSD:      &cost,
+		InputTokens: &input,
+		ReplyTokens: &reply,
+		TotalTokens: &total,
+		CostUSD:     &cost,
 	}
 
 	evt := buildTurnCompletedEvent(2*time.Second, usage)
@@ -485,78 +483,6 @@ func TestStartRustOnlyEngineFailsOnRequiredMethodsMismatch(t *testing.T) {
 	}
 }
 
-func TestEnsureHeadlessSessionUsesCurrentSession(t *testing.T) {
-	caller := &headlessSessionCaller{replies: map[string]any{
-		protocoljsonrpc.MethodStateSnapshot:  coreapi.StateSnapshot{ForegroundWorkspace: "C:/work/current"},
-		protocoljsonrpc.MethodSessionCurrent: coreapi.Session{ID: "sess-current", WorkspaceRoot: "C:/work/current"},
-	}}
-	engine := sidecar.NewRemoteEngine(caller)
-
-	session, err := ensureHeadlessSession(context.Background(), engine)
-	if err != nil {
-		t.Fatalf("ensureHeadlessSession() error = %v", err)
-	}
-	if session.ID != "sess-current" {
-		t.Fatalf("session.ID=%q, want sess-current", session.ID)
-	}
-	if caller.hasMethod(protocoljsonrpc.MethodSessionCreate) {
-		t.Fatal("ensureHeadlessSession created a new session despite current session existing")
-	}
-	params, ok := caller.firstParams(protocoljsonrpc.MethodSessionCurrent).(coreapi.CurrentSessionRequest)
-	if !ok {
-		t.Fatalf("session/current params type = %T", caller.firstParams(protocoljsonrpc.MethodSessionCurrent))
-	}
-	if params.WorkspaceRoot != "C:/work/current" {
-		t.Fatalf("workspace_root=%q, want C:/work/current", params.WorkspaceRoot)
-	}
-}
-
-func TestEnsureHeadlessSessionCreatesWhenCurrentMissing(t *testing.T) {
-	caller := &headlessSessionCaller{replies: map[string]any{
-		protocoljsonrpc.MethodStateSnapshot:  coreapi.StateSnapshot{ForegroundWorkspace: "C:/work/new"},
-		protocoljsonrpc.MethodSessionCurrent: coreapi.Session{},
-		protocoljsonrpc.MethodSessionCreate:  coreapi.Session{ID: "sess-new", WorkspaceRoot: "C:/work/new"},
-	}}
-	engine := sidecar.NewRemoteEngine(caller)
-
-	session, err := ensureHeadlessSession(context.Background(), engine)
-	if err != nil {
-		t.Fatalf("ensureHeadlessSession() error = %v", err)
-	}
-	if session.ID != "sess-new" {
-		t.Fatalf("session.ID=%q, want sess-new", session.ID)
-	}
-	params, ok := caller.firstParams(protocoljsonrpc.MethodSessionCreate).(coreapi.CreateSessionRequest)
-	if !ok {
-		t.Fatalf("session/create params type = %T", caller.firstParams(protocoljsonrpc.MethodSessionCreate))
-	}
-	if params.WorkspaceRoot != "C:/work/new" {
-		t.Fatalf("workspace_root=%q, want C:/work/new", params.WorkspaceRoot)
-	}
-}
-
-func TestSubscribeTurnEventsIncludesSessionFilter(t *testing.T) {
-	caller := &headlessSessionCaller{replies: map[string]any{
-		protocoljsonrpc.MethodEventSubscribe: map[string]any{"subscription_id": "sub-1"},
-	}}
-	engine := sidecar.NewRemoteEngine(caller)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	ch, unsubscribe := subscribeTurnEvents(ctx, engine, "sess-1", "turn-1")
-	defer unsubscribe()
-	if ch == nil {
-		t.Fatal("subscribeTurnEvents returned nil channel")
-	}
-	params, ok := caller.firstParams(protocoljsonrpc.MethodEventSubscribe).(coreapi.EventSubscribeRequest)
-	if !ok {
-		t.Fatalf("event/subscribe params type = %T", caller.firstParams(protocoljsonrpc.MethodEventSubscribe))
-	}
-	if params.SessionID != "sess-1" || params.TurnID != "turn-1" {
-		t.Fatalf("event filter session=%q turn=%q, want sess-1/turn-1", params.SessionID, params.TurnID)
-	}
-}
-
 type printTestEngine struct {
 	coreapi.Engine
 	state    coreapi.StateService
@@ -647,54 +573,6 @@ type printTestEventSubscriber struct {
 
 func (s printTestEventSubscriber) Subscribe(context.Context, coreapi.EventFilter) (<-chan protocol.Envelope, error) {
 	return s.events, nil
-}
-
-type headlessSessionCaller struct {
-	mu      sync.Mutex
-	calls   []headlessSessionCall
-	replies map[string]any
-}
-
-type headlessSessionCall struct {
-	method string
-	params any
-}
-
-func (c *headlessSessionCaller) Call(_ context.Context, method string, params any, out any) error {
-	c.mu.Lock()
-	c.calls = append(c.calls, headlessSessionCall{method: method, params: params})
-	reply := c.replies[method]
-	c.mu.Unlock()
-	if out == nil || reply == nil {
-		return nil
-	}
-	data, err := json.Marshal(reply)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(data, out)
-}
-
-func (c *headlessSessionCaller) hasMethod(method string) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for _, call := range c.calls {
-		if call.method == method {
-			return true
-		}
-	}
-	return false
-}
-
-func (c *headlessSessionCaller) firstParams(method string) any {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for _, call := range c.calls {
-		if call.method == method {
-			return call.params
-		}
-	}
-	return nil
 }
 
 // 防止 engineprovider / sidecar 被误删
