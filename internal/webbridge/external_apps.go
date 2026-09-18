@@ -109,6 +109,11 @@ func (spec externalAppSpec) installed() bool {
 // os.UserCacheDir 在 Windows 上即 %LOCALAPPDATA%（编辑器类普遍装在
 // %LOCALAPPDATA%\Programs 下）。
 func windowsInstalledExe(spec externalAppSpec) string {
+	if spec.windowsExe == "" {
+		// 无 Windows 版本的应用（如 iterm）：Join 与空串会落到
+		// %LOCALAPPDATA%\Programs 本身——该目录恒存在，会被误判已安装。
+		return ""
+	}
 	localAppData, err := os.UserCacheDir()
 	if err != nil {
 		return ""
