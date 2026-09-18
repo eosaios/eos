@@ -66,7 +66,6 @@ Compared with heavier or more closed terminal assistants, EOS currently focuses 
 - Code indexing, file watching, context assembly, and context compaction
 - Persistent sessions with restore support
 - Optional LSP support with auto-detection for Go, Python, TypeScript, and JavaScript
-- Default external LSP discovery plus `with_gopls` embedded builds
 
 ## Requirements
 
@@ -218,20 +217,6 @@ These are common entry points, not the full list:
 - Workspace and context: `/workspace`, `/context`, `/compact`
 - Tasks and planning: `/tasks`, `/plan`, `/permissions`
 - Config panels: `/model`, `/config`, `/mcp`, `/lsp`, `/rules`, `/cost`
-
-## Build Variants (LSP)
-
-- Minimal build, no LSP:
-  `go build -tags without_lsp -o eos`
-- Default build, LSP framework enabled with external server discovery:
-  `go build -o eos`
-- Go-enhanced build with embedded `gopls`:
-  `go build -tags with_gopls -o eos`
-
-Related scripts:
-
-- `scripts/embed_gopls.sh`
-- `scripts/embed_gopls.bat`
 
 ## Developer Integration
 

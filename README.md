@@ -66,7 +66,6 @@ EOS 不是单一的“问答 CLI”，而是一个完整的本地 AI 工作台�
 - 代码索引、文件监听、上下文构建与压缩
 - 会话持久化与恢复
 - 可选 LSP 能力，支持 Go、Python、TypeScript、JavaScript 自动检测
-- 支持默认外部 LSP 探测，以及 `with_gopls` 嵌入构建
 
 ## 环境要求
 
@@ -218,20 +217,6 @@ eos update
 - 工作区与上下文：`/workspace`、`/context`、`/compact`
 - 任务与计划：`/tasks`、`/plan`、`/permissions`
 - 配置面板：`/model`、`/config`、`/mcp`、`/lsp`、`/rules`、`/cost`
-
-## 构建变体（LSP）
-
-- 最小版，无 LSP：
-  `go build -tags without_lsp -o eos`
-- 默认版，启用 LSP 框架并自动检测外部语言服务器：
-  `go build -o eos`
-- Go 增强版，嵌入 `gopls`：
-  `go build -tags with_gopls -o eos`
-
-相关脚本：
-
-- `scripts/embed_gopls.sh`
-- `scripts/embed_gopls.bat`
 
 ## 开发者集成
 

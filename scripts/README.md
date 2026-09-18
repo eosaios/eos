@@ -48,5 +48,4 @@ build job 产出签名 artifact，sync job 分发到 `pkg/coreapi/sidecar/core/<
 ## 其它脚本
 
 - `regen-protocol.ps1` — 重新生成 protocol schema（schema.json 变更后跑）
-- `embed_gopls.{sh,bat}` + `download_gopls.go` — 嵌入 gopls（Go 增强版构建用）
 - `generate_eos_icon.ps1` — 生成应用图标
