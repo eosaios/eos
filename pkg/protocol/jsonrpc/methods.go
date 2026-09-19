@@ -153,6 +153,9 @@ const (
 	MethodMemorySnapshot             = "memory/snapshot"
 	MethodMemorySave                 = "memory/save"
 	MethodMemoryRebuildIndex         = "memory/rebuild_index"
+	MethodCapturesList               = "captures/list"
+	MethodCapturesSave               = "captures/save"
+	MethodCapturesDelete             = "captures/delete"
 	MethodMemoryRecordAdd            = "memory/record/add"
 	MethodMemoryRecordList           = "memory/record/list"
 	MethodMemoryRecordSearch         = "memory/record/search"
@@ -358,6 +361,9 @@ func AllCoreMethods() []string {
 		MethodMemorySnapshot,
 		MethodMemorySave,
 		MethodMemoryRebuildIndex,
+		MethodCapturesList,
+		MethodCapturesSave,
+		MethodCapturesDelete,
 		MethodRoleList,
 		MethodRoleResolve,
 		MethodAgentSpawn,

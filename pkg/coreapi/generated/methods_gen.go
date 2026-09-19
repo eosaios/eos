@@ -162,6 +162,9 @@ const (
 	MethodMemorySnapshot = "memory/snapshot"
 	MethodMemorySave = "memory/save"
 	MethodMemoryRebuildIndex = "memory/rebuild_index"
+	MethodCapturesList = "captures/list"
+	MethodCapturesSave = "captures/save"
+	MethodCapturesDelete = "captures/delete"
 	MethodRoleList = "role/list"
 	MethodRoleResolve = "role/resolve"
 	MethodAgentSpawn = "agent/spawn"
@@ -355,6 +358,9 @@ func CoreMethods() []string {
 		MethodMemorySnapshot,
 		MethodMemorySave,
 		MethodMemoryRebuildIndex,
+		MethodCapturesList,
+		MethodCapturesSave,
+		MethodCapturesDelete,
 		MethodRoleList,
 		MethodRoleResolve,
 		MethodAgentSpawn,
@@ -404,6 +410,11 @@ func MethodGroups() map[string][]string {
 			MethodApprovalList,
 			MethodApprovalRespond,
 			MethodApprovalPreview,
+		},
+		"captures": {
+			MethodCapturesList,
+			MethodCapturesSave,
+			MethodCapturesDelete,
 		},
 		"config": {
 			MethodConfigRulesGet,

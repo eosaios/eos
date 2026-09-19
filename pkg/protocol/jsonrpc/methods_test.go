@@ -33,8 +33,10 @@ func TestAllCoreMethodsFreezesMigrationSurface(t *testing.T) {
 	//     系统剪贴板分离的桥）
 	//   + 3 browser/host_*（桌面内置宿主协议：原生壳注册为宿主 / 应答注入
 	//     结果 / 广播标签页状态，AI 与人共用同一原生标签页）
-	if len(methods) != 189 {
-		t.Fatalf("AllCoreMethods() len=%d, want 189", len(methods))
+	//   + 3 captures（采集板：满意 AI 回复的常驻知识卡，桌面端右侧采集板
+	//     面板 + capture_* AI 工具共用的数据面）
+	if len(methods) != 192 {
+		t.Fatalf("AllCoreMethods() len=%d, want 192", len(methods))
 	}
 
 	seen := make(map[string]bool, len(methods))

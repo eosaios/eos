@@ -527,6 +527,36 @@ type SaveMemoryRequest struct {
 	Content string `json:"content"`
 }
 
+// CaptureEntry 采集板条目：满意 AI 回复的自包含知识卡快照。
+// 字段与内核 eos-core-protocol::CaptureEntry 的 serde 序列化同名对齐。
+type CaptureEntry struct {
+	ID                 string `json:"id,omitempty"`
+	Title              string `json:"title,omitempty"`
+	Content            string `json:"content,omitempty"`
+	SourceSessionID    string `json:"source_session_id,omitempty"`
+	SourceMessageID    string `json:"source_message_id,omitempty"`
+	SourceSessionTitle string `json:"source_session_title,omitempty"`
+	WorkspacePath      string `json:"workspace_path,omitempty"`
+	CreatedAt          string `json:"created_at,omitempty"`
+	UpdatedAt          string `json:"updated_at,omitempty"`
+}
+
+// CaptureSaveRequest captures/save 请求：ID 为空 = 新建，非空 = 整条替换。
+type CaptureSaveRequest struct {
+	ID                 string `json:"id,omitempty"`
+	Title              string `json:"title"`
+	Content            string `json:"content"`
+	SourceSessionID    string `json:"source_session_id,omitempty"`
+	SourceMessageID    string `json:"source_message_id,omitempty"`
+	SourceSessionTitle string `json:"source_session_title,omitempty"`
+	WorkspacePath      string `json:"workspace_path,omitempty"`
+}
+
+// CaptureDeleteRequest captures/delete 请求。
+type CaptureDeleteRequest struct {
+	ID string `json:"id"`
+}
+
 type MemoryRecord struct {
 	ID            string    `json:"id"`
 	Scope         string    `json:"scope"`

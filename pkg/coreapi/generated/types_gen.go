@@ -1477,6 +1477,32 @@ type SaveMemoryRequest struct {
 	Content string `json:"content"`
 }
 
+type CaptureEntry struct {
+	ID string `json:"id,omitempty"`
+	Title string `json:"title,omitempty"`
+	Content string `json:"content,omitempty"`
+	SourceSessionID string `json:"source_session_id,omitempty"`
+	SourceMessageID string `json:"source_message_id,omitempty"`
+	SourceSessionTitle string `json:"source_session_title,omitempty"`
+	WorkspacePath string `json:"workspace_path,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
+	UpdatedAt string `json:"updated_at,omitempty"`
+}
+
+type CaptureSaveRequest struct {
+	ID string `json:"id,omitempty"`
+	Title string `json:"title"`
+	Content string `json:"content"`
+	SourceSessionID string `json:"source_session_id,omitempty"`
+	SourceMessageID string `json:"source_message_id,omitempty"`
+	SourceSessionTitle string `json:"source_session_title,omitempty"`
+	WorkspacePath string `json:"workspace_path,omitempty"`
+}
+
+type CaptureDeleteRequest struct {
+	ID string `json:"id"`
+}
+
 type RoleRef struct {
 	ID string `json:"id"`
 }
