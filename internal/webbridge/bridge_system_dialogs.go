@@ -20,6 +20,16 @@ func (svc *SystemService) ExportDiagnosticsBundle() (ExportResult, error) {
 	return ExportResult{}, errors.New("diagnostics bundle export is not available in web mode")
 }
 
+// SaveTextFileDialog / SaveZipFileDialog web 模式无原生另存为对话框；
+// 返回明确不支持（与诊断包导出同模式），前端按错误通道提示。
+func (svc *SystemService) SaveTextFileDialog(defaultName, content string) (ExportResult, error) {
+	return ExportResult{Cancelled: true}, errors.New("save-as dialog is not available in web mode")
+}
+
+func (svc *SystemService) SaveZipFileDialog(defaultName string, entries []ZipEntry) (ExportResult, error) {
+	return ExportResult{Cancelled: true}, errors.New("save-as dialog is not available in web mode")
+}
+
 func (svc *SystemService) OpenLogDirectory() error {
 	s := svc.bridge
 	dir := DefaultLogDir()

@@ -234,6 +234,16 @@ func (s *BridgeService) ExportDiagnosticsBundle() (ExportResult, error) {
 	return s.systemService().ExportDiagnosticsBundle()
 }
 
+// SaveTextFileDialog/SaveZipFileDialog：反射分发按 BridgeService 方法集
+// 解析，必须有本层委托（桌面端 eos-app 同理）。
+func (s *BridgeService) SaveTextFileDialog(defaultName, content string) (ExportResult, error) {
+	return s.systemService().SaveTextFileDialog(defaultName, content)
+}
+
+func (s *BridgeService) SaveZipFileDialog(defaultName string, entries []ZipEntry) (ExportResult, error) {
+	return s.systemService().SaveZipFileDialog(defaultName, entries)
+}
+
 func (s *BridgeService) OpenLogDirectory() error {
 	return s.systemService().OpenLogDirectory()
 }

@@ -59,6 +59,12 @@ type ExportResult struct {
 	Cancelled bool   `json:"cancelled"`
 }
 
+// ZipEntry 是 SaveZipFileDialog 的单条打包项（与桌面端 eos-app 同契约）。
+type ZipEntry struct {
+	Name    string `json:"name"`
+	Content string `json:"content"`
+}
+
 type ResourceCheck struct {
 	Name   string `json:"name"`
 	Status string `json:"status"`
