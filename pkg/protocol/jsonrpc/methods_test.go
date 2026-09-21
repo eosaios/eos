@@ -35,8 +35,8 @@ func TestAllCoreMethodsFreezesMigrationSurface(t *testing.T) {
 	//     结果 / 广播标签页状态，AI 与人共用同一原生标签页）
 	//   + 3 captures（采集板：满意 AI 回复的常驻知识卡，桌面端右侧采集板
 	//     面板 + capture_* AI 工具共用的数据面）
-	if len(methods) != 192 {
-		t.Fatalf("AllCoreMethods() len=%d, want 192", len(methods))
+	if len(methods) != 193 {
+		t.Fatalf("AllCoreMethods() len=%d, want 193", len(methods))
 	}
 
 	seen := make(map[string]bool, len(methods))

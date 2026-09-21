@@ -46,6 +46,18 @@ func (s *BridgeService) BrowserControlTakeover(reason string, note string, timeo
 	return map[string]interface{}{"taken_over": true}, nil
 }
 
+// BrowserControlConfirm 人确认接管（ConfirmPending → HumanControl；幂等）。
+func (s *BridgeService) BrowserControlConfirm() (map[string]interface{}, error) {
+	gateway, err := requireRuntimeGateway(s)
+	if err != nil {
+		return nil, err
+	}
+	if err := gateway.CoreBrowserControlConfirmRPC(coreCtx()); err != nil {
+		return nil, fmt.Errorf("确认接管失败: %w", err)
+	}
+	return map[string]interface{}{"confirmed": true}, nil
+}
+
 // BrowserControlResume 交还 AI 控制权（唤醒等待中的 request_human）。
 func (s *BridgeService) BrowserControlResume() (map[string]interface{}, error) {
 	gateway, err := requireRuntimeGateway(s)

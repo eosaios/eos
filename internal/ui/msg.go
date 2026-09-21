@@ -89,6 +89,8 @@ func ConvertEvent(e uiadapter.RuntimeEvent) Msg {
 			Event:           agentEventKind(e.Type),
 			Content:         eventText(e, "error", "reason", "message", "text"),
 		}
+	case "browser.takeover.confirm":
+		return BrowserTakeoverConfirmMsg{Reason: payloadString(e, "reason"), Note: payloadString(e, "note")}
 	case "browser.takeover.started":
 		return BrowserTakeoverStartedMsg{Reason: payloadString(e, "reason"), Note: payloadString(e, "note")}
 	case "browser.takeover.ended":
@@ -106,13 +108,19 @@ func ConvertEvent(e uiadapter.RuntimeEvent) Msg {
 	}
 }
 
+// BrowserTakeoverConfirmMsg AI 请求人工接管，等人确认（browser.takeover.confirm）。
+type BrowserTakeoverConfirmMsg struct {
+	Reason string
+	Note   string
+}
+
 // BrowserTakeoverStartedMsg 内核请求/人接管了浏览器（browser.takeover.started）。
 type BrowserTakeoverStartedMsg struct {
 	Reason string
 	Note   string
 }
 
-// BrowserTakeoverEndedMsg 接管结束（resumed/timeout/cancelled）。
+// BrowserTakeoverEndedMsg 接管结束（resumed/timeout/cancelled/unconfirmed/declined）。
 type BrowserTakeoverEndedMsg struct {
 	Result string
 }
@@ -583,6 +591,7 @@ type VersionCheckMsg struct {
 }
 
 // 实现 msgType 方法以满足接口要求
+func (BrowserTakeoverConfirmMsg) msgType() {}
 func (BrowserTakeoverStartedMsg) msgType() {}
 func (BrowserTakeoverEndedMsg) msgType()   {}
 func (BrowserActionMsg) msgType()          {}

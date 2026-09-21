@@ -77,6 +77,12 @@ func (g *StdioGateway) CoreBrowserControlTakeoverRPC(ctx context.Context, req co
 	return g.client.Call(ctx, protocoljsonrpc.MethodBrowserControlTakeover, req, &out)
 }
 
+// CoreBrowserControlConfirmRPC 人确认接管（ConfirmPending → HumanControl）。
+func (g *StdioGateway) CoreBrowserControlConfirmRPC(ctx context.Context) error {
+	var out map[string]any
+	return g.client.Call(ctx, protocoljsonrpc.MethodBrowserControlConfirm, coreapi.BrowserControlResumeRequest{}, &out)
+}
+
 // CoreBrowserControlResumeRPC 交还 AI 浏览器控制权。
 func (g *StdioGateway) CoreBrowserControlResumeRPC(ctx context.Context) error {
 	var out map[string]any

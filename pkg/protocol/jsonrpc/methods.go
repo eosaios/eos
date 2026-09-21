@@ -68,6 +68,7 @@ const (
 	MethodBrowserProfileUpsert       = "browser/profile_upsert"
 	MethodBrowserCredentialsImport  = "browser/credentials_import"
 	MethodBrowserControlTakeover     = "browser/control_takeover"
+	MethodBrowserControlConfirm      = "browser/control_confirm"
 	MethodBrowserControlResume       = "browser/control_resume"
 	MethodBrowserPickStart           = "browser/pick_start"
 	MethodBrowserPickStop            = "browser/pick_stop"
@@ -276,6 +277,7 @@ func AllCoreMethods() []string {
 		MethodBrowserProfileUpsert,
 		MethodBrowserCredentialsImport,
 		MethodBrowserControlTakeover,
+		MethodBrowserControlConfirm,
 		MethodBrowserControlResume,
 		MethodBrowserPickStart,
 		MethodBrowserPickStop,

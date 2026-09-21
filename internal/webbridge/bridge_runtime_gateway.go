@@ -11,6 +11,7 @@ import (
 
 type bridgeRuntimeGateway interface {
 	CoreBrowserControlTakeoverRPC(context.Context, coreapi.BrowserControlTakeoverRequest) error
+	CoreBrowserControlConfirmRPC(context.Context) error
 	CoreBrowserControlResumeRPC(context.Context) error
 	CoreBrowserUploadProvideRPC(context.Context, string, []string) error
 	CoreBrowserFocusRPC(context.Context, coreapi.BrowserFocusRequest) error

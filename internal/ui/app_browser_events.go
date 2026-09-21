@@ -17,6 +17,63 @@ import (
 // 确认结果不回内核 approval 通路，直接调 browser/control_resume RPC）。
 const browserTakeoverKind = "browser_takeover"
 
+// browser_takeover_confirm 本地确认框 kind（确认制：AI 请求接管 → 人确认
+// → browser/control_confirm RPC）。
+const browserTakeoverConfirmKind = "browser_takeover_confirm"
+
+// handleBrowserTakeoverConfirm AI 请求人工接管（确认制）：系统消息 + 本地
+// 确认框（确认接管 / 忽略——忽略则等确认超时后控制权自动回 AI）。
+func (m *AppModel) handleBrowserTakeoverConfirm(msg BrowserTakeoverConfirmMsg) (tea.Model, tea.Cmd) {
+	reason := strings.TrimSpace(msg.Reason)
+	if reason == "" {
+		reason = "other"
+	}
+	note := strings.TrimSpace(msg.Note)
+	question := fmt.Sprintf(i18n.T("browser.takeover.confirm_question", m.state.Language), reason)
+	if note != "" {
+		question = question + "\\n" + note
+	}
+	m.appendSystem(i18n.T("browser.takeover.confirm_started", m.state.Language), "warning")
+	req := confirm.Request{
+		ID:       "browser-takeover-confirm",
+		Kind:     browserTakeoverConfirmKind,
+		Title:    i18n.T("browser.takeover.confirm_title", m.state.Language),
+		Question: question,
+		Options: []string{
+			i18n.T("browser.takeover.confirm_go", m.state.Language),
+			i18n.T("browser.takeover.confirm_ignore", m.state.Language),
+		},
+	}
+	if m.confirmView == nil {
+		m.prevView = m.activeView
+	}
+	m.browserTakeoverConfirm = true
+	m.confirmView = confirm.New(m.styles, m.state.Language, m.diffHighlightTheme(), req)
+	m.confirmView.SetSize(m.width, m.height)
+	m.activeView = "confirm"
+	m.shell.BlurInput()
+	return m, nil
+}
+
+// handleConfirmResultBrowserTakeoverConfirm 确认框结果：确认接管。
+func (m *AppModel) handleConfirmResultBrowserTakeoverConfirm(msg confirm.ResultMsg) (tea.Model, tea.Cmd) {
+	m.browserTakeoverConfirm = false
+	m.confirmView = nil
+	if m.prevView != "" {
+		m.activeView = m.prevView
+		m.prevView = ""
+	} else {
+		m.activeView = "shell"
+	}
+	m.shell.FocusInput()
+	if msg.OptionIndex == 0 {
+		if err := m.adapter.BrowserControlConfirm(context.Background()); err != nil {
+			m.appendSystem(fmt.Sprintf(i18n.T("browser.takeover.confirm_failed", m.state.Language), err), "error")
+		}
+	}
+	return m, nil
+}
+
 // handleBrowserTakeoverStarted 人工接管开始：系统消息 + 本地确认框
 //（样式与交互对齐既有 confirm 浮层--up/down/enter/esc）。
 func (m *AppModel) handleBrowserTakeoverStarted(msg BrowserTakeoverStartedMsg) (tea.Model, tea.Cmd) {

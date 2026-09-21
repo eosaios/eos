@@ -507,6 +507,9 @@ func (m *AppModel) handleConfirmResultMsg(msg confirm.ResultMsg) (tea.Model, tea
 	if msg.Kind == browserTakeoverKind {
 		return m.handleConfirmResultBrowserTakeover(msg)
 	}
+	if msg.Kind == browserTakeoverConfirmKind {
+		return m.handleConfirmResultBrowserTakeoverConfirm(msg)
+	}
 	if msg.Kind == "workspace_trust" {
 		return m.handleConfirmResultWorkspaceTrust(msg)
 	}

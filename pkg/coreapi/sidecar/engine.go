@@ -892,6 +892,11 @@ func (s remoteExtensionService) BrowserControlTakeover(ctx context.Context, req 
 	return s.engine.call(ctx, protocoljsonrpc.MethodBrowserControlTakeover, req, &out)
 }
 
+func (s remoteExtensionService) BrowserControlConfirm(ctx context.Context) error {
+	var out map[string]any
+	return s.engine.call(ctx, protocoljsonrpc.MethodBrowserControlConfirm, coreapi.BrowserControlResumeRequest{}, &out)
+}
+
 func (s remoteExtensionService) BrowserControlResume(ctx context.Context) error {
 	var out map[string]any
 	return s.engine.call(ctx, protocoljsonrpc.MethodBrowserControlResume, coreapi.BrowserControlResumeRequest{}, &out)

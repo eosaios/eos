@@ -222,6 +222,10 @@ func (compileTimeExtensions) BrowserControlTakeover(ctx context.Context, req Bro
 	return nil
 }
 
+func (compileTimeExtensions) BrowserControlConfirm(ctx context.Context) error {
+	return nil
+}
+
 func (compileTimeExtensions) BrowserControlResume(ctx context.Context) error {
 	return nil
 }

@@ -1419,6 +1419,13 @@ func (a *CoreClientAdapter) BrowserControlTakeover(ctx context.Context, req core
 	return a.engine.Extensions().BrowserControlTakeover(ctx, req)
 }
 
+func (a *CoreClientAdapter) BrowserControlConfirm(ctx context.Context) error {
+	if a == nil || a.engine == nil {
+		return errors.New("core client is not available")
+	}
+	return a.engine.Extensions().BrowserControlConfirm(ctx)
+}
+
 func (a *CoreClientAdapter) BrowserControlResume(ctx context.Context) error {
 	if a == nil || a.engine == nil {
 		return errors.New("core client is not available")

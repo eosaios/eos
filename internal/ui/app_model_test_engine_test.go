@@ -483,6 +483,10 @@ func (s *testExtensionService) BrowserControlTakeover(ctx context.Context, req c
 	return nil
 }
 
+func (s *testExtensionService) BrowserControlConfirm(ctx context.Context) error {
+	return nil
+}
+
 func (s *testExtensionService) BrowserControlResume(ctx context.Context) error {
 	return nil
 }

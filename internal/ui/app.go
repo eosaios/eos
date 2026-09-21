@@ -242,6 +242,8 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case clearCopiedMsg:
 		return m.handleClearCopiedMsg(msg)
 
+	case BrowserTakeoverConfirmMsg:
+		return m.handleBrowserTakeoverConfirm(msg)
 	case BrowserTakeoverStartedMsg:
 		return m.handleBrowserTakeoverStarted(msg)
 	case BrowserTakeoverEndedMsg:

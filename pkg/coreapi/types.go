@@ -129,6 +129,7 @@ type ExtensionService interface {
 	BrowserLaunch(ctx context.Context, req BrowserLaunchRequest) error
 	BrowserClose(ctx context.Context, req BrowserCloseRequest) error
 	BrowserControlTakeover(ctx context.Context, req BrowserControlTakeoverRequest) error
+	BrowserControlConfirm(ctx context.Context) error
 	BrowserControlResume(ctx context.Context) error
 	BrowserTabs(ctx context.Context) ([]BrowserTabInfo, error)
 	BrowserProfiles(ctx context.Context) ([]BrowserProfileRecord, error)
