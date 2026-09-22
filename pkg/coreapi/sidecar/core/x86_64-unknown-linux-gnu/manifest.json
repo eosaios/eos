@@ -4,8 +4,8 @@
   "api_version": "v1",
   "target": "x86_64-unknown-linux-gnu",
   "binary": "eos-core",
-  "sha256": "sha256:96822bbc1e2efd4d9beaeeb01da9bca7ff8dfac0ee45e653cf8f67521c9fe25d",
-  "signature": "ed25519:UMtHQFOCrIzIm4M3SMNVE2FyCyxS4EzTPHpSopvhbyO+iRml3ngU6HecKae+IbAiflqWupJZKl2/GGQfKcMbAA==",
+  "sha256": "sha256:0f7857e1806b9846876bb9bd35e439a1a8828d798da8499d88a559962fbae4f7",
+  "signature": "ed25519:JSAapjJHO5LHkI0XZDR0S0wGwEh3v0QzL+BsZ0weje8hyFu4XaZt74o9oW5lIUe2MCQiaALfACvfaHALs1q3Aw==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "initialize",
@@ -75,6 +75,7 @@
     "browser/profile_upsert",
     "browser/credentials_import",
     "browser/control_takeover",
+    "browser/control_confirm",
     "browser/control_resume",
     "browser/pick_start",
     "browser/pick_stop",

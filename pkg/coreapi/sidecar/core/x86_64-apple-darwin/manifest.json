@@ -4,8 +4,8 @@
   "api_version": "v1",
   "target": "x86_64-apple-darwin",
   "binary": "eos-core",
-  "sha256": "sha256:3b6697eebdf5190ec4c0a3833c42fbd28cb63ecc30b681c8a9abc6d07bfb6fa6",
-  "signature": "ed25519:XjSCq9+gq8CcaHS0cPQ6VLRhVi6wL5rKmCzzdiOIYCjOIE+Ak9oKnwecoS/qE3qEXt/0ejkxlOpdcBSzZHK0DA==",
+  "sha256": "sha256:1201a70e395972e7ca76b9cb30b4c1edb8d13f790ebea80b9229a10cda2eadbb",
+  "signature": "ed25519:RmAvgpf6AD06O2/q+isQB4KGG9KayhzAABHPeB68wHxcbKiR65kQy/wsHVXfTW6nIPaloC7tmK3uidE9+OAoCQ==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "initialize",
@@ -75,6 +75,7 @@
     "browser/profile_upsert",
     "browser/credentials_import",
     "browser/control_takeover",
+    "browser/control_confirm",
     "browser/control_resume",
     "browser/pick_start",
     "browser/pick_stop",
