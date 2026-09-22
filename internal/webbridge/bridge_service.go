@@ -230,6 +230,12 @@ func (s *BridgeService) OpenWorkspaceDialog() (FileDialogResult, error) {
 	return s.systemService().OpenWorkspaceDialog()
 }
 
+// ChooseLogDirectory：反射分发按 BridgeService 方法集解析，必须有本层委托；
+// web 模式无原生目录选择框，实现侧明确报不支持。
+func (s *BridgeService) ChooseLogDirectory() (FileDialogResult, error) {
+	return s.systemService().ChooseLogDirectory()
+}
+
 func (s *BridgeService) ExportDiagnosticsBundle() (ExportResult, error) {
 	return s.systemService().ExportDiagnosticsBundle()
 }

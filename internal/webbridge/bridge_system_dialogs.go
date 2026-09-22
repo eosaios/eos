@@ -15,6 +15,13 @@ func (svc *SystemService) OpenWorkspaceDialog() (FileDialogResult, error) {
 	return FileDialogResult{}, errors.New("native directory dialog is not available in web mode; use SelectWorkspace with an explicit path")
 }
 
+// ChooseLogDirectory web 模式无原生目录选择框（同 OpenWorkspaceDialog 约束），
+// 桌面端设置页「选择日志目录…」按钮在这里拿到明确错误走错误通道提示；
+// web 模式日志位置维持默认，不提供自定义。
+func (svc *SystemService) ChooseLogDirectory() (FileDialogResult, error) {
+	return FileDialogResult{}, errors.New("native directory dialog is not available in web mode")
+}
+
 // ExportDiagnosticsBundle web 模式不支持原生保存对话框，v1 不导出诊断包。
 func (svc *SystemService) ExportDiagnosticsBundle() (ExportResult, error) {
 	return ExportResult{}, errors.New("diagnostics bundle export is not available in web mode")
