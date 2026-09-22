@@ -5,6 +5,16 @@ import (
 	"time"
 )
 
+// pushNotificationLocked 写入通知中心。
+//
+// 通知中心只放「用户离开应用后仍需要知道」的事项：
+//   - 请求/会话完成
+//   - 请求失败（需要重试或处理）
+//   - 待审批 / 需要确认（等待用户决策）
+//   - 后台任务结果
+//   - 系统降级（核心不可用等）
+//
+// 操作回执（保存成功、导入完成、会话改名等）由页面内反馈表达，不进通知中心。
 func (s *BridgeService) pushNotificationLocked(title, message, tone string) {
 	item := NotificationItem{
 		ID:        newID("notice"),

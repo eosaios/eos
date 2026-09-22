@@ -69,7 +69,6 @@ func (w *WorkspaceService) SelectWorkspace(path string) (BootstrapState, error) 
 	s.tryCoreRPC("set-current-session", trimmed, "", func() error {
 		return s.setWorkspaceCurrentSessionRPC(trimmed, "")
 	})
-	s.pushNotificationLocked("工作区已切换", trimmed, "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	// 工作区无会话：回落到全局默认沙箱模式。
@@ -90,7 +89,6 @@ func (w *WorkspaceService) TrustWorkspace(path string) (BootstrapState, error) {
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("工作区已信任", path, "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -114,7 +112,6 @@ func (w *WorkspaceService) RemoveWorkspace(path string) (BootstrapState, error) 
 	}
 	s.stateMu.Lock()
 	w.removeWorkspaceStateLocked(path)
-	s.pushNotificationLocked("工作区已移除", path, "warning")
 	s.ensureActiveSessionLocked("")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()

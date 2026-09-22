@@ -49,7 +49,6 @@ func (s *BridgeService) SaveMemoryNote(content string) (BootstrapState, error) {
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked(s.t("memory.note_saved"), strings.TrimSpace(content), "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil

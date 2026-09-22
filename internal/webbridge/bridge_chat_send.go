@@ -69,13 +69,12 @@ func (svc *ChatService) SendChatWithReasoning(sessionID, workspace, input string
 		session.NeedsAttention = true
 		session.UpdatedAt = time.Now()
 		s.setMessageStatus(session, assistantID, requestFailureMessage(err.Error()), "error", "failed")
-		s.pushNotificationLocked("Request Failed", err.Error(), "danger")
+		s.pushNotificationLocked(s.t("notification.request_failed.title"), err.Error(), "danger")
 		s.stateMu.Unlock()
 		response := s.bootstrapForSession(session.ID)
 		s.emitShellUpdatedForSession(session.ID)
 		return response, nil
 	}
-	s.pushNotificationLocked("Chat Sent", "Request entered the Wails backend bridge.", "info")
 	// AGENTS.md §3：壳层不做业务裁决。原 needsInquiry 用硬编码中文关键词在壳层拦截
 	// turn（违反规范）的逻辑已删除——所有审批/问询由内核裁决，壳层只渲染内核事件。
 	ctx, cancel := context.WithCancel(context.Background())
@@ -123,7 +122,7 @@ func (svc *ChatService) ResumeFailedTurn(sessionID string) (BootstrapState, erro
 		session.NeedsAttention = true
 		session.UpdatedAt = time.Now()
 		s.setMessageStatus(session, assistantID, requestFailureMessage(err.Error()), "error", "failed")
-		s.pushNotificationLocked("请求失败", err.Error(), "danger")
+		s.pushNotificationLocked(s.t("notification.request_failed.title"), err.Error(), "danger")
 		s.stateMu.Unlock()
 		response := s.bootstrapForSession(session.ID)
 		s.emitShellUpdatedForSession(session.ID)

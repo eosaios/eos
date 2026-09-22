@@ -20,7 +20,6 @@ func (svc *CapabilityService) UpsertModel(name, base, keyMasked, model string) (
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("Model Saved", strings.TrimSpace(name), "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -65,17 +64,6 @@ func (svc *CapabilityService) SaveModel(req ModelSaveRequest) (BootstrapState, e
 		}
 	}
 	s.stateMu.Lock()
-	title := "Model Created"
-	if strings.TrimSpace(req.OriginalName) != "" {
-		title = "Model Updated"
-	}
-	if name == "" {
-		name = strings.TrimSpace(req.OriginalName)
-	}
-	if name == "" {
-		name = "Model Configuration"
-	}
-	s.pushNotificationLocked(title, name, "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -121,7 +109,6 @@ func (svc *CapabilityService) ActivateModel(name string) (BootstrapState, error)
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("Model Activated", strings.TrimSpace(name), "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -143,19 +130,10 @@ func (svc *CapabilityService) SelectCurrentModel(name string) (BootstrapState, e
 		}
 	}
 	s.stateMu.RUnlock()
-	scope, err := s.selectCurrentModelRPC(activeWorkspace, currentSessionID, name)
-	if err != nil {
+	if _, err := s.selectCurrentModelRPC(activeWorkspace, currentSessionID, name); err != nil {
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	title := "Default Model Updated"
-	switch scope {
-	case "session":
-		title = "Session Model Updated"
-	case "workspace":
-		title = "Workspace Model Updated"
-	}
-	s.pushNotificationLocked(title, strings.TrimSpace(name), "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -170,7 +148,6 @@ func (svc *CapabilityService) DeleteModel(name string) (BootstrapState, error) {
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("Model Deleted", strings.TrimSpace(name), "warning")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil

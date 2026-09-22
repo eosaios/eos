@@ -123,7 +123,6 @@ func (svc *SettingsService) SaveSettings(req SettingsSaveRequest) (BootstrapStat
 	}
 
 	s.stateMu.Lock()
-	s.pushNotificationLocked("设置已保存", normalized.Language+" / "+normalized.Theme, "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	// 托盘显隐即时生效（回调在锁外：可能触碰窗口/托盘句柄）。
@@ -139,7 +138,6 @@ func (svc *SettingsService) SetExecutionMode(mode string) BootstrapState {
 	mode = normalizeExecutionMode(mode)
 	s.setExecutionModeRPC(mode)
 	s.stateMu.Lock()
-	s.pushNotificationLocked("执行模式已更新", mode, "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap()
@@ -174,7 +172,6 @@ func (svc *SettingsService) SetReasoningLevel(level string) (BootstrapState, err
 	}
 
 	s.stateMu.Lock()
-	s.pushNotificationLocked("推理强度已更新", label, "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil

@@ -63,7 +63,7 @@ func (s *BridgeService) runConversation(ctx context.Context, sessionID, assistan
 		session.UpdatedAt = time.Now()
 		if persistErr := s.persistSessionLocked(session); persistErr != nil {
 			session.NeedsAttention = true
-			s.pushNotificationLocked("请求失败", persistErr.Error(), "danger")
+			s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 		}
 	}
 	s.stateMu.Unlock()
@@ -95,9 +95,9 @@ func (s *BridgeService) runConversation(ctx context.Context, sessionID, assistan
 		s.appendRuntimeEventLocked(session, assistantMessageID, "error", "请求启动失败", err.Error(), "failed")
 		s.setMessageStatus(session, assistantMessageID, requestFailureMessage(err.Error()), "error", "failed")
 		if persistErr := s.persistSessionLocked(session); persistErr != nil {
-			s.pushNotificationLocked("请求失败", persistErr.Error(), "danger")
+			s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 		}
-		s.pushNotificationLocked("请求失败", err.Error(), "danger")
+		s.pushNotificationLocked(s.t("notification.request_failed.title"), err.Error(), "danger")
 		s.stateMu.Unlock()
 		s.emitShellUpdatedForSession(sessionID)
 		return
@@ -143,7 +143,7 @@ func (s *BridgeService) runConversation(ctx context.Context, sessionID, assistan
 		if result.persist {
 			if persistErr := s.persistSessionLocked(session); persistErr != nil {
 				session.NeedsAttention = true
-				s.pushNotificationLocked("请求失败", persistErr.Error(), "danger")
+				s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 			}
 		}
 		// 锁内提取增量 payload 并直接 emit（Wails EventProcessor 是 goroutine-safe 的，

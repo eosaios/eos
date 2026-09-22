@@ -32,7 +32,6 @@ func (svc *CommandService) RunAutomationTemplate(templateID string) (BootstrapSt
 	if len(s.automationRuns) > 20 {
 		s.automationRuns = append([]AutomationRunCard(nil), s.automationRuns[:20]...)
 	}
-	s.pushNotificationLocked("Automation Started", template.Title, "info")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 

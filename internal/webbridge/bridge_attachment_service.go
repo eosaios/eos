@@ -82,7 +82,6 @@ func (svc *AttachmentService) ImportAttachment(name string, mime string, base64D
 	}
 
 	s.stateMu.Lock()
-	s.pushNotificationLocked("Image Imported", safeName+" | "+normalizedMIME, "info")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return AttachmentRef{Name: safeName, Path: target, MIME: normalizedMIME, Kind: "image"}, nil

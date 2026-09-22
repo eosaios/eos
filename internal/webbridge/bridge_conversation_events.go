@@ -230,6 +230,23 @@ func (s *BridgeService) handleConversationApprovalLocked(frame conversationEvent
 	s.pushNotificationLocked(s.t("approval.notification.title"), prompt.Message, "warning")
 }
 
+// notifyRequestCompletedLocked 在会话真正从 running 收口时写入一条完成提醒。
+// 调用方必须先检查 wasRunning，避免 text.final 与 turn.completed 双写。
+func (s *BridgeService) notifyRequestCompletedLocked(session *sessionState) {
+	if session == nil {
+		return
+	}
+	title := fallbackText(strings.TrimSpace(session.Title), s.t("notification.session_fallback"))
+	if runes := []rune(title); len(runes) > 30 {
+		title = string(runes[:30]) + "…"
+	}
+	s.pushNotificationLocked(
+		s.t("notification.request_completed.title"),
+		s.t("notification.request_completed.message", title),
+		"success",
+	)
+}
+
 // approvalPreviewFromEvent extracts the kernel-side risk preview (level + reason)
 // from a tool.approval_required event payload. Returns ("","") when the kernel
 // did not inline a preview (e.g. MCP/external tools); callers fall back to i18n.
@@ -323,7 +340,7 @@ func (s *BridgeService) handleConversationRequestUserInputLocked(frame conversat
 	s.appendRuntimeEventLocked(frame.session, frame.assistantMessageID, "interaction", title, message, "waiting")
 	text, level := s.pendingPromptStatusTextAndLevel(prompt)
 	s.beginMessageStatusWithKey(frame.session, frame.assistantMessageID, promptStatusKey(prompt.ID), text, level)
-	s.pushNotificationLocked("需要确认", message, "warning")
+	s.pushNotificationLocked(s.t("notification.needs_confirmation.title"), message, "warning")
 }
 
 // parseRequestUserInputQuestions extracts the questions array from a
@@ -380,10 +397,11 @@ func (s *BridgeService) handleConversationFailureLocked(frame conversationEventF
 	frame.session.NeedsAttention = true
 	s.appendRuntimeEventLocked(frame.session, frame.assistantMessageID, "error", message, lastRuntimeEventTitle(frame.session, frame.assistantMessageID), "failed")
 	s.setMessageStatus(frame.session, frame.assistantMessageID, message, "error", "failed")
-	s.pushNotificationLocked("请求失败", message, "danger")
+	s.pushNotificationLocked(s.t("notification.request_failed.title"), message, "danger")
 }
 
 func (s *BridgeService) handleConversationTextFinalLocked(frame conversationEventFrame) {
+	wasRunning := frame.session.Running
 	frame.session.Running = false
 	frame.session.NeedsAttention = false
 	s.appendRuntimeEventLocked(frame.session, frame.assistantMessageID, "lifecycle", "请求已完成", "", "completed")
@@ -391,10 +409,13 @@ func (s *BridgeService) handleConversationTextFinalLocked(frame conversationEven
 	if isAutoSessionPlaceholderTitle(frame.session.Title) {
 		frame.session.Title = autoSessionTitle(frame.session, frame.input)
 	}
-	s.pushNotificationLocked("请求完成", "聊天内容与任务状态已同步。", "success")
+	if wasRunning {
+		s.notifyRequestCompletedLocked(frame.session)
+	}
 }
 
 func (s *BridgeService) handleConversationTurnCompletedLocked(frame conversationEventFrame) {
+	wasRunning := frame.session.Running
 	frame.session.Running = false
 	frame.session.NeedsAttention = false
 	payload := frame.event.Payload
@@ -410,7 +431,9 @@ func (s *BridgeService) handleConversationTurnCompletedLocked(frame conversation
 	if isAutoSessionPlaceholderTitle(frame.session.Title) {
 		frame.session.Title = autoSessionTitle(frame.session, frame.input)
 	}
-	s.pushNotificationLocked("请求完成", "聊天内容与任务状态已同步。", "success")
+	if wasRunning {
+		s.notifyRequestCompletedLocked(frame.session)
+	}
 }
 
 func (s *BridgeService) handleConversationRuntimeEventLocked(frame conversationEventFrame) {

@@ -139,7 +139,6 @@ func (svc *ChatService) RenameSession(sessionID, title string) (BootstrapState, 
 		s.stateMu.Unlock()
 		return s.LoadBootstrap(), err
 	}
-	s.pushNotificationLocked("Session Renamed", title, "info")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -175,7 +174,6 @@ func (svc *ChatService) DeleteSession(workspacePath, sessionID string) (Bootstra
 			s.activeWorkspace = next.WorkspacePath
 		}
 	}
-	s.pushNotificationLocked("Session Deleted", session.Title, "warning")
 	if s.currentSessionID == "" {
 		if next := s.latestSessionForWorkspaceLocked(""); next != nil {
 			s.currentSessionID = next.ID
@@ -230,9 +228,7 @@ func (svc *ChatService) ArchiveSession(sessionID string, archived bool) (Bootstr
 		}
 	}
 	if archived {
-		s.pushNotificationLocked("Session Archived", sessionID, "info")
 	} else {
-		s.pushNotificationLocked("Session Restored", sessionID, "info")
 	}
 	s.ensureActiveSessionLocked("")
 	s.emitShellUpdated()

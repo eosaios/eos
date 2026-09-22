@@ -5,7 +5,6 @@ package webbridge
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"strings"
 
@@ -69,7 +68,6 @@ func (svc *CommandService) ResolvePrompt(promptID, decision, note string) (Boots
 		s.stateMu.Unlock()
 		return s.LoadBootstrap(), err
 	}
-	s.pushNotificationLocked(s.resolvePromptNotificationTitle(prompt), prompt.Title, "info")
 	// 会话作用域 emit：针对审批所在的 session 构建快照，避免全局 emit 在多会话时
 	// 把 currentSessionID 解析到别的会话上，导致本次审批的 status 更新（等待确认→已允许）
 	// 不被前端应用到当前查看的会话。
@@ -110,7 +108,6 @@ func (svc *CommandService) KillTask(taskID string) (BootstrapState, error) {
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("Task Stopped", taskID, "warning")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -136,13 +133,6 @@ func (s *BridgeService) resolvedStatusTextAndLevel(prompt *promptState, decision
 	default:
 		return s.t("approval.resolved.default"), "info"
 	}
-}
-
-func (s *BridgeService) resolvePromptNotificationTitle(prompt *promptState) string {
-	if prompt != nil && prompt.Source == "request-user-input" {
-		return s.t("request_user_input.notification.submitted")
-	}
-	return "Approval Submitted"
 }
 
 func (svc *CommandService) DismissNotification(notificationID string) BootstrapState {
@@ -174,9 +164,8 @@ func (svc *CommandService) RunCommandPalette(command string) (BootstrapState, er
 	case "session.new":
 		return s.chatService().CreateSession("")
 	case "tasks.cleanup":
-		count := s.cleanupTasksRPC()
+		s.cleanupTasksRPC()
 		s.stateMu.Lock()
-		s.pushNotificationLocked("Tasks Cleaned", fmt.Sprintf("Removed %d finished tasks", count), "info")
 		s.emitShellUpdated()
 		s.stateMu.Unlock()
 		return s.LoadBootstrap(), nil
@@ -184,9 +173,7 @@ func (svc *CommandService) RunCommandPalette(command string) (BootstrapState, er
 		report := s.buildDiagnosticsReport()
 		s.stateMu.Lock()
 		if s.writeClipboardText(report) {
-			s.pushNotificationLocked("Diagnostics Copied", "Diagnostics summary copied to clipboard", "success")
 		} else {
-			s.pushNotificationLocked("Clipboard Unavailable", "Diagnostics summary could not be copied", "warning")
 		}
 		s.emitShellUpdated()
 		s.stateMu.Unlock()

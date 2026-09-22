@@ -157,7 +157,7 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 				delete(s.runningConversations, sessionKey)
 			}
 			if persistErr := s.persistSessionLocked(session); persistErr != nil {
-				s.pushNotificationLocked("请求失败", persistErr.Error(), "danger")
+				s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 			}
 			s.stateMu.Unlock()
 			s.emitShellUpdatedForSession(sessionID)
@@ -171,7 +171,7 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 			session.NeedsAttention = true
 			s.appendRuntimeEventLocked(session, assistantMessageID, "error", "会话无响应", lastRuntimeEventTitle(session, assistantMessageID), "failed")
 			s.setMessageStatus(session, assistantMessageID, "会话无响应，请重试", "error", "failed")
-			s.pushNotificationLocked("请求失败", "会话无响应，已强制结束", "danger")
+			s.pushNotificationLocked(s.t("notification.request_failed.title"), "会话无响应，已强制结束", "danger")
 		case errors.Is(ctx.Err(), context.Canceled):
 			session.Running = false
 			session.NeedsAttention = false
@@ -182,13 +182,13 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 			session.NeedsAttention = true
 			s.appendRuntimeEventLocked(session, assistantMessageID, "error", "请求超时", lastRuntimeEventTitle(session, assistantMessageID), "failed")
 			s.setMessageStatus(session, assistantMessageID, runtimeTimeoutMessage(session, assistantMessageID), "error", "failed")
-			s.pushNotificationLocked("请求失败", "请求超时", "danger")
+			s.pushNotificationLocked(s.t("notification.request_failed.title"), "请求超时", "danger")
 		default:
 			session.Running = false
 			session.NeedsAttention = true
 			s.appendRuntimeEventLocked(session, assistantMessageID, "error", "流式响应异常结束", lastRuntimeEventTitle(session, assistantMessageID), "failed")
 			s.setMessageStatus(session, assistantMessageID, runtimeClosedStreamMessage(session, assistantMessageID), "error", "failed")
-			s.pushNotificationLocked("请求失败", "流式响应异常结束", "danger")
+			s.pushNotificationLocked(s.t("notification.request_failed.title"), "流式响应异常结束", "danger")
 		}
 		// turn 已终止：挂起的审批/问询随之失效，必须一并收起——否则出现
 		// 「会话都报错中止了，下面还挂着审批卡」的矛盾 UI（用户点了也会扑空）。
@@ -198,7 +198,7 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 			delete(s.runningConversations, sessionKey)
 		}
 		if persistErr := s.persistSessionLocked(session); persistErr != nil {
-			s.pushNotificationLocked("请求失败", persistErr.Error(), "danger")
+			s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 		}
 	} else {
 		if session != nil && !messageInTerminalState(session, assistantMessageID) {
@@ -209,15 +209,15 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 			s.dismissPendingPromptsLocked(sessionID)
 			session.UpdatedAt = time.Now()
 			if persistErr := s.persistSessionLocked(session); persistErr != nil {
-				s.pushNotificationLocked("请求失败", persistErr.Error(), "danger")
+				s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 			}
-			s.pushNotificationLocked("请求失败", "流式响应异常结束", "danger")
+			s.pushNotificationLocked(s.t("notification.request_failed.title"), "流式响应异常结束", "danger")
 		}
 		if running != nil && running.AssistantMessageID == assistantMessageID {
 			delete(s.runningConversations, sessionKey)
 			if session != nil {
 				if persistErr := s.persistSessionLocked(session); persistErr != nil {
-					s.pushNotificationLocked("请求失败", persistErr.Error(), "danger")
+					s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 				}
 			}
 		}

@@ -27,7 +27,6 @@ func (svc *CommandService) RunBashCommand(input string) (BootstrapState, error) 
 		Status:    "running",
 		UpdatedAt: now,
 	}
-	s.pushNotificationLocked("Bash Started", command, "info")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	go svc.runBashCommand(command)

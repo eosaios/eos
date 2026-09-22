@@ -27,7 +27,6 @@ func (w *WorkspaceService) OpenRemoteWorkspace(idOrPath string) (BootstrapState,
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("已打开远程仓库", fallbackText(item.RepoURL, item.LocalPath), "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return state, nil
@@ -42,7 +41,6 @@ func (w *WorkspaceService) ForgetRemoteWorkspace(idOrPath string) (BootstrapStat
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("已移除远程记录", strings.TrimSpace(idOrPath), "warning")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -57,7 +55,6 @@ func (w *WorkspaceService) ClearRemoteWorkspaceCache(idOrPath string) (Bootstrap
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("已清理远程缓存", strings.TrimSpace(idOrPath), "warning")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil

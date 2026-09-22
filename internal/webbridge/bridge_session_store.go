@@ -238,7 +238,6 @@ func (s *BridgeService) createWorkspaceSessionLocked(workspace, title string, no
 		return s.setWorkspaceCurrentSessionRPC(workspace, session.ID)
 	})
 	if notify == SessionCreateNotifyUser {
-		s.pushNotificationLocked("已创建会话", session.Title, "success")
 	}
 	return session, nil
 }

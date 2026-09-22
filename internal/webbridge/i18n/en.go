@@ -41,6 +41,13 @@ var enText = map[string]string{
 	// Conversation lifecycle status lines (inline status items in the message stream).
 	"conversation.stopped_manual": "Stopped manually",
 	"conversation.interrupted":    "Interrupted (app restarted)",
+	// Notification center: completions / failures / pending requests / background
+	// task results / system degradation only.
+	"notification.request_completed.title":   "Request completed",
+	"notification.request_completed.message": "Session \"%s\" finished",
+	"notification.request_failed.title":      "Request failed",
+	"notification.needs_confirmation.title":  "Confirmation needed",
+	"notification.session_fallback":          "current session",
 
 	// eos web 模式服务壳文案。
 	"web.server.ready":    "eos web is running at %s (frontend dir: %s, Ctrl+C to quit)",

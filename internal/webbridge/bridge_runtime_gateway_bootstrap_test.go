@@ -827,8 +827,8 @@ func TestCancelFirstLaunchSendWithOptimisticSessionIDDoesNotBlock(t *testing.T) 
 	if !found {
 		t.Fatalf("cancel assistant missing status item '已停止生成': items=%+v", assistant.Items)
 	}
-	if !notificationContainsForRust(cancelState.Notifications, "已手动停止") {
-		t.Fatalf("expected stop notification, got %+v", cancelState.Notifications)
+	if notificationContainsForRust(cancelState.Notifications, "已手动停止") {
+		t.Fatalf("did not expect stop notification, got %+v", cancelState.Notifications)
 	}
 }
 

@@ -53,7 +53,7 @@ func (svc *CapabilityService) SaveRules(req RulesSaveRequest) (BootstrapState, e
 	if s == nil {
 		return BootstrapState{}, errors.New("bridge service is not available")
 	}
-	path, scopeLabel, detail, err := resolveRuleWriteTarget(req, s.guiLanguage())
+	path, _, _, err := resolveRuleWriteTarget(req, s.guiLanguage())
 	if err != nil {
 		return s.LoadBootstrap(), err
 	}
@@ -68,7 +68,6 @@ func (svc *CapabilityService) SaveRules(req RulesSaveRequest) (BootstrapState, e
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked(scopeLabel+" Saved", detail, "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -91,7 +90,6 @@ func (svc *CapabilityService) RollbackVersion(id string) (BootstrapState, error)
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("Version Rolled Back", strings.TrimSpace(id), "warning")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -106,7 +104,6 @@ func (svc *CapabilityService) DeleteVersion(id string) (BootstrapState, error) {
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("Version Deleted", strings.TrimSpace(id), "warning")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -117,9 +114,8 @@ func (svc *CapabilityService) ClearVersions() BootstrapState {
 	if s == nil {
 		return BootstrapState{}
 	}
-	count := s.clearVersionsRPC()
+	s.clearVersionsRPC()
 	s.stateMu.Lock()
-	s.pushNotificationLocked("Version History Cleared", toCountLabel(count)+" records removed", "warning")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap()

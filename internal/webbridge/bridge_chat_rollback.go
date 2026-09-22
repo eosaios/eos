@@ -96,9 +96,8 @@ func (svc *ChatService) RollbackChatTurn(sessionID, userMessageID string) (Boots
 	s.currentSessionID = session.ID
 	s.activeWorkspace = session.WorkspacePath
 	if err := s.setWorkspaceCurrentSessionRPC(session.WorkspacePath, session.ID); err != nil {
-		s.pushNotificationLocked("会话同步失败", "回滚已完成，但更新当前会话时出错："+err.Error(), "warning")
+		s.pushNotificationLocked(s.t("notification.request_failed.title"), "回滚已完成，但更新当前会话时出错："+err.Error(), "warning")
 	}
-	s.pushNotificationLocked("Turn Rolled Back", "Restored the conversation to the state before this turn.", "warning")
 	targetSessionID := session.ID
 	s.stateMu.Unlock()
 	response := s.bootstrapForSession(targetSessionID)

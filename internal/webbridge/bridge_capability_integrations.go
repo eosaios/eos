@@ -5,6 +5,7 @@ package webbridge
 
 import (
 	"errors"
+	"log/slog"
 	"strings"
 )
 
@@ -17,7 +18,6 @@ func (svc *CapabilityService) UpsertMCP(name, kind, target string, enabled bool)
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("MCP Saved", strings.TrimSpace(name), "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -32,7 +32,6 @@ func (svc *CapabilityService) ImportMCPJSON(raw string) (BootstrapState, error) 
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("MCP JSON Imported", "A new MCP configuration was saved", "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -47,7 +46,6 @@ func (svc *CapabilityService) DeleteMCP(name string) (BootstrapState, error) {
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("MCP Deleted", strings.TrimSpace(name), "warning")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -62,13 +60,6 @@ func (svc *CapabilityService) SetMCPEnabled(name string, enabled bool) (Bootstra
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	status := "disabled"
-	tone := "warning"
-	if enabled {
-		status = "enabled"
-		tone = "success"
-	}
-	s.pushNotificationLocked("MCP Status Updated", strings.TrimSpace(name)+" "+status, tone)
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -79,14 +70,11 @@ func (svc *CapabilityService) DetectLSP(language string) BootstrapState {
 	if s == nil {
 		return BootstrapState{}
 	}
-	message, err := s.detectLSPRPC(language)
 	language = strings.TrimSpace(language)
-	s.stateMu.Lock()
-	if err != nil {
-		s.pushNotificationLocked("LSP 检测失败", fallbackText(err.Error(), language), "warning")
-	} else {
-		s.pushNotificationLocked("LSP Detection Complete", fallbackText(message, language), "info")
+	if _, err := s.detectLSPRPC(language); err != nil {
+		slog.Warn("bridge.detect_lsp_failed", "language", language, "error", err)
 	}
+	s.stateMu.Lock()
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap()
@@ -97,14 +85,11 @@ func (svc *CapabilityService) StartLSP(language string) BootstrapState {
 	if s == nil {
 		return BootstrapState{}
 	}
-	message, err := s.startLSPRPC(language)
 	language = strings.TrimSpace(language)
-	s.stateMu.Lock()
-	if err != nil {
-		s.pushNotificationLocked("LSP 启动失败", fallbackText(err.Error(), language), "warning")
-	} else {
-		s.pushNotificationLocked("LSP Started", fallbackText(message, language), "success")
+	if _, err := s.startLSPRPC(language); err != nil {
+		slog.Warn("bridge.start_lsp_failed", "language", language, "error", err)
 	}
+	s.stateMu.Lock()
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap()
@@ -115,14 +100,11 @@ func (svc *CapabilityService) InstallLSP(language string) BootstrapState {
 	if s == nil {
 		return BootstrapState{}
 	}
-	message, err := s.installLSPRPC(language)
 	language = strings.TrimSpace(language)
-	s.stateMu.Lock()
-	if err != nil {
-		s.pushNotificationLocked("LSP 安装失败", fallbackText(err.Error(), language), "warning")
-	} else {
-		s.pushNotificationLocked("LSP Installed", fallbackText(message, language), "success")
+	if _, err := s.installLSPRPC(language); err != nil {
+		slog.Warn("bridge.install_lsp_failed", "language", language, "error", err)
 	}
+	s.stateMu.Lock()
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap()
@@ -137,7 +119,6 @@ func (svc *CapabilityService) ReloadSkills() (BootstrapState, error) {
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("Skills Reloaded", "The skill catalog was refreshed", "success")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -166,13 +147,6 @@ func (svc *CapabilityService) SetSkillEnabled(name string, enabled bool) (Bootst
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	status := "disabled"
-	tone := "warning"
-	if enabled {
-		status = "enabled"
-		tone = "success"
-	}
-	s.pushNotificationLocked("Skill Status Updated", strings.TrimSpace(name)+" "+status, tone)
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
@@ -187,13 +161,6 @@ func (svc *CapabilityService) SetPluginEnabled(name string, enabled bool) (Boots
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	status := "disabled"
-	tone := "warning"
-	if enabled {
-		status = "enabled"
-		tone = "success"
-	}
-	s.pushNotificationLocked("Plugin Status Updated", strings.TrimSpace(name)+" "+status, tone)
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil

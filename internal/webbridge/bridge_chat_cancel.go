@@ -77,7 +77,6 @@ func (svc *ChatService) CancelSession(sessionID string) (BootstrapState, error) 
 	session.NeedsAttention = false
 	session.UpdatedAt = time.Now()
 	s.setMessageStatus(session, assistantMessageID, "已停止生成", "warning", "failed")
-	s.pushNotificationLocked("已手动停止", fallbackText(session.Title, "当前会话")+" 已停止生成。", "warning")
 	targetSessionID := session.ID
 	s.stateMu.Unlock()
 

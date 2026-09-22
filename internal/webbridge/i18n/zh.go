@@ -43,6 +43,12 @@ var zhText = map[string]string{
 	// 会话生命周期状态行（消息流内联 status item 文案）。
 	"conversation.stopped_manual": "已手动停止",
 	"conversation.interrupted":    "已中断（应用已重启）",
+	// 通知中心：只记录完成 / 失败 / 待处理请求 / 后台任务结果 / 系统降级。
+	"notification.request_completed.title":   "请求完成",
+	"notification.request_completed.message": "会话「%s」输出完成",
+	"notification.request_failed.title":      "请求失败",
+	"notification.needs_confirmation.title":  "需要确认",
+	"notification.session_fallback":          "当前会话",
 
 	// eos web 模式服务壳文案。
 	"web.server.ready":    "eos web 已启动：%s（前端目录：%s，Ctrl+C 退出）",

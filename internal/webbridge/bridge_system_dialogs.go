@@ -117,7 +117,6 @@ func (svc *SystemService) WriteClipboardText(text string) BootstrapState {
 	}
 	if s.writeClipboardText(text) {
 		s.stateMu.Lock()
-		s.pushNotificationLocked("Clipboard Updated", "Selected content copied to clipboard.", "success")
 		s.emitShellUpdated()
 		s.stateMu.Unlock()
 	}
@@ -133,7 +132,6 @@ func (svc *SystemService) AcknowledgeCrashReport() (BootstrapState, error) {
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	s.pushNotificationLocked("Crash Report Acknowledged", "Pending crash report marked as read.", "info")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
