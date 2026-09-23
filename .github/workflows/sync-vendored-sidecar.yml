@@ -42,7 +42,7 @@ on:
         type: boolean
         default: false
       sync_app:
-        description: "同步到 eos-app（Gitee，需 EOS_APP_DEPLOY_KEY）"
+        description: "同步到下游 eos-app 仓库（需 EOS_APP_DEPLOY_KEY）"
         type: boolean
         default: false
 
@@ -284,10 +284,10 @@ jobs:
             echo "已 push 到 eos-cli"
           fi
 
-      # ── 可选：同步到 eos-app（Gitee）──
+      # ── 可选：同步到下游 eos-app 仓库 ──
       # 注意：secrets 上下文不允许出现在 if: 条件里（GitHub 会拒绝整个 workflow
       # 文件，这正是此前一触发即 0s 失败的原因），key 是否存在改在 run 内判断。
-      - name: Sync to eos-app (Gitee)
+      - name: Sync to eos-app (downstream)
         if: ${{ github.event.inputs.sync_app == 'true' }}
         env:
           EOS_APP_GIT_URL: ${{ secrets.EOS_APP_GIT_URL }}

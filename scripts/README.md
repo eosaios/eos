@@ -37,13 +37,13 @@ powershell -File scripts/dev-rebuild.ps1 -SkipApp   # 只分发 eos-cli，不碰
 
 触发：GitHub Actions → sync-vendored-sidecar.yml → Run workflow（手动）。
 build job 产出签名 artifact，sync job 分发到 `pkg/coreapi/sidecar/core/<triple>/`
-并 commit 回仓库。可选 `sync_app=true` 同步到 eos-app（Gitee，需 deploy key secret）。
+并 commit 回仓库。可选 `sync_app=true` 同步到下游 eos-app 仓库（需 deploy key secret）。
 
 需要的 secrets（在 eos-cli 仓库 Settings → Secrets 配置）：
 - `EOS_SIGNING_KEY`：Ed25519 签名私钥（PKCS#8 PEM 内容，与 eos-core-rs/scripts/eos-signing-key.pem 一致）
 - `EOS_CORE_REPO`：eos-core-rs 的 GitHub 仓库（owner/name，默认 eosaios/eos-core-rs）
 - `EOS_CORE_PAT`：若 eos-core-rs 是私有仓，需 PAT 访问（公开仓留空）
-- `EOS_APP_GIT_URL` + `EOS_APP_DEPLOY_KEY`（可选）：同步到 eos-app（Gitee）
+- `EOS_APP_GIT_URL` + `EOS_APP_DEPLOY_KEY`（可选）：同步到下游 eos-app 仓库
 
 ## 其它脚本
 
