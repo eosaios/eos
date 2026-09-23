@@ -32,9 +32,7 @@ func (s *BridgeService) commandService() *CommandService {
 func (svc *CommandService) DefaultCommandPalette() []CommandAction {
 	return []CommandAction{
 		{ID: "cmd-page-sessions", Command: "page.open.sessions", Label: "Open Sessions", Description: "Switch to the session management page", Target: "sessions"},
-		{ID: "cmd-page-models", Command: "page.open.models", Label: "Open Models", Description: "Switch to the connections and models page", Target: "models"},
 		{ID: "cmd-page-rules", Command: "page.open.rules", Label: "Open Rules", Description: "Switch to the rules page", Target: "rules"},
-		{ID: "cmd-tasks-clean", Command: "tasks.cleanup", Label: "Clean Tasks", Description: "Remove finished background tasks", Target: "tasks"},
 	}
 }
 
