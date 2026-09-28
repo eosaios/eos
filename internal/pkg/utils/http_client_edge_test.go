@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestClientErrorMessages(t *testing.T) {
@@ -246,5 +247,62 @@ func TestWithHTTPDefaults(t *testing.T) {
 	}
 	if spec.Headers == nil {
 		t.Fatal("headers")
+	}
+}
+
+func TestHTTPClientDoRetriesAndTruncation(t *testing.T) {
+	// 可重试状态码后成功
+	attempts := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts < 2 {
+			w.WriteHeader(503)
+			return
+		}
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer srv.Close()
+	c := NewHTTPClient()
+	resp, err := c.Do(context.Background(), RequestSpec{
+		URL:          srv.URL,
+		AllowHTTP:    true,
+		RetryPolicy:  RetryPolicy{MaxAttempts: 3, BaseDelay: time.Millisecond, Multiplier: 1},
+	})
+	if err != nil || string(resp.Body) != "ok" {
+		t.Fatalf("retry then ok = %+v %v attempts=%d", resp, err, attempts)
+	}
+
+	// 超限截断
+	big := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(strings.Repeat("x", 100)))
+	}))
+	defer big.Close()
+	resp, err = c.Do(context.Background(), RequestSpec{
+		URL:       big.URL,
+		AllowHTTP: true,
+		MaxBytes:  10,
+	})
+	if err != nil || !resp.Truncated || len(resp.Body) != 10 {
+		t.Fatalf("truncated = %+v %v", resp, err)
+	}
+
+	// 同源重定向跟随
+	final := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("final"))
+	}))
+	// 用同一 host 的不同 path
+	mux := http.NewServeMux()
+	mux.HandleFunc("/a", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/b", 302)
+	})
+	mux.HandleFunc("/b", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("followed"))
+	})
+	same := httptest.NewServer(mux)
+	defer same.Close()
+	_ = final
+	resp, err = c.Do(context.Background(), RequestSpec{URL: same.URL + "/a", AllowHTTP: true})
+	if err != nil || string(resp.Body) != "followed" {
+		t.Fatalf("same-host redirect = %+v %v", resp, err)
 	}
 }

@@ -318,6 +318,11 @@ func shouldRetry(spec RequestSpec, resp *ResponseSpec, err error, attempt int) b
 	if err != nil {
 		var clientErr *ClientError
 		if errors.As(err, &clientErr) {
+			// 结构性错误（非法 URL/跨主机重定向等）不重试。
+			// HTTP 状态错误要按状态码判断——否则 429/503 永远重试不到。
+			if clientErr.Kind == ErrHTTPStatus {
+				return IsRetryableHTTPError(clientErr.StatusCode)
+			}
 			return false
 		}
 		var netErr net.Error
