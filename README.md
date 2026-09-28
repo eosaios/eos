@@ -2,7 +2,7 @@
 
 [中文](./README.md) | [English](./README.en.md)
 
-EOS 是一个开源的终端 AI 编码助手，当前以 Rust Core 作为核心运行时，Go 侧负责 CLI 入口、TUI、桥接与分发集成。它面向日常编码、代码审查、文档处理、本地自动化，以及 IDE / 平台集成场景，提供交互式 TUI、工具调用、安全门禁、工作区上下文和可扩展的 MCP 能力。
+EOS 是一个终端 AI 编码助手，当前以 Rust Core 作为核心运行时，Go 侧负责 CLI 入口、TUI、桥接与分发集成。它面向日常编码、代码审查、文档处理、本地自动化，以及 IDE / 平台集成场景，提供交互式 TUI、工具调用、安全门禁、工作区上下文和可扩展的 MCP 能力。
 
 当前版本 `v1.0.0-beta.29`（最新以 [Releases](https://github.com/eosaios/eos/releases) 为准），提供三端（Windows / macOS / Linux × amd64+arm64）生产包与 SHA256SUMS 校验；[EOS App](https://github.com/eosaios/eos-app) 桌面端基于同一 Rust 内核构建，两者版本号独立递进。
 
@@ -90,7 +90,7 @@ curl -fsSL https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.sh | bas
 Windows（PowerShell）：
 
 ```powershell
-irm https://raw.githubusercontent.com/eosaios/eos/main/scripts/install.ps1 | iex
+irm https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.ps1 | iex
 ```
 
 安装后运行 `eos` 即可；`eos version` 查看版本，`eos update` 一键自升级（含 Rust 内核 core/ 同步更新）。
@@ -302,7 +302,7 @@ EOS 当前不内置浏览器驱动，推荐通过 Playwright MCP 接入真实浏
 - 浏览器 MCP 适合真实页面交互、行为验证和截图
 - 可通过 `/status`、MCP 面板或运行态信息检查连接状态
 
-## 开源使用与发布建议
+## 使用与发布建议
 
 - 运行时会在工作目录生成 `.eos/` 数据，例如会话、检查点和版本快照
 - 建议将 `.eos/`、`.eos.json`、`.env`、日志和本地配置加入忽略列表

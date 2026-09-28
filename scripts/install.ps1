@@ -1,12 +1,13 @@
 # EOS CLI 官方安装脚本（Windows PowerShell）
 #
 # 用法：
-#   irm https://raw.githubusercontent.com/eosaios/eos/main/scripts/install.ps1 | iex
+#   irm https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.ps1 | iex
 #   .\install.ps1 -Version v1.0.0-beta.3
 #
 # 行为：GitHub Releases 拉取 windows 归档 → SHA256 校验 → 安装到
 #   %LOCALAPPDATA%\Programs\eos（eos.exe + core\）→ 用户 PATH 追加该目录。
 # `eos update` 之后原地自升级。
+# 入口走 jsdelivr CDN：raw.githubusercontent.com 在国内网络不可达。
 
 param(
     [string]$Version = "",
@@ -14,6 +15,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# Windows PowerShell 5.1 下 IWR 渲染进度条会把大文件下载拖慢 10 倍以上
+$ProgressPreference = "SilentlyContinue"
 $Repo = "eosaios/eos"
 
 if (-not $InstallDir) {

@@ -117,7 +117,13 @@ if [ -d "${DIST_DIR}/core" ] || [ -e "${DIST_DIR}/eos" ]; then
   mkdir -p "$DIST_DIR"
 fi
 tar -xzf "${TMP}/${ASSET}" -C "$TMP"
-SRC_DIR="$(dirname "$(find "${TMP}" -maxdepth 2 -name eos -type f | head -1)")"
+# 归档结构固定为单一顶层目录（<stage>/eos + <stage>/core/）。不用 find
+# -maxdepth：那是 GNU 扩展，macOS 自带的 BSD find 不支持会直接报错。
+SRC_DIR=""
+for d in "${TMP}"/*/; do
+  if [ -f "${d}eos" ]; then SRC_DIR="${d%/}"; break; fi
+done
+[ -n "$SRC_DIR" ] || err "归档结构异常：未在 ${ASSET} 中找到 eos 可执行文件"
 cp -R "${SRC_DIR}/." "$DIST_DIR/"
 [ -n "$OLD" ] && rm -rf "$OLD" 2>/dev/null || true
 chmod +x "${DIST_DIR}/eos"

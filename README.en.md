@@ -2,7 +2,7 @@
 
 [中文](./README.md) | [English](./README.en.md)
 
-EOS is an open-source terminal AI coding assistant with Rust Core as its core runtime, while the Go side provides the CLI entry point, TUI, bridge layer, and distribution integration. It is designed for day-to-day coding, code review, document workflows, local automation, and IDE / platform integration, with an interactive TUI, tool calling, safety controls, workspace-aware context, and extensible MCP support.
+EOS is a terminal AI coding assistant with Rust Core as its core runtime, while the Go side provides the CLI entry point, TUI, bridge layer, and distribution integration. It is designed for day-to-day coding, code review, document workflows, local automation, and IDE / platform integration, with an interactive TUI, tool calling, safety controls, workspace-aware context, and extensible MCP support.
 
 Current version is `v1.0.0-beta.29` (see [Releases](https://github.com/eosaios/eos/releases) for the latest). Releases ship production packages for three platforms (Windows / macOS / Linux, amd64 + arm64) with SHA256SUMS verification. The [EOS App](https://github.com/eosaios/eos-app) desktop distribution is built on the same Rust core; version numbers advance independently.
 
@@ -90,7 +90,7 @@ curl -fsSL https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.sh | bas
 Windows (PowerShell):
 
 ```powershell
-irm https://raw.githubusercontent.com/eosaios/eos/main/scripts/install.ps1 | iex
+irm https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.ps1 | iex
 ```
 
 Then run `eos`. Use `eos version` to check the version and `eos update` to self-upgrade (the Rust core sidecar is updated together with the binary).
