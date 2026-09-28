@@ -171,7 +171,10 @@ func (v *ModelSetupView) loadProviders() {
 // 其余 provider 直接用其原始名称。rust_catalog 在 ai 包没有 language 上下文，
 // 只能在这里按当前语言渲染。
 func providerDisplayName(p *ai.ProviderConfig, language string) string {
-	if p != nil && p.ID == "custom" {
+	if p == nil {
+		return ""
+	}
+	if p.ID == "custom" {
 		return i18n.T("setup.custom", language)
 	}
 	return p.Name
