@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -103,11 +104,11 @@ func IsRetryableError(err error) bool {
 	return false
 }
 
-// contains 检查字符串是否包含子串（不区分大小写）
+// contains 检查字符串是否包含子串（不区分大小写）。
+// 旧实现只匹配前缀/后缀且区分大小写，导致
+// "dial tcp ...: connection refused" 这类中间命中模式检不出来。
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) &&
-		(s == substr ||
-			len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr))
+	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }
 
 // calculateDelay 计算指数退避延迟

@@ -145,48 +145,47 @@ func ValidateCommand(cmd string) InputValidationResult {
 	}
 }
 
-// containsSuspiciousPathPatterns 检查路径中是否包含可疑模式
+// containsSuspiciousPathPatterns 检查路径中是否包含可疑模式。
+// Windows 保留设备名按路径段/基名精确匹配——旧实现用子串匹配 "CON"，
+// 会把 config/console/concepts 等常规路径误杀。
 func containsSuspiciousPathPatterns(path string) bool {
-	suspicious := []string{
+	substringSuspicious := []string{
 		"../",
 		"..\\",
 		"~/.config", // 尝试访问系统配置
 		"/etc/passwd",
 		"/etc/shadow",
 		"\\\\", // Windows UNC path potential
-		"COM0", // Windows reserved device names
-		"COM1",
-		"COM2",
-		"COM3",
-		"COM4",
-		"COM5",
-		"COM6",
-		"COM7",
-		"COM8",
-		"COM9",
-		"LPT0",
-		"LPT1",
-		"LPT2",
-		"LPT3",
-		"LPT4",
-		"LPT5",
-		"LPT6",
-		"LPT7",
-		"LPT8",
-		"LPT9",
-		"CON",
-		"PRN",
-		"AUX",
-		"NUL",
 	}
-
-	upperPath := strings.ToUpper(path)
-	for _, pattern := range suspicious {
-		if strings.Contains(path, pattern) || strings.Contains(upperPath, pattern) {
+	for _, pattern := range substringSuspicious {
+		if strings.Contains(path, pattern) {
 			return true
 		}
 	}
 
+	// Windows 保留设备名（含带扩展名形式：COM1.txt 保留，fileCOM1.txt 不保留）
+	reserved := map[string]bool{
+		"CON": true, "PRN": true, "AUX": true, "NUL": true,
+		"COM0": true, "COM1": true, "COM2": true, "COM3": true, "COM4": true,
+		"COM5": true, "COM6": true, "COM7": true, "COM8": true, "COM9": true,
+		"LPT0": true, "LPT1": true, "LPT2": true, "LPT3": true, "LPT4": true,
+		"LPT5": true, "LPT6": true, "LPT7": true, "LPT8": true, "LPT9": true,
+	}
+	upper := strings.ToUpper(path)
+	for _, seg := range strings.FieldsFunc(upper, func(r rune) bool {
+		return r == '/' || r == '\\'
+	}) {
+		if reserved[seg] {
+			return true
+		}
+		base := seg
+		if i := strings.IndexByte(base, '.'); i >= 0 {
+			base = base[:i]
+		}
+		if reserved[base] {
+			return true
+		}
+	}
 	return false
 }
 
