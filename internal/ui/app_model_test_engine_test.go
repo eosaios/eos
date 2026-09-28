@@ -44,6 +44,15 @@ type testEngine struct {
 	resumeCalls      []string
 	messages         []coreapi.SessionMessage
 	currentSessionID string
+
+	// 失败臂批测注入口（零值=原成功行为）：config/context/memory 服务
+	// 经共享状态读取（服务每次取用时新建实例，注入字段必须挂 engine 上）。
+	saveRulesErr   error
+	saveMemoryErr  error
+	compactErr     error
+	compactMessage string
+	clearCtxErr    error
+	exportCtxErr   error
 }
 
 func (e *testEngine) Caller() coreapi.Caller                 { return nil }
@@ -55,24 +64,26 @@ func (e *testEngine) LSP() coreapi.LSPService                { return &testLSPSe
 func (e *testEngine) Config() coreapi.ConfigService          { return &testConfigService{e: e} }
 func (e *testEngine) Permissions() coreapi.PermissionService { return &testPermissionService{e: e} }
 func (e *testEngine) Extensions() coreapi.ExtensionService   { return &testExtensionService{} }
-func (e *testEngine) Context() coreapi.ContextService        { return &testContextService{} }
-func (e *testEngine) Usage() coreapi.UsageService            { return &testUsageService{} }
-func (e *testEngine) Versions() coreapi.VersionService       { return &testVersionService{} }
-func (e *testEngine) Tasks() coreapi.TaskService             { return &testTaskService{} }
-func (e *testEngine) Goals() coreapi.GoalService             { return &testGoalService{} }
-func (e *testEngine) Modes() coreapi.ModeService             { return &testModeService{e: e} }
-func (e *testEngine) Models() coreapi.ModelService           { return &testModelService{e: e} }
+func (e *testEngine) Context() coreapi.ContextService {
+	return &testContextService{e: e}
+}
+func (e *testEngine) Usage() coreapi.UsageService      { return &testUsageService{} }
+func (e *testEngine) Versions() coreapi.VersionService { return &testVersionService{} }
+func (e *testEngine) Tasks() coreapi.TaskService       { return &testTaskService{} }
+func (e *testEngine) Goals() coreapi.GoalService       { return &testGoalService{} }
+func (e *testEngine) Modes() coreapi.ModeService       { return &testModeService{e: e} }
+func (e *testEngine) Models() coreapi.ModelService     { return &testModelService{e: e} }
 func (e *testEngine) RemoteWorkspaces() coreapi.RemoteWorkspaceService {
 	return &testRemoteWorkspaceService{}
 }
 func (e *testEngine) Git() coreapi.GitService                     { return &testGitService{} }
 func (e *testEngine) Insights() coreapi.InsightService            { return nil }
-func (e *testEngine) Memory() coreapi.MemoryService               { return &testMemoryService{} }
+func (e *testEngine) Memory() coreapi.MemoryService               { return &testMemoryService{e: e} }
 func (e *testEngine) Roles() coreapi.RoleService                  { return nil }
 func (e *testEngine) Turns() coreapi.TurnService                  { return nil }
 func (e *testEngine) Approvals() coreapi.ApprovalService          { return &testApprovalsService{} }
 func (e *testEngine) Inquiries() coreapi.InquiryService           { return &testInquiryService{} }
-func (e *testEngine) Agents() coreapi.AgentService            { return &testAgentsService{} }
+func (e *testEngine) Agents() coreapi.AgentService                { return &testAgentsService{} }
 func (e *testEngine) Tools() coreapi.ToolExecutor                 { return nil }
 func (e *testEngine) ToolCatalog() coreapi.ToolCatalogService     { return nil }
 func (e *testEngine) ToolTelemetry() coreapi.ToolTelemetryService { return &testToolTelemetryService{} }
@@ -201,8 +212,13 @@ func (s *testConfigService) GetRules(context.Context) (string, error) { return "
 func (s *testConfigService) RulesSnapshot(context.Context) (coreapi.RulesSnapshot, error) {
 	return coreapi.RulesSnapshot{}, nil
 }
-func (s *testConfigService) SaveRules(context.Context, coreapi.SaveRulesRequest) error { return nil }
-func (s *testConfigService) ResetRules(context.Context) error                          { return nil }
+func (s *testConfigService) SaveRules(context.Context, coreapi.SaveRulesRequest) error {
+	if s.e != nil && s.e.saveRulesErr != nil {
+		return s.e.saveRulesErr
+	}
+	return nil
+}
+func (s *testConfigService) ResetRules(context.Context) error { return nil }
 func (s *testConfigService) GetSettings(context.Context) (coreapi.Settings, error) {
 	return s.e.settings, nil
 }
@@ -409,7 +425,7 @@ func (s *testUsageService) CostItems(context.Context) ([]coreapi.CostItem, error
 }
 
 // === Context ===
-type testContextService struct{}
+type testContextService struct{ e *testEngine }
 
 func (s *testContextService) Preview(context.Context) ([]string, error) { return nil, nil }
 func (s *testContextService) Stats(context.Context) (coreapi.ContextStats, error) {
@@ -419,9 +435,25 @@ func (s *testContextService) WindowTokens(context.Context) (int, error) { return
 func (s *testContextService) PinDocument(context.Context, coreapi.PinDocumentRequest) error {
 	return nil
 }
-func (s *testContextService) Compact(context.Context) (string, error) { return "", nil }
-func (s *testContextService) Clear(context.Context) error             { return nil }
+func (s *testContextService) Compact(context.Context) (string, error) {
+	if s.e != nil {
+		if s.e.compactErr != nil {
+			return "", s.e.compactErr
+		}
+		return s.e.compactMessage, nil
+	}
+	return "", nil
+}
+func (s *testContextService) Clear(context.Context) error {
+	if s.e != nil && s.e.clearCtxErr != nil {
+		return s.e.clearCtxErr
+	}
+	return nil
+}
 func (s *testContextService) Export(context.Context, coreapi.ExportContextRequest) error {
+	if s.e != nil && s.e.exportCtxErr != nil {
+		return s.e.exportCtxErr
+	}
 	return nil
 }
 
@@ -544,7 +576,6 @@ func (s *testGoalService) Resume(_ context.Context, _ coreapi.GoalRefRequest) (c
 
 func (s *testGoalService) Clear(_ context.Context, _ coreapi.GoalRefRequest) error { return nil }
 
-
 // testApprovalsService / testInquiryService / testToolTelemetryService：
 // UI 测试用假实现，避免 engine.X() 返回 nil 后 adapter 解引用 panic。
 type testApprovalsService struct{}
@@ -563,7 +594,6 @@ func (s *testToolTelemetryService) Traces(context.Context) ([]coreapi.ToolTrace,
 func (s *testToolTelemetryService) Stats(context.Context) ([]coreapi.ToolStat, error) {
 	return nil, nil
 }
-
 
 // testGitService：UI 测试用假 git service，避免 engine.Git() 为 nil 时 panic。
 type testGitService struct{}
@@ -587,15 +617,19 @@ func (s *testGitService) Show(context.Context, coreapi.GitShowRequest) (coreapi.
 	return coreapi.GitShowResult{}, nil
 }
 
-
 // testMemoryService：UI 测试用假 memory service。
-type testMemoryService struct{}
+type testMemoryService struct{ e *testEngine }
 
 func (s *testMemoryService) Snapshot(context.Context) (coreapi.MemorySnapshot, error) {
 	return coreapi.MemorySnapshot{}, nil
 }
-func (s *testMemoryService) Save(context.Context, coreapi.SaveMemoryRequest) error { return nil }
-func (s *testMemoryService) RebuildIndex(context.Context) error                    { return nil }
+func (s *testMemoryService) Save(context.Context, coreapi.SaveMemoryRequest) error {
+	if s.e != nil && s.e.saveMemoryErr != nil {
+		return s.e.saveMemoryErr
+	}
+	return nil
+}
+func (s *testMemoryService) RebuildIndex(context.Context) error { return nil }
 func (s *testMemoryService) RecordAdd(context.Context, coreapi.AddMemoryRecordRequest) (coreapi.MemoryRecord, error) {
 	return coreapi.MemoryRecord{}, nil
 }
@@ -608,7 +642,6 @@ func (s *testMemoryService) RecordSearch(context.Context, coreapi.SearchMemoryRe
 func (s *testMemoryService) RecordDelete(context.Context, coreapi.DeleteMemoryRecordRequest) error {
 	return nil
 }
-
 
 // testLSPService / testVersionService：UI 测试用假实现。
 type testLSPService struct{}
@@ -639,7 +672,6 @@ func (s *testVersionService) DeleteFile(context.Context, coreapi.VersionFileRequ
 	return 0, nil
 }
 func (s *testVersionService) Clear(context.Context) (int, error) { return 0, nil }
-
 
 // testAgentsService：UI 测试用假 agent service。
 type testAgentsService struct{}
