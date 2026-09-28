@@ -492,6 +492,9 @@ func (p *ModelsPanel) SetSize(width, height int) {
 	p.BasePanel.SetSize(width, height)
 	p.table.SetWidth(width - 4)
 	p.table.SetHeight(height - 12)
+	// 套餐选择子表格与主表同宽高，否则 planTable 宽度为 0 时不渲染数据行
+	p.planTable.SetWidth(width - 4)
+	p.planTable.SetHeight(height - 12)
 }
 
 // ModelSelectMsg 选择模型消息

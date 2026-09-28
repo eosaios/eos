@@ -265,8 +265,11 @@ func (p *TasksPanel) openView(id string) {
 	p.viewing = true
 	p.viewID = id
 	p.viewLines = nil
+	// 任务已消失时必须清掉上次的 viewTask，否则会渲染到过期元数据
 	if task, ok := p.findTask(id); ok {
 		p.viewTask = task
+	} else {
+		p.viewTask = coreapi.TaskSnapshot{}
 	}
 	p.vp.GotoTop()
 	p.refreshView()
