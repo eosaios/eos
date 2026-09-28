@@ -51,6 +51,8 @@ type MemoryMonitor struct {
 	gcStats             GCStats
 	sampleInterval      time.Duration
 	stopCh              chan struct{}
+	started             bool
+	stopped             bool
 }
 
 // MemoryThresholds 内存阈值配置
@@ -126,13 +128,26 @@ func (m *MemoryMonitor) SetSampleInterval(interval time.Duration) {
 	m.sampleInterval = interval
 }
 
-// Start 启动监控
+// Start 启动监控（幂等：重复 Start 不会起多个循环）。
 func (m *MemoryMonitor) Start() {
+	m.mu.Lock()
+	if m.started {
+		m.mu.Unlock()
+		return
+	}
+	m.started = true
+	m.mu.Unlock()
 	go m.monitorLoop()
 }
 
-// Stop 停止监控
+// Stop 停止监控（幂等：重复 Stop 不会 double-close panic）。
 func (m *MemoryMonitor) Stop() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.stopped {
+		return
+	}
+	m.stopped = true
 	close(m.stopCh)
 }
 
