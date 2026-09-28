@@ -306,3 +306,25 @@ func TestHTTPClientDoRetriesAndTruncation(t *testing.T) {
 		t.Fatalf("same-host redirect = %+v %v", resp, err)
 	}
 }
+
+func TestDoHTTPRetryWithClientAndSimple(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	}))
+	defer srv.Close()
+
+	req, err := http.NewRequest(http.MethodGet, srv.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res := DoHTTPRetryWithClient(context.Background(), srv.Client(), req, RetryPolicy{MaxAttempts: 1})
+	if res.Error != nil || !res.Succeeded {
+		t.Fatalf("with client = %+v", res)
+	}
+
+	req2, _ := http.NewRequest(http.MethodGet, srv.URL, nil)
+	res2 := DoHTTPRetrySimple(req2)
+	if res2.Error != nil {
+		t.Fatalf("simple = %+v", res2)
+	}
+}

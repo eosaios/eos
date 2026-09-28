@@ -445,3 +445,51 @@ func TestIsEmptyValue(t *testing.T) {
 		t.Fatal("non-empty")
 	}
 }
+
+func TestFileBinaryEdgeCases(t *testing.T) {
+	dir := t.TempDir()
+	// 已知文本扩展名不按内容判二进制
+	txt := filepath.Join(dir, "a.md")
+	if err := os.WriteFile(txt, []byte{0x00, 0x01, 0x00, 0x02}, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if isBinaryByExtension(txt) {
+		t.Fatal("md is text by ext")
+	}
+	// 已知二进制扩展名
+	if !isBinaryByExtension(filepath.Join(dir, "x.dll")) {
+		t.Fatal("dll")
+	}
+	// 无扩展名 + 未知 base → 交给内容
+	if isBinaryByExtension(filepath.Join(dir, "README")) {
+		// 可能按 base 名
+	}
+
+	// ReadFileLimited 正常路径
+	p := filepath.Join(dir, "f.txt")
+	if err := os.WriteFile(p, []byte("abc"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	content, size, err := ReadFileLimited(p, 100)
+	if err != nil || content != "abc" || size != 3 {
+		t.Fatalf("read = %q %d %v", content, size, err)
+	}
+
+	// IsPathInRoot 自身
+	if !IsPathInRoot(dir, dir) {
+		t.Fatal("self")
+	}
+}
+
+func TestParamsTypeMismatchDefaults(t *testing.T) {
+	p := map[string]any{"s": 1, "b": "x", "i": true}
+	if GetParamString(p, "s", "d") != "d" {
+		t.Fatal("string mismatch")
+	}
+	if GetParamBool(p, "b", true) != true {
+		t.Fatal("bool mismatch")
+	}
+	if GetParamInt(p, "i", -1) != -1 {
+		t.Fatal("int mismatch")
+	}
+}

@@ -134,3 +134,46 @@ func TestRequestLifecycleEnvelopeCarriesStableFields(t *testing.T) {
 		t.Fatalf("payload[status]=%v, want running", got)
 	}
 }
+
+func TestNormalizeEventTypeAllMappings(t *testing.T) {
+	cases := map[EventType]EventType{
+		EventTypeTurnStarted:            EventTypeRequestStarted,
+		EventTypeTurnItemStarted:        EventTypeItemStarted,
+		EventTypeTurnItemDelta:          EventTypeItemDelta,
+		EventTypeTurnItemCompleted:      EventTypeItemCompleted,
+		EventTypeTurnCompleted:          EventTypeRequestDone,
+		EventTypeTurnError:              EventTypeRequestFailed,
+		EventTypeTurnCancelled:          EventTypeRequestFailed,
+		EventTypeTurnInterrupted:        EventTypeRequestFailed,
+		EventTypeTurnWaitingApproval:    EventTypeApprovalReq,
+		EventTypeTurnPreCompact:         EventTypeTextReasoning,
+		EventTypeTurnMidCompact:         EventTypeTextReasoning,
+		EventTypeTurnModelDownshift:     EventTypeTextReasoning,
+		EventTypeTurnContextWindowExceeded: EventTypeTextReasoning,
+		EventTypeTurnToolLoopExhausted:  EventTypeTextReasoning,
+		EventType("custom.event"):       EventType("custom.event"),
+	}
+	for in, want := range cases {
+		if got := NormalizeEventType(in); got != want {
+			t.Fatalf("Normalize(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestClonePayload(t *testing.T) {
+	if ClonePayload(nil) != nil {
+		t.Fatal("nil")
+	}
+	if ClonePayload(map[string]any{}) != nil {
+		t.Fatal("empty")
+	}
+	in := map[string]any{"a": 1, "b": "x"}
+	out := ClonePayload(in)
+	if out["a"] != 1 || out["b"] != "x" {
+		t.Fatalf("clone = %v", out)
+	}
+	out["a"] = 2
+	if in["a"] != 1 {
+		t.Fatal("clone should be independent")
+	}
+}
