@@ -392,3 +392,56 @@ func TestSanitizeAndTruncate(t *testing.T) {
 		t.Fatalf("truncate = %q", got)
 	}
 }
+
+func TestCheckIntAndStringLength(t *testing.T) {
+	if ok, msg := CheckPositiveInt(1, "n"); !ok || msg != "" {
+		t.Fatalf("positive ok = %v %q", ok, msg)
+	}
+	if ok, msg := CheckPositiveInt(0, "n"); ok || !strings.Contains(msg, "n") {
+		t.Fatalf("zero positive = %v %q", ok, msg)
+	}
+	if ok, _ := CheckPositiveInt(-1, "n"); ok {
+		t.Fatal("negative")
+	}
+
+	if ok, _ := CheckNonNegativeInt(0, "n"); !ok {
+		t.Fatal("zero non-neg")
+	}
+	if ok, msg := CheckNonNegativeInt(-1, "n"); ok || msg == "" {
+		t.Fatalf("neg non-neg = %v %q", ok, msg)
+	}
+
+	if ok, _ := CheckRangeInt(5, 1, 10, "n"); !ok {
+		t.Fatal("in range")
+	}
+	if ok, _ := CheckRangeInt(0, 1, 10, "n"); ok {
+		t.Fatal("below")
+	}
+	if ok, _ := CheckRangeInt(11, 1, 10, "n"); ok {
+		t.Fatal("above")
+	}
+
+	if ok, _ := CheckStringLength("abc", 1, 10, "s"); !ok {
+		t.Fatal("in len")
+	}
+	if ok, _ := CheckStringLength("", 1, 10, "s"); ok {
+		t.Fatal("too short")
+	}
+	if ok, _ := CheckStringLength("abcdefghijk", 1, 10, "s"); ok {
+		t.Fatal("too long")
+	}
+	// maxLen<=0 不限制上界
+	if ok, _ := CheckStringLength("abcdefghijk", 1, 0, "s"); !ok {
+		t.Fatal("no max")
+	}
+}
+
+func TestIsEmptyValue(t *testing.T) {
+	if !isEmptyValue(nil) || !isEmptyValue("") || !isEmptyValue([]string{}) ||
+		!isEmptyValue([]any{}) || !isEmptyValue(map[string]any{}) {
+		t.Fatal("empty values")
+	}
+	if isEmptyValue("x") || isEmptyValue(1) || isEmptyValue([]string{"a"}) || isEmptyValue(map[string]any{"k": 1}) {
+		t.Fatal("non-empty")
+	}
+}
