@@ -60,3 +60,29 @@ func TestHintsEmptySelected(t *testing.T) {
 	m.CursorDown()
 	m.CursorUp()
 }
+
+func TestHintsSetHeightAndView(t *testing.T) {
+	m := New()
+	m.SetHeight(5)
+	m.SetHints([]Hint{{Key: "k", Desc: "d", Value: "v"}})
+	m.Show()
+	if m.Height() != 5 {
+		t.Fatalf("height = %d", m.Height())
+	}
+	if out := m.View(); out == "" {
+		t.Fatal("view")
+	}
+	// 空提示 View / Height 回 0
+	m.ClearHints()
+	_ = m.View()
+	if m.Height() != 0 {
+		t.Fatalf("cleared height = %d", m.Height())
+	}
+	// SetHeight 下限夹到 3
+	m.SetHeight(1)
+	m.SetHints([]Hint{{Key: "k", Desc: "d"}})
+	m.Show()
+	if m.Height() != 3 {
+		t.Fatalf("clamped height = %d", m.Height())
+	}
+}
