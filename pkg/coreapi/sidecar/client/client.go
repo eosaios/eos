@@ -179,8 +179,9 @@ func Attach(engine *sidecar.RemoteEngine) *Client {
 }
 
 // Engine 返回底层 coreapi.Engine，供 adapter 做 RPC 调用。
+// c.engine 为 nil 指针时返回真正的 nil 接口，避免 typed-nil 陷阱。
 func (c *Client) Engine() coreapi.Engine {
-	if c == nil {
+	if c == nil || c.engine == nil {
 		return nil
 	}
 	return c.engine
