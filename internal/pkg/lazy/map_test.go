@@ -48,7 +48,9 @@ func TestLazyMapGetOrCreateAndPreload(t *testing.T) {
 	if evicted := lm.Evict(time.Hour); evicted != 0 {
 		t.Fatalf("evict fresh = %d", evicted)
 	}
-	// maxIdle=0 会驱除所有已加载
+	// maxIdle=0 会驱除所有已加载（Evict 用严格 > 比较 idle，快平台上
+	// 加载与驱逐可能落在同一时钟读数——先确保时钟推进）
+	time.Sleep(2 * time.Millisecond)
 	if evicted := lm.Evict(0); evicted == 0 {
 		t.Fatal("evict idle")
 	}

@@ -6,6 +6,7 @@ package ui
 // 商业使用请联系版权人获得商业授权。
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -89,10 +90,13 @@ func TestHandleRenameAndStatsAndShare(t *testing.T) {
 func TestHandleExportSlash(t *testing.T) {
 	setTestHome(t)
 	app := newTestAppModel(t)
-	// 导出到临时路径（json）
-	app.handleExportSlash([]string{"/tmp/eos-test-export.json"})
+	// 参数序为 [format, path]（handleExportSlash 约定）：此前传反后路径
+	// 落成字面量 "md" 写进源码树 cwd
+	app.handleExportSlash([]string{"json", filepath.Join(t.TempDir(), "eos-test-export.json")})
 	// markdown 格式
-	app.handleExportSlash([]string{"/tmp/eos-test-export.md", "md"})
+	app.handleExportSlash([]string{"md", filepath.Join(t.TempDir(), "eos-test-export.md")})
+	// path 省略 → 默认 sessions 目录
+	app.handleExportSlash([]string{"json"})
 }
 
 func TestExecutionModeUsageLocalize(t *testing.T) {

@@ -6,6 +6,7 @@ package ui
 // 商业使用请联系版权人获得商业授权.
 
 import (
+	"os"
 	"testing"
 
 	"github.com/eosaios/eos/internal/ui/views/confirm"
@@ -14,6 +15,14 @@ import (
 func TestHandleConfirmResultWorkspaceTrust(t *testing.T) {
 	setTestHome(t)
 	app := newTestAppModel(t)
+	// switchWorkspaceTrusted 会 os.Chdir 进工作区（产品预期：TUI 进程
+	// 跟随工作区）；Windows 下进程 cwd 占用目录句柄会让 TempDir 清理
+	// 失败，测试结束前恢复 cwd。
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
 
 	// cancel / 空 path → Quit
 	next, cmd := app.handleConfirmResultWorkspaceTrust(confirm.ResultMsg{Decision: "cancel"})

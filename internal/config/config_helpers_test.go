@@ -7,6 +7,7 @@ package config
 
 import (
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -75,8 +76,13 @@ func TestResolveLogDir(t *testing.T) {
 	if !filepath.IsAbs(got) {
 		t.Fatalf("rel = %q", got)
 	}
-	// 绝对
-	if ResolveLogDir("/tmp/x") != filepath.Clean("/tmp/x") {
+	// 绝对（"/tmp/x" 在 Windows 上不是绝对路径——无卷名，会被当相对
+	// 路径解析，按平台取真绝对路径）
+	absDir := "/tmp/x"
+	if runtime.GOOS == "windows" {
+		absDir = `C:\tmp\x`
+	}
+	if ResolveLogDir(absDir) != filepath.Clean(absDir) {
 		t.Fatal("abs")
 	}
 

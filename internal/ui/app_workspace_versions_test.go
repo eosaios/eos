@@ -7,6 +7,7 @@ package ui
 
 import (
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -23,8 +24,13 @@ func TestVersionPathHelpers(t *testing.T) {
 	if !versionFileMatches("A/B.TXT", "a/b.txt") {
 		t.Fatal("case")
 	}
-	// 绝对 vs 相对后缀
-	abs := filepath.ToSlash(filepath.Join("/ws", "src", "a.go"))
+	// 绝对 vs 相对后缀（绝对前缀按平台取值：Windows 的 filepath.IsAbs
+	// 要求卷名，"/ws/..." 在 Windows 上是根相对路径而非绝对路径）
+	absRoot := "/ws"
+	if runtime.GOOS == "windows" {
+		absRoot = `C:\ws`
+	}
+	abs := filepath.ToSlash(filepath.Join(absRoot, "src", "a.go"))
 	if !versionFileMatches(abs, "src/a.go") {
 		t.Fatalf("abs vs rel: %q", abs)
 	}
@@ -45,7 +51,11 @@ func TestVersionPathHelpers(t *testing.T) {
 		t.Fatalf("trim = %q", normalizeVersionPath("  x/y  "))
 	}
 
-	if !isAbsVersionPath("/a/b") {
+	if runtime.GOOS == "windows" {
+		if !isAbsVersionPath("C:/a/b") {
+			t.Fatal("windows abs")
+		}
+	} else if !isAbsVersionPath("/a/b") {
 		t.Fatal("unix abs")
 	}
 	if isAbsVersionPath("rel/a") {

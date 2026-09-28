@@ -8,6 +8,7 @@ package utils
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -178,7 +179,13 @@ func TestIsPathInRootJoinNormalize(t *testing.T) {
 	if got := JoinPath("/base", "rel/x"); got != filepath.Join("/base", "rel", "x") && got != "/base/rel/x" {
 		t.Fatalf("join = %q", got)
 	}
-	if got := JoinPath("/base", "/abs"); got != "/abs" {
+	// "/abs" 在 Windows 上无卷名不算绝对路径（会被并入 base），按平台
+	// 取真绝对路径
+	absPath := "/abs"
+	if runtime.GOOS == "windows" {
+		absPath = filepath.Join(t.TempDir(), "abs")
+	}
+	if got := JoinPath("/base", absPath); got != absPath {
 		t.Fatalf("abs join = %q", got)
 	}
 
