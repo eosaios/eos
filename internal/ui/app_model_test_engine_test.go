@@ -65,17 +65,17 @@ func (e *testEngine) Models() coreapi.ModelService           { return &testModel
 func (e *testEngine) RemoteWorkspaces() coreapi.RemoteWorkspaceService {
 	return &testRemoteWorkspaceService{}
 }
-func (e *testEngine) Git() coreapi.GitService                     { return nil }
+func (e *testEngine) Git() coreapi.GitService                     { return &testGitService{} }
 func (e *testEngine) Insights() coreapi.InsightService            { return nil }
 func (e *testEngine) Memory() coreapi.MemoryService               { return nil }
 func (e *testEngine) Roles() coreapi.RoleService                  { return nil }
 func (e *testEngine) Turns() coreapi.TurnService                  { return nil }
-func (e *testEngine) Approvals() coreapi.ApprovalService          { return nil }
-func (e *testEngine) Inquiries() coreapi.InquiryService           { return nil }
+func (e *testEngine) Approvals() coreapi.ApprovalService          { return &testApprovalsService{} }
+func (e *testEngine) Inquiries() coreapi.InquiryService           { return &testInquiryService{} }
 func (e *testEngine) Agents() coreapi.AgentService                { return nil }
 func (e *testEngine) Tools() coreapi.ToolExecutor                 { return nil }
 func (e *testEngine) ToolCatalog() coreapi.ToolCatalogService     { return nil }
-func (e *testEngine) ToolTelemetry() coreapi.ToolTelemetryService { return nil }
+func (e *testEngine) ToolTelemetry() coreapi.ToolTelemetryService { return &testToolTelemetryService{} }
 func (e *testEngine) Events() coreapi.EventSubscriber             { return &testEventSubscriber{} }
 func (e *testEngine) Sandbox() coreapi.SandboxService             { return &testSandboxService{} }
 func (e *testEngine) Diagnostics() coreapi.DiagnosticsService     { return &testDiagnosticsService{} }
@@ -543,3 +543,46 @@ func (s *testGoalService) Resume(_ context.Context, _ coreapi.GoalRefRequest) (c
 }
 
 func (s *testGoalService) Clear(_ context.Context, _ coreapi.GoalRefRequest) error { return nil }
+
+
+// testApprovalsService / testInquiryService / testToolTelemetryService：
+// UI 测试用假实现，避免 engine.X() 返回 nil 后 adapter 解引用 panic。
+type testApprovalsService struct{}
+
+func (s *testApprovalsService) Respond(context.Context, coreapi.ApprovalResponse) error { return nil }
+
+type testInquiryService struct{}
+
+func (s *testInquiryService) Respond(context.Context, coreapi.InquiryResponse) error { return nil }
+
+type testToolTelemetryService struct{}
+
+func (s *testToolTelemetryService) Traces(context.Context) ([]coreapi.ToolTrace, error) {
+	return nil, nil
+}
+func (s *testToolTelemetryService) Stats(context.Context) ([]coreapi.ToolStat, error) {
+	return nil, nil
+}
+
+
+// testGitService：UI 测试用假 git service，避免 engine.Git() 为 nil 时 panic。
+type testGitService struct{}
+
+func (s *testGitService) Status(context.Context, coreapi.GitStatusRequest) ([]coreapi.GitChange, error) {
+	return nil, nil
+}
+func (s *testGitService) Summary(context.Context, coreapi.GitSummaryRequest) (coreapi.GitSummaryResult, error) {
+	return coreapi.GitSummaryResult{Branch: "main"}, nil
+}
+func (s *testGitService) Diff(context.Context, coreapi.GitDiffRequest) (coreapi.GitTextResult, error) {
+	return coreapi.GitTextResult{}, nil
+}
+func (s *testGitService) Branches(context.Context, coreapi.GitBranchesRequest) (coreapi.GitBranchesResult, error) {
+	return coreapi.GitBranchesResult{}, nil
+}
+func (s *testGitService) Log(context.Context, coreapi.GitLogRequest) (coreapi.GitLogResult, error) {
+	return coreapi.GitLogResult{}, nil
+}
+func (s *testGitService) Show(context.Context, coreapi.GitShowRequest) (coreapi.GitShowResult, error) {
+	return coreapi.GitShowResult{}, nil
+}
