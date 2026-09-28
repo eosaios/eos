@@ -51,13 +51,13 @@ func (e *testEngine) State() coreapi.StateService            { return &testState
 func (e *testEngine) Workspaces() coreapi.WorkspaceService   { return &testWorkspaceService{e: e} }
 func (e *testEngine) Sessions() coreapi.SessionService       { return &testSessionService{e: e} }
 func (e *testEngine) MCP() coreapi.MCPService                { return &testMCPService{} }
-func (e *testEngine) LSP() coreapi.LSPService                { return nil }
+func (e *testEngine) LSP() coreapi.LSPService                { return &testLSPService{} }
 func (e *testEngine) Config() coreapi.ConfigService          { return &testConfigService{e: e} }
 func (e *testEngine) Permissions() coreapi.PermissionService { return &testPermissionService{e: e} }
 func (e *testEngine) Extensions() coreapi.ExtensionService   { return &testExtensionService{} }
 func (e *testEngine) Context() coreapi.ContextService        { return &testContextService{} }
 func (e *testEngine) Usage() coreapi.UsageService            { return &testUsageService{} }
-func (e *testEngine) Versions() coreapi.VersionService       { return nil }
+func (e *testEngine) Versions() coreapi.VersionService       { return &testVersionService{} }
 func (e *testEngine) Tasks() coreapi.TaskService             { return &testTaskService{} }
 func (e *testEngine) Goals() coreapi.GoalService             { return &testGoalService{} }
 func (e *testEngine) Modes() coreapi.ModeService             { return &testModeService{e: e} }
@@ -67,7 +67,7 @@ func (e *testEngine) RemoteWorkspaces() coreapi.RemoteWorkspaceService {
 }
 func (e *testEngine) Git() coreapi.GitService                     { return &testGitService{} }
 func (e *testEngine) Insights() coreapi.InsightService            { return nil }
-func (e *testEngine) Memory() coreapi.MemoryService               { return nil }
+func (e *testEngine) Memory() coreapi.MemoryService               { return &testMemoryService{} }
 func (e *testEngine) Roles() coreapi.RoleService                  { return nil }
 func (e *testEngine) Turns() coreapi.TurnService                  { return nil }
 func (e *testEngine) Approvals() coreapi.ApprovalService          { return &testApprovalsService{} }
@@ -586,3 +586,56 @@ func (s *testGitService) Log(context.Context, coreapi.GitLogRequest) (coreapi.Gi
 func (s *testGitService) Show(context.Context, coreapi.GitShowRequest) (coreapi.GitShowResult, error) {
 	return coreapi.GitShowResult{}, nil
 }
+
+
+// testMemoryService：UI 测试用假 memory service。
+type testMemoryService struct{}
+
+func (s *testMemoryService) Snapshot(context.Context) (coreapi.MemorySnapshot, error) {
+	return coreapi.MemorySnapshot{}, nil
+}
+func (s *testMemoryService) Save(context.Context, coreapi.SaveMemoryRequest) error { return nil }
+func (s *testMemoryService) RebuildIndex(context.Context) error                    { return nil }
+func (s *testMemoryService) RecordAdd(context.Context, coreapi.AddMemoryRecordRequest) (coreapi.MemoryRecord, error) {
+	return coreapi.MemoryRecord{}, nil
+}
+func (s *testMemoryService) RecordList(context.Context, coreapi.ListMemoryRecordsRequest) ([]coreapi.MemoryRecord, error) {
+	return nil, nil
+}
+func (s *testMemoryService) RecordSearch(context.Context, coreapi.SearchMemoryRecordsRequest) ([]coreapi.MemoryRecord, error) {
+	return nil, nil
+}
+func (s *testMemoryService) RecordDelete(context.Context, coreapi.DeleteMemoryRecordRequest) error {
+	return nil
+}
+
+
+// testLSPService / testVersionService：UI 测试用假实现。
+type testLSPService struct{}
+
+func (s *testLSPService) List(context.Context) ([]coreapi.LSPServer, error) { return nil, nil }
+func (s *testLSPService) Detect(context.Context, coreapi.LSPLanguageRequest) (string, error) {
+	return "go", nil
+}
+func (s *testLSPService) Start(context.Context, coreapi.LSPLanguageRequest) (string, error) {
+	return "", nil
+}
+func (s *testLSPService) Install(context.Context, coreapi.LSPLanguageRequest) (string, error) {
+	return "", nil
+}
+func (s *testLSPService) Diagnostics(context.Context) ([]string, error) { return nil, nil }
+func (s *testLSPService) DiagnosticsSummary(context.Context) (coreapi.LSPDiagnosticsSummary, error) {
+	return coreapi.LSPDiagnosticsSummary{}, nil
+}
+
+type testVersionService struct{}
+
+func (s *testVersionService) List(context.Context) ([]coreapi.VersionItem, error) { return nil, nil }
+func (s *testVersionService) Rollback(context.Context, coreapi.VersionIDRequest) error {
+	return nil
+}
+func (s *testVersionService) Delete(context.Context, coreapi.VersionIDRequest) error { return nil }
+func (s *testVersionService) DeleteFile(context.Context, coreapi.VersionFileRequest) (int, error) {
+	return 0, nil
+}
+func (s *testVersionService) Clear(context.Context) (int, error) { return 0, nil }
