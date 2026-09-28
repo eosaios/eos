@@ -4,7 +4,7 @@
 
 EOS is a terminal AI coding assistant with Rust Core as its core runtime, while the Go side provides the CLI entry point, TUI, bridge layer, and distribution integration. It is designed for day-to-day coding, code review, document workflows, local automation, and IDE / platform integration, with an interactive TUI, tool calling, safety controls, workspace-aware context, and extensible MCP support.
 
-Current version is `v1.0.0-beta.29` (see [Releases](https://github.com/eosaios/eos/releases) for the latest). Releases ship production packages for three platforms (Windows / macOS / Linux, amd64 + arm64) with SHA256SUMS verification. The [EOS App](https://github.com/eosaios/eos-app) desktop distribution is built on the same Rust core; version numbers advance independently.
+Versioning and artifacts are always available from [Releases](https://github.com/eosaios/eos/releases) (currently in 1.0.0 beta). Releases ship production packages for three platforms (Windows / macOS / Linux, amd64 + arm64) with SHA256SUMS verification. The [EOS App](https://github.com/eosaios/eos-app) desktop distribution is built on the same Rust core; version numbers advance independently.
 
 - Repository: https://github.com/eosaios/eos
 - Issues: https://github.com/eosaios/eos/issues

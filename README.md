@@ -4,7 +4,7 @@
 
 EOS 是一个终端 AI 编码助手，当前以 Rust Core 作为核心运行时，Go 侧负责 CLI 入口、TUI、桥接与分发集成。它面向日常编码、代码审查、文档处理、本地自动化，以及 IDE / 平台集成场景，提供交互式 TUI、工具调用、安全门禁、工作区上下文和可扩展的 MCP 能力。
 
-当前版本 `v1.0.0-beta.29`（最新以 [Releases](https://github.com/eosaios/eos/releases) 为准），提供三端（Windows / macOS / Linux × amd64+arm64）生产包与 SHA256SUMS 校验；[EOS App](https://github.com/eosaios/eos-app) 桌面端基于同一 Rust 内核构建，两者版本号独立递进。
+版本与产物始终以 [Releases](https://github.com/eosaios/eos/releases) 为准（当前为 1.0.0 beta 阶段），提供三端（Windows / macOS / Linux × amd64+arm64）生产包与 SHA256SUMS 校验；[EOS App](https://github.com/eosaios/eos-app) 桌面端基于同一 Rust 内核构建，两者版本号独立递进。
 
 - 项目仓库：https://github.com/eosaios/eos
 - 问题反馈：https://github.com/eosaios/eos/issues
