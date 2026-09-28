@@ -29,8 +29,8 @@ func TestMacOSAppBundlePath(t *testing.T) {
 		},
 		{
 			name: "用户目录布局",
-			exe:  "/Users/tina/Applications/EOS.app/Contents/MacOS/EOS",
-			want: "/Users/tina/Applications/EOS.app",
+			exe:  "/Users/you/Applications/EOS.app/Contents/MacOS/EOS",
+			want: "/Users/you/Applications/EOS.app",
 			ok:   true,
 		},
 		{
