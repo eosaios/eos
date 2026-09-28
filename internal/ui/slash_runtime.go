@@ -46,13 +46,21 @@ func (m *AppModel) currentWorkspaceRoot() string {
 }
 
 func isSupportedExecutionModeInput(raw string) bool {
-	if strings.TrimSpace(raw) == "" {
+	// 不能用 Normalize* 的结果做判断：未知输入会被归一成默认档
+	// （auto/workspace-write/on-request），导致任意脏输入都被判合法。
+	// 这里直接对照名称与别名表匹配原文。
+	key := strings.TrimSpace(raw)
+	if key == "" {
 		return false
 	}
-	normalized := modes.NormalizeExecutionMode(raw)
 	for _, item := range modes.SupportedExecutionModes() {
-		if item.Name == normalized {
+		if strings.EqualFold(item.Name, key) {
 			return true
+		}
+		for _, alias := range item.Aliases {
+			if strings.EqualFold(alias, key) {
+				return true
+			}
 		}
 	}
 	return false
@@ -66,26 +74,36 @@ func (m *AppModel) executionModeUsage() string {
 }
 
 func isSupportedAccessModeInput(raw string) bool {
-	if strings.TrimSpace(raw) == "" {
+	key := strings.TrimSpace(raw)
+	if key == "" {
 		return false
 	}
-	normalized := modes.NormalizeAccessMode(raw)
 	for _, item := range modes.SupportedAccessModes() {
-		if item.Name == normalized {
+		if strings.EqualFold(item.Name, key) {
 			return true
+		}
+		for _, alias := range item.Aliases {
+			if strings.EqualFold(alias, key) {
+				return true
+			}
 		}
 	}
 	return false
 }
 
 func isSupportedApprovalModeInput(raw string) bool {
-	if strings.TrimSpace(raw) == "" {
+	key := strings.TrimSpace(raw)
+	if key == "" {
 		return false
 	}
-	normalized := modes.NormalizeApprovalMode(raw)
 	for _, item := range modes.SupportedApprovalModes() {
-		if item.Name == normalized {
+		if strings.EqualFold(item.Name, key) {
 			return true
+		}
+		for _, alias := range item.Aliases {
+			if strings.EqualFold(alias, key) {
+				return true
+			}
 		}
 	}
 	return false
