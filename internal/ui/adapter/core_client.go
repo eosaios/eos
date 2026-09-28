@@ -1161,14 +1161,22 @@ func (a *CoreClientAdapter) ToolTraces(ctx context.Context) ([]coreapi.ToolTrace
 	if a == nil || a.engine == nil {
 		return nil, errors.New("core client is not available")
 	}
-	return a.engine.ToolTelemetry().Traces(ctx)
+	telemetry := a.engine.ToolTelemetry()
+	if telemetry == nil {
+		return nil, errors.New("tool telemetry is not available")
+	}
+	return telemetry.Traces(ctx)
 }
 
 func (a *CoreClientAdapter) ToolStats(ctx context.Context) ([]coreapi.ToolStat, error) {
 	if a == nil || a.engine == nil {
 		return nil, errors.New("core client is not available")
 	}
-	return a.engine.ToolTelemetry().Stats(ctx)
+	telemetry := a.engine.ToolTelemetry()
+	if telemetry == nil {
+		return nil, errors.New("tool telemetry is not available")
+	}
+	return telemetry.Stats(ctx)
 }
 
 func (a *CoreClientAdapter) Tasks(ctx context.Context) ([]coreapi.TaskSnapshot, error) {
