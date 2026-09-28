@@ -52,3 +52,24 @@ func TestDIBToPNG_32bpp_TopDown(t *testing.T) {
 		t.Fatalf("expected green pixel at (1,0), got r=%x g=%x b=%x", r1, g1, b1)
 	}
 }
+
+func TestDibToRGBAErors(t *testing.T) {
+	if _, err := dibToRGBA([]byte{1, 2, 3}); err == nil {
+		t.Fatal("too small")
+	}
+	// 头声明过大
+	hdr := make([]byte, 40)
+	binary.LittleEndian.PutUint32(hdr[0:4], 100)
+	if _, err := dibToRGBA(hdr); err == nil {
+		t.Fatal("invalid header size")
+	}
+	// 宽高非法
+	hdr2 := make([]byte, 40)
+	binary.LittleEndian.PutUint32(hdr2[0:4], 40)
+	if _, err := dibToRGBA(hdr2); err == nil {
+		t.Fatal("zero dims")
+	}
+	if _, err := dibToPNG([]byte{1}); err == nil {
+		t.Fatal("png err")
+	}
+}
