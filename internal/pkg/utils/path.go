@@ -127,9 +127,15 @@ func ResolvePathUnder(rootDir string, path string) PathResolutionResult {
 	// 检查符号链接并解析
 	resolvedAbs, isSymlink := resolveSymlink(ap)
 
-	// 验证解析后的路径仍在工作目录范围内
+	// 验证解析后的路径仍在工作目录范围内。
+	// 工作目录自身也要解析符号链接（macOS 上 /var → /private/var），
+	// 否则根内符号链接会被误判为出界。
 	if isSymlink {
-		resolvedRel, errRel2 := filepath.Rel(wd, resolvedAbs)
+		wdResolved := wd
+		if r, err := filepath.EvalSymlinks(wd); err == nil {
+			wdResolved = filepath.Clean(r)
+		}
+		resolvedRel, errRel2 := filepath.Rel(wdResolved, resolvedAbs)
 		if errRel2 == nil && (strings.HasPrefix(resolvedRel, "..") || strings.HasPrefix(resolvedRel, string(filepath.Separator)+"..")) {
 			slog.Warn("path.resolve.symlink_out_of_root",
 				"component", ComponentSystem,

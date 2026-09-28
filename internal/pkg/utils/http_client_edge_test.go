@@ -6,10 +6,12 @@ package utils
 // 商业使用请联系版权人获得商业授权。
 
 import (
+	"context"
 	"errors"
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -187,3 +189,62 @@ func mustURL(t *testing.T, raw string) *url.URL {
 
 // 保证 io.Reader 接口在 readLimited 错误路径上也可测
 var _ io.Reader = strings.NewReader("")
+
+func TestHTTPClientDoValidationAndRedirects(t *testing.T) {
+	c := NewHTTPClient()
+
+	// 非法 URL
+	if _, err := c.Do(context.Background(), RequestSpec{URL: "://bad"}); err == nil {
+		t.Fatal("invalid url")
+	}
+	// 默认拒绝 http
+	if _, err := c.Do(context.Background(), RequestSpec{URL: "http://example.com"}); err == nil {
+		t.Fatal("http should fail")
+	}
+
+	// 重定向缺 Location
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(302)
+	}))
+	defer srv.Close()
+	_, err := c.Do(context.Background(), RequestSpec{URL: srv.URL, AllowHTTP: true})
+	if err == nil {
+		t.Fatal("missing location")
+	}
+
+	// 跨主机重定向被拒
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+	}))
+	defer target.Close()
+	redir := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL, 302)
+	}))
+	defer redir.Close()
+	_, err = c.Do(context.Background(), RequestSpec{URL: redir.URL, AllowHTTP: true})
+	if err == nil {
+		t.Fatal("cross-host redirect")
+	}
+
+	// 成功响应
+	ok := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		_, _ = w.Write([]byte("hi"))
+	}))
+	defer ok.Close()
+	resp, err := c.Do(context.Background(), RequestSpec{URL: ok.URL, AllowHTTP: true})
+	if err != nil || resp == nil || string(resp.Body) != "hi" {
+		t.Fatalf("ok = %+v %v", resp, err)
+	}
+}
+
+func TestWithHTTPDefaults(t *testing.T) {
+	spec := withHTTPDefaults(RequestSpec{})
+	if spec.Method != http.MethodGet || spec.Timeout <= 0 || spec.MaxBytes <= 0 ||
+		spec.RedirectPolicy.MaxHops <= 0 || spec.RetryPolicy.MaxAttempts != 1 {
+		t.Fatalf("defaults = %+v", spec)
+	}
+	if spec.Headers == nil {
+		t.Fatal("headers")
+	}
+}
