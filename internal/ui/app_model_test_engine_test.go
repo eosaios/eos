@@ -72,7 +72,7 @@ func (e *testEngine) Roles() coreapi.RoleService                  { return nil }
 func (e *testEngine) Turns() coreapi.TurnService                  { return nil }
 func (e *testEngine) Approvals() coreapi.ApprovalService          { return &testApprovalsService{} }
 func (e *testEngine) Inquiries() coreapi.InquiryService           { return &testInquiryService{} }
-func (e *testEngine) Agents() coreapi.AgentService                { return nil }
+func (e *testEngine) Agents() coreapi.AgentService            { return &testAgentsService{} }
 func (e *testEngine) Tools() coreapi.ToolExecutor                 { return nil }
 func (e *testEngine) ToolCatalog() coreapi.ToolCatalogService     { return nil }
 func (e *testEngine) ToolTelemetry() coreapi.ToolTelemetryService { return &testToolTelemetryService{} }
@@ -639,3 +639,25 @@ func (s *testVersionService) DeleteFile(context.Context, coreapi.VersionFileRequ
 	return 0, nil
 }
 func (s *testVersionService) Clear(context.Context) (int, error) { return 0, nil }
+
+
+// testAgentsService：UI 测试用假 agent service。
+type testAgentsService struct{}
+
+func (s *testAgentsService) Spawn(context.Context, coreapi.SpawnAgentRequest) (coreapi.Agent, error) {
+	return coreapi.Agent{ID: "a1", Status: "running"}, nil
+}
+func (s *testAgentsService) SendInput(context.Context, coreapi.AgentInput) error { return nil }
+func (s *testAgentsService) Wait(context.Context, coreapi.AgentRef) (coreapi.Agent, error) {
+	return coreapi.Agent{ID: "a1", Status: "done"}, nil
+}
+func (s *testAgentsService) Run(context.Context, coreapi.RunAgentRequest) (coreapi.AgentRunResult, error) {
+	return coreapi.AgentRunResult{}, nil
+}
+func (s *testAgentsService) RunTool(context.Context, coreapi.AgentToolRequest) (coreapi.AgentToolResult, error) {
+	return coreapi.AgentToolResult{}, nil
+}
+func (s *testAgentsService) List(context.Context, coreapi.ListAgentsRequest) ([]coreapi.Agent, error) {
+	return nil, nil
+}
+func (s *testAgentsService) Close(context.Context, coreapi.AgentRef) error { return nil }
