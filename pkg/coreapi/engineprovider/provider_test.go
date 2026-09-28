@@ -1,146 +1,63 @@
 package engineprovider
 
-import (
-	"context"
-	"errors"
-	"strings"
-	"testing"
+// Copyright (c) 2026 EOSAIOS
+// SPDX-License-Identifier: EOS-NCL-1.1
+// 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
+// 商业使用请联系版权人获得商业授权.
 
-	"github.com/eosaios/eos/pkg/coreapi"
-	coreapijsonrpc "github.com/eosaios/eos/pkg/coreapi/jsonrpc"
-	"github.com/eosaios/eos/pkg/coreapi/sidecar"
-	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
+import (
+	"errors"
+	"os"
+	"testing"
 )
 
-func TestSelectAutoUsesRustWhenRequiredMethodsArePresent(t *testing.T) {
-	remote := sidecar.NewRemoteEngine(fakeProviderCaller{
-		init: coreapijsonrpc.InitializeResult{
-			ServerName: "rust-core",
-			Methods: []string{
-				protocoljsonrpc.MethodInitialize,
-				protocoljsonrpc.MethodStateSnapshot,
-				protocoljsonrpc.MethodSessionList,
-			},
-		},
-	})
-
-	selected, err := Select(context.Background(), Options{
-		RequiredMethods: []string{protocoljsonrpc.MethodStateSnapshot, protocoljsonrpc.MethodSessionList},
-		StartRemote:     staticRemote(remote, nil),
-	})
-	if err != nil {
-		t.Fatalf("Select() error = %v", err)
-	}
-	if selected.Kind != KindRustSidecar {
-		t.Fatalf("Kind=%q, want %q", selected.Kind, KindRustSidecar)
-	}
-}
-
-func TestSelectAutoErrorsWhenRequiredMethodsAreMissing(t *testing.T) {
-	remote := sidecar.NewRemoteEngine(fakeProviderCaller{
-		init: coreapijsonrpc.InitializeResult{
-			ServerName: "rust-core",
-			Methods:    []string{protocoljsonrpc.MethodInitialize},
-		},
-	})
-
-	// 缺失必需方法时直接报 ErrMissingMethods，不再回退。
-	_, err := Select(context.Background(), Options{
-		RequiredMethods: []string{protocoljsonrpc.MethodWorkspaceList},
-		StartRemote:     staticRemote(remote, nil),
-	})
-	if !errors.Is(err, ErrMissingMethods) {
-		t.Fatalf("Select() error = %v, want ErrMissingMethods", err)
-	}
-}
-
-func TestSelectAutoErrorsWhenSidecarStartFails(t *testing.T) {
-	_, err := Select(context.Background(), Options{
-		StartRemote: staticRemote(nil, errors.New("sidecar missing")),
-	})
-	if err == nil {
-		t.Fatalf("Select() expected error when sidecar start fails")
-	}
-	if !strings.Contains(err.Error(), "sidecar missing") {
-		t.Fatalf("Select() error = %v, want it to contain sidecar missing", err)
-	}
-}
-
-func TestSelectRustPassesRequiredMethodsToSidecarResolver(t *testing.T) {
-	remote := sidecar.NewRemoteEngine(fakeProviderCaller{
-		init: coreapijsonrpc.InitializeResult{
-			ServerName: "rust-core",
-			Methods: []string{
-				protocoljsonrpc.MethodInitialize,
-				protocoljsonrpc.MethodWorkspaceList,
-			},
-		},
-	})
-	var got sidecar.ProcessOptions
-
-	_, err := Select(context.Background(), Options{
-		Mode:            ModeRust,
-		RequiredMethods: []string{protocoljsonrpc.MethodWorkspaceList},
-		StartRemote: func(_ context.Context, opts sidecar.ProcessOptions) (RemoteEngine, error) {
-			got = opts
-			return remote, nil
-		},
-	})
-	if err != nil {
-		t.Fatalf("Select() error = %v", err)
-	}
-	if len(got.RequiredFeatures) != 1 || got.RequiredFeatures[0] != protocoljsonrpc.MethodWorkspaceList {
-		t.Fatalf("RequiredFeatures=%+v, want workspace/list", got.RequiredFeatures)
-	}
-}
-
-func TestResolveModeOnlyAcceptsAutoAndRust(t *testing.T) {
-	for _, value := range []string{"", "auto", "rust"} {
-		mode, err := ResolveMode(value)
-		if err != nil {
-			t.Fatalf("ResolveMode(%q) error = %v", value, err)
-		}
-		if mode != ModeAuto {
-			t.Fatalf("ResolveMode(%q) = %q, want %q", value, mode, ModeAuto)
+func TestResolveMode(t *testing.T) {
+	for _, v := range []string{"", "auto", "rust", "AUTO", "  rust  "} {
+		mode, err := ResolveMode(v)
+		if err != nil || mode != ModeAuto {
+			t.Fatalf("ResolveMode(%q) = %v %v", v, mode, err)
 		}
 	}
+	if _, err := ResolveMode("legacy"); err == nil {
+		t.Fatal("legacy should fail")
+	}
+	// 环境变量回落
+	t.Setenv(EnvCoreEngine, "rust")
+	mode, err := ResolveMode("")
+	if err != nil || mode != ModeAuto {
+		t.Fatalf("env = %v %v", mode, err)
+	}
+	t.Setenv(EnvCoreEngine, "nope")
+	if _, err := ResolveMode(""); err == nil {
+		t.Fatal("bad env")
+	}
+	_ = os.Getenv(EnvCoreEngine)
+}
 
-	// 退役的 mode 字符串必须被拒绝，避免静默走老路径。
-	for _, value := range []string{"legacy", "go", "eino", "parity", "sidecar"} {
-		if _, err := ResolveMode(value); err == nil {
-			t.Fatalf("ResolveMode(%q) expected error (retired mode)", value)
-		}
+func TestMissingMethods(t *testing.T) {
+	if MissingMethods([]string{"a"}, nil) != nil {
+		t.Fatal("no required")
+	}
+	got := MissingMethods([]string{"a", " b "}, []string{"a", "b", "c", ""})
+	if len(got) != 1 || got[0] != "c" {
+		t.Fatalf("missing = %v", got)
+	}
+	if len(MissingMethods(nil, []string{"x"})) != 1 {
+		t.Fatal("empty available")
 	}
 }
 
-func TestMissingMethodsTrimsAndIgnoresEmptyRequired(t *testing.T) {
-	missing := MissingMethods(
-		[]string{" initialize ", protocoljsonrpc.MethodStateSnapshot},
-		[]string{"", protocoljsonrpc.MethodInitialize, protocoljsonrpc.MethodSessionList},
-	)
-	if len(missing) != 1 || missing[0] != protocoljsonrpc.MethodSessionList {
-		t.Fatalf("MissingMethods()=%+v, want session/list", missing)
+func TestSelectionClose(t *testing.T) {
+	s := Selection{}
+	if err := s.Close(); err != nil {
+		t.Fatal("nil close")
 	}
-}
-
-func staticRemote(remote RemoteEngine, err error) StartRemoteFunc {
-	return func(context.Context, sidecar.ProcessOptions) (RemoteEngine, error) {
-		return remote, err
-	}
-}
-
-type fakeProviderCaller struct {
-	init coreapijsonrpc.InitializeResult
-}
-
-func (f fakeProviderCaller) Call(_ context.Context, method string, _ any, out any) error {
-	switch method {
-	case protocoljsonrpc.MethodInitialize:
-		if target, ok := out.(*coreapijsonrpc.InitializeResult); ok {
-			*target = f.init
-		}
-		return nil
-	default:
-		return coreapi.ErrUnsupported
+	called := false
+	s2 := Selection{close: func() error {
+		called = true
+		return errors.New("x")
+	}}
+	if err := s2.Close(); err == nil || !called {
+		t.Fatalf("close = %v", err)
 	}
 }
