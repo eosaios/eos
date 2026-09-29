@@ -132,3 +132,55 @@ func TestPreviewWorkspaceFile(t *testing.T) {
 		t.Fatal("no workspace")
 	}
 }
+
+func TestImportAttachment(t *testing.T) {
+	withTempHome(t)
+	s := &BridgeService{}
+	svc := NewAttachmentService(s)
+
+	// nil bridge
+	if _, err := NewAttachmentService(nil).ImportAttachment("a.png", "image/png", "aGVsbG8="); err == nil {
+		t.Fatal("nil bridge")
+	}
+	// 不支持的 mime
+	if _, err := svc.ImportAttachment("a.txt", "text/plain", "aGVsbG8="); err == nil {
+		t.Fatal("bad mime")
+	}
+	// 坏 base64
+	if _, err := svc.ImportAttachment("a.png", "image/png", "!!!"); err == nil {
+		t.Fatal("bad b64")
+	}
+	// 空数据
+	if _, err := svc.ImportAttachment("a.png", "image/png", ""); err == nil {
+		t.Fatal("empty")
+	}
+	// 成功（data URL）
+	ref, err := svc.ImportAttachment("a.png", "", "data:image/png;base64,aGVsbG8=")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ref.Kind != "image" || ref.MIME != "image/png" {
+		t.Fatalf("ref = %+v", ref)
+	}
+	// OpenAttachmentDialog web 模式报错
+	if _, err := svc.OpenAttachmentDialog(); err == nil {
+		t.Fatal("web dialog")
+	}
+}
+
+func TestBrowserTabNoGateway(t *testing.T) {
+	s := &BridgeService{}
+	if _, err := s.BrowserTabNew("https://x"); err == nil {
+		t.Fatal("tab new")
+	}
+	if _, err := s.BrowserTabSwitch(0); err == nil {
+		t.Fatal("tab switch")
+	}
+	idx := 0
+	if _, err := s.BrowserTabClose(&idx); err == nil {
+		t.Fatal("tab close")
+	}
+	if _, err := s.BrowserNavigate("https://x"); err == nil {
+		t.Fatal("navigate")
+	}
+}
