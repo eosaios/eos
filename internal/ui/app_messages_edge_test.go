@@ -173,3 +173,56 @@ func TestHandleAIResponseMsg(t *testing.T) {
 		t.Fatalf("content = %q", app.shell.Content())
 	}
 }
+
+func TestRenderHistoryEntryNilRenderer(t *testing.T) {
+	setTestHome(t)
+	app := newTestAppModel(t)
+	app.msgRenderer = nil
+
+	cases := []historyEntry{
+		{kind: "user", content: "u"},
+		{kind: "ai", content: "a"},
+		{kind: "system", content: "s"},
+		{kind: "tool", toolOutput: "out"},
+		{kind: "agent.final", content: "f"},
+		{kind: "reasoning", content: "l1\n\nlast"},
+		{kind: "other", content: "o"},
+	}
+	for _, e := range cases {
+		if out := app.renderHistoryEntry(e); out == "" && e.content != "" && e.toolOutput != "" {
+			t.Fatalf("empty for %q", e.kind)
+		}
+	}
+
+	// reasoning 折叠取最后一行
+	got := app.renderHistoryEntry(historyEntry{kind: "reasoning", content: "a\n\nfinal line"})
+	if got != "final line" {
+		t.Fatalf("reasoning = %q", got)
+	}
+}
+
+func TestRenderHistoryEntryToolStatusFallback(t *testing.T) {
+	setTestHome(t)
+	app := newTestAppModel(t)
+
+	// toolSuccess → success
+	out := app.renderHistoryEntry(historyEntry{kind: "tool", toolName: "Bash", toolSuccess: true})
+	if out == "" {
+		t.Fatal("success tool")
+	}
+	// toolOutput 非空 → error
+	out = app.renderHistoryEntry(historyEntry{kind: "tool", toolName: "Bash", toolOutput: "err"})
+	if out == "" {
+		t.Fatal("error tool")
+	}
+	// 无输出 → running
+	out = app.renderHistoryEntry(historyEntry{kind: "tool", toolName: "Bash"})
+	if out == "" {
+		t.Fatal("running tool")
+	}
+	// preStyled system
+	out = app.renderHistoryEntry(historyEntry{kind: "system", content: "x", preStyled: true})
+	if out == "" {
+		t.Fatal("prestyled")
+	}
+}
