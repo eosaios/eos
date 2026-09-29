@@ -69,3 +69,76 @@ func TestGetBuildInfoAndVerifyCron(t *testing.T) {
 		t.Fatal("metadata")
 	}
 }
+
+func TestAutomationTemplateCRUD(t *testing.T) {
+	withTempHome(t)
+	s := &BridgeService{}
+	svc := NewAutomationService(s)
+
+	// 保存新模板
+	_, err := svc.SaveAutomationTemplate(AutomationSaveRequest{
+		Title: "T", Prompt: "P", Schedule: "0 0 * * *", Enabled: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	all := s.allAutomationTemplatesReadOnly()
+	found := false
+	var id string
+	for _, item := range all {
+		if item.Title == "T" {
+			found = true
+			id = item.ID
+		}
+	}
+	if !found {
+		t.Fatalf("saved template missing: %+v", all)
+	}
+
+	// 编辑（保留 cron）
+	_, err = svc.SaveAutomationTemplate(AutomationSaveRequest{
+		OriginalID: id, Title: "T2", Prompt: "P2", Schedule: "0 0 * * *",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Toggle 启用（有 cron）
+	if _, err := svc.ToggleAutomationTemplate(id, true); err != nil {
+		t.Fatal(err)
+	}
+	// Toggle 空 id
+	if _, err := svc.ToggleAutomationTemplate("", true); err == nil {
+		t.Fatal("empty id")
+	}
+	// Toggle 不存在
+	if _, err := svc.ToggleAutomationTemplate("nope", true); err == nil {
+		t.Fatal("missing")
+	}
+
+	// 无 cron 的模板不允许启用
+	_, err = svc.SaveAutomationTemplate(AutomationSaveRequest{Title: "NoCron", Prompt: "p"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range s.allAutomationTemplatesReadOnly() {
+		if item.Title == "NoCron" {
+			if _, err := svc.ToggleAutomationTemplate(item.ID, true); err == nil {
+				t.Fatal("no cron enable")
+			}
+		}
+	}
+
+	// Delete
+	if _, err := svc.DeleteAutomationTemplate(id); err != nil {
+		t.Fatal(err)
+	}
+	// Delete 空
+	if _, err := svc.DeleteAutomationTemplate(""); err == nil {
+		t.Fatal("empty delete")
+	}
+	// Delete 不存在
+	if _, err := svc.DeleteAutomationTemplate("nope"); err == nil {
+		t.Fatal("missing delete")
+	}
+}

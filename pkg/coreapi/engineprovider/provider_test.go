@@ -6,6 +6,7 @@ package engineprovider
 // 商业使用请联系版权人获得商业授权.
 
 import (
+	"context"
 	"errors"
 	"os"
 	"testing"
@@ -59,5 +60,11 @@ func TestSelectionClose(t *testing.T) {
 	}}
 	if err := s2.Close(); err == nil || !called {
 		t.Fatalf("close = %v", err)
+	}
+}
+
+func TestSelectRejectsBadMode(t *testing.T) {
+	if _, err := Select(context.Background(), Options{Mode: Mode("legacy")}); err == nil {
+		t.Fatal("bad mode")
 	}
 }
