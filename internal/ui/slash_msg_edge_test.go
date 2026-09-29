@@ -533,3 +533,48 @@ func TestConvertEventRemainingBranches(t *testing.T) {
 		t.Fatalf("tool result = %+v", msg)
 	}
 }
+
+func TestConvertEventAllBranchesExtra(t *testing.T) {
+	// prompt.request
+	msg := ConvertEvent(uiadapter.RuntimeEvent{
+		Type: "prompt.request",
+		Data: map[string]any{"approval_id": "a1", "kind": "permission", "title": "T"},
+	})
+	if _, ok := msg.(PromptRequestMsg); !ok {
+		t.Fatalf("prompt = %T", msg)
+	}
+
+	// item.completed tool_call with display
+	msg = ConvertEvent(uiadapter.RuntimeEvent{
+		Type: string(protocol.EventTypeItemCompleted),
+		Data: map[string]any{"item": map[string]any{
+			"kind": "tool_call", "id": "t1", "name": "Bash",
+			"result": map[string]any{"display": "ok", "status": "success"},
+		}},
+	})
+	if tr, ok := msg.(ToolResultMsg); !ok || tr.Output != "ok" {
+		t.Fatalf("tool result = %+v", msg)
+	}
+
+	// item.started tool_call
+	msg = ConvertEvent(uiadapter.RuntimeEvent{
+		Type: string(protocol.EventTypeItemStarted),
+		Data: map[string]any{"item": map[string]any{
+			"kind": "tool_call", "id": "t1", "name": "Bash", "arguments": `{"c":1}`,
+		}},
+	})
+	if tc, ok := msg.(ToolCallMsg); !ok || tc.Name != "Bash" {
+		t.Fatalf("tool call = %+v", msg)
+	}
+
+	// item.completed reasoning
+	msg = ConvertEvent(uiadapter.RuntimeEvent{
+		Type: string(protocol.EventTypeItemCompleted),
+		Data: map[string]any{"item": map[string]any{
+			"kind": "reasoning", "id": "r1", "content": []any{"a", "b"},
+		}},
+	})
+	if ic, ok := msg.(ItemCompletedMsg); !ok || ic.ItemType != "reasoning" {
+		t.Fatalf("reasoning = %+v", msg)
+	}
+}
