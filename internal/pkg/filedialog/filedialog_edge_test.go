@@ -55,3 +55,23 @@ func TestLookPathAny(t *testing.T) {
 		t.Skip("sh not on PATH")
 	}
 }
+
+func TestLookPathAnyAndNormalizeMore(t *testing.T) {
+	// 多候选
+	if _, ok := lookPathAny("nope1", "nope2", "definitely-not-a-binary"); ok {
+		t.Fatal("all missing")
+	}
+	// 空白名跳过
+	if _, ok := lookPathAny("", "  ", "nope"); ok {
+		t.Fatal("blank only")
+	}
+	// normalize 空白
+	if _, err := normalizeDirectory("\n\t"); err == nil {
+		t.Fatal("blank")
+	}
+	// 绝对路径
+	got, err := normalizeDirectory("/tmp")
+	if err != nil || !filepath.IsAbs(got) {
+		t.Fatalf("abs = %q %v", got, err)
+	}
+}
