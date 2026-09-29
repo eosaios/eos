@@ -51,3 +51,21 @@ func TestVerifyCronExpressionBinding(t *testing.T) {
 	// VerifyCronExpression 绑定方法
 	_ = svc
 }
+
+func TestGetBuildInfoAndVerifyCron(t *testing.T) {
+	s := &BridgeService{}
+	ok := s.VerifyCronExpression("*/5 * * * *")
+	if !ok.Valid {
+		t.Fatalf("valid cron = %+v", ok)
+	}
+	bad := s.VerifyCronExpression("bad")
+	if bad.Valid {
+		t.Fatalf("bad cron = %+v", bad)
+	}
+	if s.GetBuildInfo().AppName == "" {
+		t.Fatal("build info")
+	}
+	if CurrentBuildMetadata().Version == "" {
+		t.Fatal("metadata")
+	}
+}
