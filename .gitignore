@@ -71,6 +71,15 @@ internal/.eos/
 .env.*
 *.local.json
 
+# 签名私钥（CI 落盘 / 本机 dev-rebuild 使用）——绝不能入库
+*.pem
+scripts/eos-signing-key.pem
+**/eos-signing-key.pem
+
+# 测试污染产物（/init 写文件、临时脚本）——杂散文件不入库
+/internal/ui/EOS.md
+/internal/ui/md
+
 /docs/
 
 # 本地工作笔记与 agent 工具目录（不入库）
