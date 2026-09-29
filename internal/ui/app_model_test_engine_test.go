@@ -36,6 +36,7 @@ type testEngine struct {
 	workspaceList    []coreapi.Workspace
 	models           []coreapi.ModelConfig
 	activeModel      string
+	mcpList          []coreapi.MCPServer
 
 	// Session 行为可观测/可注入字段（供启动期 resume 测试用，零值保持原行为）：
 	//   resumeCalls      —— 记录 Resume 收到的 SessionID（"latest" 透传）
@@ -59,7 +60,7 @@ func (e *testEngine) Caller() coreapi.Caller                 { return nil }
 func (e *testEngine) State() coreapi.StateService            { return &testStateService{} }
 func (e *testEngine) Workspaces() coreapi.WorkspaceService   { return &testWorkspaceService{e: e} }
 func (e *testEngine) Sessions() coreapi.SessionService       { return &testSessionService{e: e} }
-func (e *testEngine) MCP() coreapi.MCPService                { return &testMCPService{} }
+func (e *testEngine) MCP() coreapi.MCPService                { return &testMCPService{e: e} }
 func (e *testEngine) LSP() coreapi.LSPService                { return &testLSPService{} }
 func (e *testEngine) Config() coreapi.ConfigService          { return &testConfigService{e: e} }
 func (e *testEngine) Permissions() coreapi.PermissionService { return &testPermissionService{e: e} }
@@ -532,9 +533,11 @@ func (s *testExtensionService) BrowserProfiles(ctx context.Context) ([]coreapi.B
 }
 
 // === MCP ===
-type testMCPService struct{}
+type testMCPService struct{ e *testEngine }
 
-func (s *testMCPService) List(context.Context) ([]coreapi.MCPServer, error)      { return nil, nil }
+func (s *testMCPService) List(context.Context) ([]coreapi.MCPServer, error) {
+	return s.e.mcpList, nil
+}
 func (s *testMCPService) Upsert(context.Context, coreapi.UpsertMCPRequest) error { return nil }
 func (s *testMCPService) ImportJSON(context.Context, coreapi.ImportMCPJSONRequest) error {
 	return nil
