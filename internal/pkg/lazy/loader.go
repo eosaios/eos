@@ -7,6 +7,7 @@ package lazy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -169,8 +170,8 @@ func (l *Lazy[T]) Reload() error {
 	l.mu.Lock()
 	l.loadOnce = sync.Once{}
 	l.state.Store(LoadStateNotLoaded)
-	l.value.Store((*T)(nil))
-	l.err.Store(nil)
+	clearValue[T](&l.value)
+	l.err.Store(errNotLoaded)
 	l.mu.Unlock()
 
 	return l.Load()
@@ -242,6 +243,16 @@ func (l *Lazy[T]) LoadDuration() time.Duration {
 	return d.(time.Duration)
 }
 
+// errNotLoaded 是 atomic.Value 的占位错误：atomic.Value 不允许 Store(nil)，
+// Reset/Reload 时用它清空错误槽，Get 在未加载时走 load() 不会读到它。
+var errNotLoaded = errors.New("lazy: not loaded")
+
+// clearValue 往 atomic.Value 写入类型正确的零值（不能写 nil，也不能写 *T）。
+func clearValue[T any](slot *atomic.Value) {
+	var zero T
+	slot.Store(zero)
+}
+
 // Reset 重置懒加载器
 func (l *Lazy[T]) Reset() {
 	l.mu.Lock()
@@ -249,8 +260,8 @@ func (l *Lazy[T]) Reset() {
 
 	l.loadOnce = sync.Once{}
 	l.state.Store(LoadStateNotLoaded)
-	l.value.Store((*T)(nil))
-	l.err.Store(nil)
+	clearValue[T](&l.value)
+	l.err.Store(errNotLoaded)
 	l.loadedAt.Store(time.Time{})
 	l.duration.Store(time.Duration(0))
 }
