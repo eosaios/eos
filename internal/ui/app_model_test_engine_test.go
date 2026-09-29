@@ -54,10 +54,34 @@ type testEngine struct {
 	compactMessage string
 	clearCtxErr    error
 	exportCtxErr   error
+
+	// foregroundWS 写入 StateSnapshot.ForegroundWorkspace：/init 等按工作区
+	// 根写文件的路径必须指向 t.TempDir()，避免往测试进程 cwd 落 EOS.md。
+	foregroundWS string
+
+	// git 注入（供 /git /diff /review 分支批测）。
+	gitStatus    []coreapi.GitChange
+	gitStatusErr error
+	gitBranches  coreapi.GitBranchesResult
+	gitLog       coreapi.GitLogResult
+	gitShow      coreapi.GitShowResult
+	gitDiff      coreapi.GitTextResult
+	gitDiffErr   error
+
+	// pendingReview 注入（/diff 无参、/review 无参的待审批分支）。
+	pendingReview coreapi.PendingReview
+
+	// caller 注入（plugin/install|search|remove 的 CallCore 路径）。
+	caller coreapi.Caller
 }
 
-func (e *testEngine) Caller() coreapi.Caller                 { return nil }
-func (e *testEngine) State() coreapi.StateService            { return &testStateService{} }
+func (e *testEngine) Caller() coreapi.Caller {
+	if e.caller != nil {
+		return e.caller
+	}
+	return nil
+}
+func (e *testEngine) State() coreapi.StateService            { return &testStateServiceWithEngine{e: e} }
 func (e *testEngine) Workspaces() coreapi.WorkspaceService   { return &testWorkspaceService{e: e} }
 func (e *testEngine) Sessions() coreapi.SessionService       { return &testSessionService{e: e} }
 func (e *testEngine) MCP() coreapi.MCPService                { return &testMCPService{e: e} }
@@ -77,7 +101,7 @@ func (e *testEngine) Models() coreapi.ModelService     { return &testModelServic
 func (e *testEngine) RemoteWorkspaces() coreapi.RemoteWorkspaceService {
 	return &testRemoteWorkspaceService{}
 }
-func (e *testEngine) Git() coreapi.GitService                     { return &testGitService{} }
+func (e *testEngine) Git() coreapi.GitService                     { return &testGitService{e: e} }
 func (e *testEngine) Insights() coreapi.InsightService            { return &testInsightsService{} }
 func (e *testEngine) Memory() coreapi.MemoryService               { return &testMemoryService{e: e} }
 func (e *testEngine) Roles() coreapi.RoleService                  { return nil }
@@ -251,6 +275,9 @@ func (s *testPermissionService) Snapshot(context.Context) (coreapi.PermissionSna
 	return s.e.permissionSnap, nil
 }
 func (s *testPermissionService) PendingReview(context.Context) (coreapi.PendingReview, error) {
+	if s.e != nil {
+		return s.e.pendingReview, nil
+	}
 	return coreapi.PendingReview{}, nil
 }
 func (s *testPermissionService) ClearPendingReview(context.Context) error { return nil }
@@ -410,7 +437,13 @@ func (s *testModeService) SetReasoningLevel(context.Context, coreapi.SetModeRequ
 }
 
 // === State ===
-type testStateService struct{}
+// testStateServiceWithEngine 共享 engine 状态以回填 ForegroundWorkspace。
+// /init 等按工作区根写文件的路径必须指向 t.TempDir()，避免污染测试进程 cwd。
+type testStateServiceWithEngine struct{ e *testEngine }
+
+func (s *testStateServiceWithEngine) Snapshot(context.Context, coreapi.StateSnapshotRequest) (coreapi.StateSnapshot, error) {
+	return coreapi.StateSnapshot{ForegroundWorkspace: s.e.foregroundWS}, nil
+}
 
 // === Usage ===
 // 补全 Usage 空实现，让依赖 refreshCostPanel/UsageSummary 的路径（如启动期 resume）
@@ -475,10 +508,6 @@ func (s *testRemoteWorkspaceService) ClearCache(context.Context, coreapi.RemoteW
 }
 func (s *testRemoteWorkspaceService) CurrentRepo(context.Context) (coreapi.RemoteRepoState, bool, error) {
 	return coreapi.RemoteRepoState{}, false, nil
-}
-
-func (s *testStateService) Snapshot(context.Context, coreapi.StateSnapshotRequest) (coreapi.StateSnapshot, error) {
-	return coreapi.StateSnapshot{}, nil
 }
 
 // === Extension ===
@@ -598,25 +627,46 @@ func (s *testToolTelemetryService) Stats(context.Context) ([]coreapi.ToolStat, e
 	return nil, nil
 }
 
-// testGitService：UI 测试用假 git service，避免 engine.Git() 为 nil 时 panic。
-type testGitService struct{}
+// testGitService：UI 测试用假 git service，结果可经 testEngine 注入。
+type testGitService struct{ e *testEngine }
 
 func (s *testGitService) Status(context.Context, coreapi.GitStatusRequest) ([]coreapi.GitChange, error) {
+	if s.e != nil && s.e.gitStatusErr != nil {
+		return nil, s.e.gitStatusErr
+	}
+	if s.e != nil {
+		return s.e.gitStatus, nil
+	}
 	return nil, nil
 }
 func (s *testGitService) Summary(context.Context, coreapi.GitSummaryRequest) (coreapi.GitSummaryResult, error) {
 	return coreapi.GitSummaryResult{Branch: "main"}, nil
 }
 func (s *testGitService) Diff(context.Context, coreapi.GitDiffRequest) (coreapi.GitTextResult, error) {
+	if s.e != nil && s.e.gitDiffErr != nil {
+		return coreapi.GitTextResult{}, s.e.gitDiffErr
+	}
+	if s.e != nil {
+		return s.e.gitDiff, nil
+	}
 	return coreapi.GitTextResult{}, nil
 }
 func (s *testGitService) Branches(context.Context, coreapi.GitBranchesRequest) (coreapi.GitBranchesResult, error) {
+	if s.e != nil {
+		return s.e.gitBranches, nil
+	}
 	return coreapi.GitBranchesResult{}, nil
 }
 func (s *testGitService) Log(context.Context, coreapi.GitLogRequest) (coreapi.GitLogResult, error) {
+	if s.e != nil {
+		return s.e.gitLog, nil
+	}
 	return coreapi.GitLogResult{}, nil
 }
 func (s *testGitService) Show(context.Context, coreapi.GitShowRequest) (coreapi.GitShowResult, error) {
+	if s.e != nil {
+		return s.e.gitShow, nil
+	}
 	return coreapi.GitShowResult{}, nil
 }
 
