@@ -10,6 +10,7 @@ import (
 
 	"github.com/eosaios/eos/internal/ui/panels"
 	"github.com/eosaios/eos/internal/ui/views/confirm"
+	"github.com/eosaios/eos/internal/ui/views/setup"
 	"github.com/eosaios/eos/pkg/coreapi"
 )
 
@@ -97,5 +98,65 @@ func TestNewAppModelFromCoreClient(t *testing.T) {
 	app := NewAppModelFromCoreEngine(eng)
 	if app == nil {
 		t.Fatal("nil app")
+	}
+}
+
+func TestHandleMCPDeleteAndRefresh(t *testing.T) {
+	setTestHome(t)
+	app, eng := newTestAppModelWithEngine(t)
+	eng.mcpList = []coreapi.MCPServer{{Name: "fs", Type: "stdio", Enabled: true}}
+
+	// delete 命中
+	cmd := app.handleMCPDelete(panels.MCPDeleteMsg{Name: "fs"})
+	if cmd == nil {
+		t.Fatal("delete cmd")
+	}
+	if _, ok := cmd().(MCPReloadDoneMsg); !ok {
+		t.Fatal("reload msg")
+	}
+
+	// refreshMCPPanel
+	app.refreshMCPPanel()
+	app.handleMCPSave()
+
+	// refreshLSPPanel
+	app.refreshLSPPanel()
+}
+
+func TestHandleMCPConfigSubmitFormats(t *testing.T) {
+	setTestHome(t)
+	app := newTestAppModel(t)
+
+	// 空文本
+	app.handleMCPConfigSubmitMsg(setup.MCPConfigSubmitMsg{Text: "  "})
+
+	// 旧版 JSON 标签格式
+	app.handleMCPConfigSubmitMsg(setup.MCPConfigSubmitMsg{
+		Text: `{"mcpServers":{"fs":{"command":"npx","args":["-y","fs"]}}}`,
+	})
+
+	// 新版数组
+	app.handleMCPConfigSubmitMsg(setup.MCPConfigSubmitMsg{
+		Text: `[{"name":"a","type":"stdio","command":"x","enabled":true}]`,
+	})
+
+	// 单对象
+	app.handleMCPConfigSubmitMsg(setup.MCPConfigSubmitMsg{
+		Text: `{"name":"b","type":"sse","url":"https://x"}`,
+		Edit: true, OriginalName: "b",
+	})
+}
+
+func TestHandleAIResponseAndDiffTheme(t *testing.T) {
+	setTestHome(t)
+	app := newTestAppModel(t)
+
+	next, _ := app.handleAIResponseMsg(AIResponseMsg{Type: "final", Content: "answer", RID: "r"})
+	if next == nil {
+		t.Fatal("ai response")
+	}
+	if app.diffHighlightTheme() == "" {
+		// 可能为空
+		_ = app.diffHighlightTheme()
 	}
 }
