@@ -6,6 +6,7 @@ package ui
 // 商业使用请联系版权人获得商业授权.
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/eosaios/eos/internal/ui/adapter"
@@ -29,8 +30,24 @@ func TestFeedbackAndScreenshotSlash(t *testing.T) {
 	setTestHome(t)
 	app := newTestAppModel(t)
 
-	// feedback：尝试打开浏览器（沙箱可能失败，不 panic 即可）
+	// 注入 stub，绝不能真拉起系统浏览器（会反复打开 GitHub Issues 页）
+	orig := openInBrowserImpl
+	var opened string
+	openInBrowserImpl = func(url string) error {
+		opened = url
+		return nil
+	}
+	t.Cleanup(func() { openInBrowserImpl = orig })
+
 	app.handleFeedbackSlash(nil)
+	if opened != eosIssuesURL {
+		t.Fatalf("opened = %q, want %q", opened, eosIssuesURL)
+	}
+
+	// 打开失败分支
+	openInBrowserImpl = func(string) error { return errors.New("no browser") }
+	app.handleFeedbackSlash(nil)
+	openInBrowserImpl = orig
 
 	// screenshot
 	app.handleScreenshotSlash(nil)

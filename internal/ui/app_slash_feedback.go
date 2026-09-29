@@ -26,7 +26,14 @@ func (m *AppModel) handleFeedbackSlash(_ []string) tea.Cmd {
 	return nil
 }
 
+// openInBrowserImpl 测试注入点：非 nil 时替代真实系统调用。
+// 测试绝不能真拉起浏览器（会反复打开 GitHub Issues 页）。
+var openInBrowserImpl func(string) error
+
 func openInBrowser(url string) error {
+	if openInBrowserImpl != nil {
+		return openInBrowserImpl(url)
+	}
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin":
