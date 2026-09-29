@@ -77,7 +77,7 @@ func (e *testEngine) RemoteWorkspaces() coreapi.RemoteWorkspaceService {
 	return &testRemoteWorkspaceService{}
 }
 func (e *testEngine) Git() coreapi.GitService                     { return &testGitService{} }
-func (e *testEngine) Insights() coreapi.InsightService            { return nil }
+func (e *testEngine) Insights() coreapi.InsightService            { return &testInsightsService{} }
 func (e *testEngine) Memory() coreapi.MemoryService               { return &testMemoryService{e: e} }
 func (e *testEngine) Roles() coreapi.RoleService                  { return nil }
 func (e *testEngine) Turns() coreapi.TurnService                  { return nil }
@@ -700,4 +700,18 @@ type testToolExecutor struct{}
 
 func (s *testToolExecutor) Execute(context.Context, coreapi.ToolRequest) (coreapi.ToolResult, error) {
 	return coreapi.ToolResult{Status: "success"}, nil
+}
+
+
+// testInsightsService：UI 测试用假 insight service。
+type testInsightsService struct{}
+
+func (s *testInsightsService) PredictNextUserMessage(context.Context, coreapi.PredictNextUserMessageRequest) (string, error) {
+	return "predicted text", nil
+}
+func (s *testInsightsService) RefineInput(context.Context, coreapi.RefineInputRequest) (string, error) {
+	return "", nil
+}
+func (s *testInsightsService) PlanSnapshot(context.Context) (coreapi.PlanSnapshot, error) {
+	return coreapi.PlanSnapshot{}, nil
 }
