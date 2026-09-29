@@ -74,7 +74,14 @@ func ApplyModelOverride(ctx context.Context, engine coreapi.Engine, session core
 	if override == "" {
 		return nil
 	}
-	entries, err := engine.Models().List(ctx)
+	if engine == nil {
+		return fmt.Errorf("core engine unavailable")
+	}
+	models := engine.Models()
+	if models == nil {
+		return fmt.Errorf("model service unavailable")
+	}
+	entries, err := models.List(ctx)
 	if err != nil {
 		return fmt.Errorf("--model: list models: %w", err)
 	}
