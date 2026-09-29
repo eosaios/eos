@@ -84,7 +84,7 @@ func (e *testEngine) Turns() coreapi.TurnService                  { return nil }
 func (e *testEngine) Approvals() coreapi.ApprovalService          { return &testApprovalsService{} }
 func (e *testEngine) Inquiries() coreapi.InquiryService           { return &testInquiryService{} }
 func (e *testEngine) Agents() coreapi.AgentService                { return &testAgentsService{} }
-func (e *testEngine) Tools() coreapi.ToolExecutor                 { return nil }
+func (e *testEngine) Tools() coreapi.ToolExecutor                 { return &testToolExecutor{} }
 func (e *testEngine) ToolCatalog() coreapi.ToolCatalogService     { return nil }
 func (e *testEngine) ToolTelemetry() coreapi.ToolTelemetryService { return &testToolTelemetryService{} }
 func (e *testEngine) Events() coreapi.EventSubscriber             { return &testEventSubscriber{} }
@@ -693,3 +693,11 @@ func (s *testAgentsService) List(context.Context, coreapi.ListAgentsRequest) ([]
 	return nil, nil
 }
 func (s *testAgentsService) Close(context.Context, coreapi.AgentRef) error { return nil }
+
+
+// testToolExecutor：UI 测试用假工具执行器。
+type testToolExecutor struct{}
+
+func (s *testToolExecutor) Execute(context.Context, coreapi.ToolRequest) (coreapi.ToolResult, error) {
+	return coreapi.ToolResult{Status: "success"}, nil
+}
