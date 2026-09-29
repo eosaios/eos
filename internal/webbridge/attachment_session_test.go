@@ -235,3 +235,41 @@ func TestAutomationBindingsAndTrigger(t *testing.T) {
 	// trigger 无 workspace / 无 command service 不 panic
 	s.triggerAutomationTemplate(AutomationTemplateCard{ID: "x", Title: "T"})
 }
+
+func TestCapabilityIntegrationsNoGateway(t *testing.T) {
+	s := &BridgeService{}
+	_, _ = s.UpsertMCP("n", "stdio", "cmd", true)
+	_, _ = s.ImportMCPJSON("{}")
+	_, _ = s.DeleteMCP("n")
+	_, _ = s.SetMCPEnabled("n", true)
+	_ = s.DetectLSP("go")
+	_ = s.StartLSP("go")
+	_ = s.InstallLSP("go")
+	_, _ = s.ReloadSkills()
+	_, _ = s.ReloadSkillsSilent()
+	_, _ = s.SetSkillEnabled("s", true)
+	_, _ = s.SetPluginEnabled("p", true)
+}
+
+func TestBrowserPickAndProfileNoGateway(t *testing.T) {
+	s := &BridgeService{}
+	_, err := s.BrowserPickStart()
+	if err == nil {
+		t.Fatal("pick start")
+	}
+	if _, err := s.BrowserPickStop(); err == nil {
+		t.Fatal("pick stop")
+	}
+	if _, err := s.BrowserCredentialsImport("ep", "p", nil, true); err == nil {
+		t.Fatal("creds")
+	}
+	if _, err := s.BrowserProfileUpsert("n", nil, "note"); err == nil {
+		t.Fatal("profile upsert")
+	}
+	if _, err := s.BrowserProfiles(); err == nil {
+		t.Fatal("profiles")
+	}
+	if _, err := s.BrowserPickUploadFile("f"); err == nil {
+		t.Fatal("upload")
+	}
+}
