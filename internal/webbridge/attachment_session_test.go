@@ -84,3 +84,51 @@ func TestBrowserControlNoGateway(t *testing.T) {
 		t.Fatal("no gateway")
 	}
 }
+
+func TestPreviewWorkspaceFile(t *testing.T) {
+	withTempHome(t)
+	s := &BridgeService{}
+	svc := NewAttachmentService(s)
+
+	dir := t.TempDir()
+	s.activeWorkspace = dir
+	src := filepath.Join(dir, "a.txt")
+	if err := os.WriteFile(src, []byte("hello\nworld"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// nil bridge
+	if _, err := NewAttachmentService(nil).PreviewWorkspaceFile("a.txt", 0); err == nil {
+		t.Fatal("nil bridge")
+	}
+	// 空路径
+	if _, err := svc.PreviewWorkspaceFile("  ", 0); err == nil {
+		t.Fatal("empty path")
+	}
+	// 缺失
+	if _, err := svc.PreviewWorkspaceFile("nope.txt", 0); err == nil {
+		t.Fatal("missing")
+	}
+	// 目录
+	if _, err := svc.PreviewWorkspaceFile(".", 0); err == nil {
+		t.Fatal("dir")
+	}
+	// 成功
+	got, err := svc.PreviewWorkspaceFile("a.txt", 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Content != "hello\nworld" || got.Line != 1 {
+		t.Fatalf("preview = %+v", got)
+	}
+	// 负行号夹到 0
+	got, err = svc.PreviewWorkspaceFile("a.txt", -5)
+	if err != nil || got.Line != 0 {
+		t.Fatalf("neg line = %+v %v", got, err)
+	}
+	// 无工作区
+	s.activeWorkspace = ""
+	if _, err := svc.PreviewWorkspaceFile("a.txt", 0); err == nil {
+		t.Fatal("no workspace")
+	}
+}
