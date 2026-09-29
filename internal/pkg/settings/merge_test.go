@@ -5,7 +5,11 @@ package settings
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权.
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestMergeIntoScalarsAndSlices(t *testing.T) {
 	dst := Settings{Language: "zh", MaxInjectKB: 10, Workspaces: []string{"a"}}
@@ -118,3 +122,38 @@ func TestMergePermissionRules(t *testing.T) {
 }
 
 func boolPtr(v bool) *bool { return &v }
+
+func TestLoadLayerAndSaveErrors(t *testing.T) {
+	// loadLayer 缺失文件 → 零值
+	got := loadLayer(filepath.Join(t.TempDir(), "nope.json"))
+	if got.Language != "" {
+		t.Fatalf("missing = %+v", got)
+	}
+	// loadLayer 坏 JSON → 零值
+	bad := filepath.Join(t.TempDir(), "bad.json")
+	if err := os.WriteFile(bad, []byte("{"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := loadLayer(bad); got.Language != "" {
+		t.Fatalf("bad = %+v", got)
+	}
+
+	// Save 写失败（目录不可写）
+	m := NewManager(filepath.Join(t.TempDir(), "no", "deep", "x.json"))
+	// MkdirAll 会创建，成功
+	if err := m.Save(&Settings{Language: "en"}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestLoadMergedLayerErrors(t *testing.T) {
+	root := t.TempDir()
+	user := filepath.Join(root, "user.json")
+	if err := os.WriteFile(user, []byte("{"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s := LoadMerged(user, filepath.Join(root, "proj"))
+	if s == nil {
+		t.Fatal("merged")
+	}
+}
