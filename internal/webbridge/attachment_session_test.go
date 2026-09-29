@@ -184,3 +184,54 @@ func TestBrowserTabNoGateway(t *testing.T) {
 		t.Fatal("navigate")
 	}
 }
+
+func TestBrowserControlMoreNoGateway(t *testing.T) {
+	s := &BridgeService{}
+	if _, err := s.BrowserSetDefaultProfile("p"); err == nil {
+		t.Fatal("default profile")
+	}
+	if _, err := s.BrowserLiveStart(800, 600, 80); err == nil {
+		t.Fatal("live start")
+	}
+	if _, err := s.BrowserLiveStop(); err == nil {
+		t.Fatal("live stop")
+	}
+	if _, err := s.BrowserInput(map[string]interface{}{"action": "click"}); err == nil {
+		t.Fatal("input")
+	}
+	if _, err := s.BrowserHistory("back"); err == nil {
+		t.Fatal("history")
+	}
+	if _, err := s.BrowserCopySelection(); err == nil {
+		t.Fatal("copy")
+	}
+}
+
+func TestAutomationBindingsAndTrigger(t *testing.T) {
+	withTempHome(t)
+	s := &BridgeService{}
+	// bindings 委托 AutomationService
+	_, err := s.SaveAutomationTemplate(AutomationSaveRequest{Title: "T", Prompt: "P"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	all := s.allAutomationTemplatesReadOnly()
+	var id string
+	for _, item := range all {
+		if item.Title == "T" {
+			id = item.ID
+		}
+	}
+	if id == "" {
+		t.Fatal("saved")
+	}
+	if _, err := s.ToggleAutomationTemplate(id, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.DeleteAutomationTemplate(id); err != nil {
+		t.Fatal(err)
+	}
+
+	// trigger 无 workspace / 无 command service 不 panic
+	s.triggerAutomationTemplate(AutomationTemplateCard{ID: "x", Title: "T"})
+}
