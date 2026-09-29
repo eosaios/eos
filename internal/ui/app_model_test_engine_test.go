@@ -8,6 +8,7 @@ package ui
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -45,6 +46,10 @@ type testEngine struct {
 	resumeCalls      []string
 	messages         []coreapi.SessionMessage
 	currentSessionID string
+
+	// currentSessionMeta 注入 Sessions.Current 的 Metadata（HealCurrentSessionModel
+	// 读 model_name 覆盖用）。
+	currentSessionMeta map[string]any
 
 	// 失败臂批测注入口（零值=原成功行为）：config/context/memory 服务
 	// 经共享状态读取（服务每次取用时新建实例，注入字段必须挂 engine 上）。
@@ -109,6 +114,20 @@ type testEngine struct {
 	selectModelErr      error                        // SelectModelForCurrentContext 失败臂
 	resumeSessionErr    error                        // ResumeSession 失败臂（/resume）
 	reloadSkillsErr     error                        // ReloadSkills 失败臂（/skills reload）
+
+	// app_send / startup 批测注入口（零值=原行为）。
+	toolExecResult   coreapi.ToolResult // Tools.Execute 返回
+	toolExecErr      error              // Tools.Execute 失败臂
+	predictText      string             // Insights.PredictNextUserMessage 返回
+	predictErr       error              // Insights.Predict 失败臂
+	modelsSaveErr    error              // Models.Save 失败臂（SwitchPlanModel）
+	activateModelErr error              // Models.Activate 失败臂
+	setWorkspaceErr  error              // Models.SetWorkspace 失败臂
+	healNote         string             // HealCurrentSessionModel 提示文案（经 Sessions.Current 驱动）
+	invokeSkillInvoked bool             // Extensions.InvokeSkill 返回 Invoked
+	invokeSkillErr     error            // Extensions.InvokeSkill 失败臂
+	modelCatalog       *coreapi.ModelCatalogState // Models.Catalog 覆盖（nil=默认）
+	turnStartErr       error // Turns.Start 失败臂（Invoke 异步回包）
 }
 
 func (e *testEngine) Caller() coreapi.Caller {
@@ -140,14 +159,14 @@ func (e *testEngine) RemoteWorkspaces() coreapi.RemoteWorkspaceService {
 	return &testRemoteWorkspaceService{e: e}
 }
 func (e *testEngine) Git() coreapi.GitService                 { return &testGitService{e: e} }
-func (e *testEngine) Insights() coreapi.InsightService        { return &testInsightsService{} }
+func (e *testEngine) Insights() coreapi.InsightService        { return &testInsightsService{e: e} }
 func (e *testEngine) Memory() coreapi.MemoryService           { return &testMemoryService{e: e} }
 func (e *testEngine) Roles() coreapi.RoleService              { return nil }
-func (e *testEngine) Turns() coreapi.TurnService              { return nil }
+func (e *testEngine) Turns() coreapi.TurnService              { return &testTurnService{e: e} }
 func (e *testEngine) Approvals() coreapi.ApprovalService      { return &testApprovalsService{} }
 func (e *testEngine) Inquiries() coreapi.InquiryService       { return &testInquiryService{} }
 func (e *testEngine) Agents() coreapi.AgentService            { return &testAgentsService{e: e} }
-func (e *testEngine) Tools() coreapi.ToolExecutor             { return &testToolExecutor{} }
+func (e *testEngine) Tools() coreapi.ToolExecutor             { return &testToolExecutor{e: e} }
 func (e *testEngine) ToolCatalog() coreapi.ToolCatalogService { return nil }
 func (e *testEngine) ToolTelemetry() coreapi.ToolTelemetryService {
 	return &testToolTelemetryService{e: e}
@@ -247,10 +266,11 @@ func (s *testSessionService) List(context.Context, coreapi.ListSessionsRequest) 
 	return nil, nil
 }
 func (s *testSessionService) Current(context.Context, coreapi.CurrentSessionRequest) (coreapi.Session, error) {
-	if id := strings.TrimSpace(s.e.currentSessionID); id != "" {
-		return coreapi.Session{ID: id}, nil
+	id := strings.TrimSpace(s.e.currentSessionID)
+	if id == "" {
+		id = "test-session"
 	}
-	return coreapi.Session{ID: "test-session"}, nil
+	return coreapi.Session{ID: id, Metadata: s.e.currentSessionMeta}, nil
 }
 func (s *testSessionService) SetCurrent(context.Context, coreapi.SetCurrentSessionRequest) error {
 	return nil
@@ -393,6 +413,9 @@ func (s *testModelService) List(context.Context) ([]coreapi.ModelConfig, error) 
 	return out, nil
 }
 func (s *testModelService) Catalog(context.Context) (coreapi.ModelCatalogState, error) {
+	if s.e.modelCatalog != nil {
+		return *s.e.modelCatalog, nil
+	}
 	return coreapi.ModelCatalogState{
 		Providers: []coreapi.ModelProviderOption{{
 			ID:            "openai",
@@ -430,7 +453,9 @@ func (s *testModelService) Upsert(_ context.Context, req coreapi.UpsertModelRequ
 	})
 	return nil
 }
-func (s *testModelService) Save(context.Context, coreapi.ModelSaveRequest) error { return nil }
+func (s *testModelService) Save(context.Context, coreapi.ModelSaveRequest) error {
+	return s.e.modelsSaveErr
+}
 func (s *testModelService) Delete(_ context.Context, req coreapi.ModelNameRequest) error {
 	out := s.e.models[:0]
 	for _, m := range s.e.models {
@@ -442,6 +467,9 @@ func (s *testModelService) Delete(_ context.Context, req coreapi.ModelNameReques
 	return nil
 }
 func (s *testModelService) Activate(_ context.Context, req coreapi.ModelNameRequest) error {
+	if s.e.activateModelErr != nil {
+		return s.e.activateModelErr
+	}
 	s.e.activeModel = req.Name
 	return nil
 }
@@ -460,6 +488,9 @@ func (s *testModelService) Context(context.Context, coreapi.ModelContextRequest)
 	}, nil
 }
 func (s *testModelService) SetWorkspace(_ context.Context, req coreapi.SetWorkspaceModelRequest) error {
+	if s.e.setWorkspaceErr != nil {
+		return s.e.setWorkspaceErr
+	}
 	s.e.activeModel = req.ModelName
 	return nil
 }
@@ -597,6 +628,12 @@ func (s *testExtensionService) SetSkillEnabled(context.Context, coreapi.SetExten
 	return nil
 }
 func (s *testExtensionService) InvokeSkill(context.Context, coreapi.InvokeSkillRequest) (coreapi.InvokeSkillResult, error) {
+	if s.e != nil && s.e.invokeSkillErr != nil {
+		return coreapi.InvokeSkillResult{}, s.e.invokeSkillErr
+	}
+	if s.e != nil {
+		return coreapi.InvokeSkillResult{Invoked: s.e.invokeSkillInvoked}, nil
+	}
 	return coreapi.InvokeSkillResult{}, nil
 }
 func (s *testExtensionService) ListPlugins(context.Context) ([]coreapi.PluginInfo, error) {
@@ -719,6 +756,20 @@ func (s *testGoalService) Clear(_ context.Context, _ coreapi.GoalRefRequest) err
 
 // testApprovalsService / testInquiryService / testToolTelemetryService：
 // UI 测试用假实现，避免 engine.X() 返回 nil 后 adapter 解引用 panic。
+// testTurnService：Invoke 异步 Start 注入点，零值返回通用错误避免 nil panic。
+type testTurnService struct{ e *testEngine }
+
+func (s *testTurnService) Start(context.Context, coreapi.StartTurnRequest) (coreapi.Turn, error) {
+	if s.e != nil && s.e.turnStartErr != nil {
+		return coreapi.Turn{}, s.e.turnStartErr
+	}
+	return coreapi.Turn{}, errors.New("turn start not configured in tests")
+}
+func (s *testTurnService) Interrupt(context.Context, coreapi.TurnRef) error { return nil }
+func (s *testTurnService) Resume(context.Context, coreapi.TurnRef) (coreapi.Turn, error) {
+	return coreapi.Turn{}, errors.New("turn resume not configured in tests")
+}
+
 type testApprovalsService struct{}
 
 func (s *testApprovalsService) Respond(context.Context, coreapi.ApprovalResponse) error { return nil }
@@ -871,16 +922,28 @@ func (s *testAgentsService) List(context.Context, coreapi.ListAgentsRequest) ([]
 func (s *testAgentsService) Close(context.Context, coreapi.AgentRef) error { return nil }
 
 // testToolExecutor：UI 测试用假工具执行器。
-type testToolExecutor struct{}
+type testToolExecutor struct{ e *testEngine }
 
 func (s *testToolExecutor) Execute(context.Context, coreapi.ToolRequest) (coreapi.ToolResult, error) {
+	if s.e != nil && s.e.toolExecErr != nil {
+		return coreapi.ToolResult{}, s.e.toolExecErr
+	}
+	if s.e != nil && (s.e.toolExecResult.Status != "" || len(s.e.toolExecResult.Output) > 0 || s.e.toolExecResult.Error != "" || s.e.toolExecResult.Display != "") {
+		return s.e.toolExecResult, nil
+	}
 	return coreapi.ToolResult{Status: "success"}, nil
 }
 
 // testInsightsService：UI 测试用假 insight service。
-type testInsightsService struct{}
+type testInsightsService struct{ e *testEngine }
 
 func (s *testInsightsService) PredictNextUserMessage(context.Context, coreapi.PredictNextUserMessageRequest) (string, error) {
+	if s.e != nil && s.e.predictErr != nil {
+		return "", s.e.predictErr
+	}
+	if s.e != nil && s.e.predictText != "" {
+		return s.e.predictText, nil
+	}
 	return "predicted text", nil
 }
 func (s *testInsightsService) RefineInput(context.Context, coreapi.RefineInputRequest) (string, error) {

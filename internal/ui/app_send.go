@@ -34,6 +34,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
+// readClipboardImage 是 clip.ReadImage 的注入缝，var 以便测试 stub（仓库既有惯例）。
+var readClipboardImage = clip.ReadImage
+
 // predictionDebounceMsg 预测防抖消息，用于延迟触发下一条消息预测
 type predictionDebounceMsg struct {
 	Seq   int    // 序列号，用于丢弃过期的防抖消息
@@ -294,7 +297,7 @@ func (m *AppModel) pasteClipboardImage() tea.Cmd {
 		m.appendSystem(i18n.T("image.bash_mode", m.state.Language), "warning")
 		return func() tea.Msg { return nil }
 	}
-	b, err := clip.ReadImage()
+	b, err := readClipboardImage()
 	if err != nil {
 		if strings.Contains(err.Error(), "empty clipboard image") {
 			m.appendSystem(i18n.T("image.clipboard_empty", m.state.Language), "warning")

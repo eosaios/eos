@@ -10,6 +10,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -165,14 +166,23 @@ func TestCommandWrappers(t *testing.T) {
 		t.Fatal("GUI mode should be on")
 	}
 
-	cmd := Command("echo", "hi")
+	// Windows 无独立 echo.exe（cmd 内建），改用 cmd /c echo 保证跨平台可执行。
+	echoName, echoArgs := "echo", []string{"hi"}
+	if runtime.GOOS == "windows" {
+		echoName, echoArgs = "cmd", []string{"/c", "echo", "hi"}
+	}
+	cmd := Command(echoName, echoArgs...)
 	out, err := cmd.Output()
 	if err != nil || strings.TrimSpace(string(out)) != "hi" {
 		t.Fatalf("Command = %q err=%v", out, err)
 	}
 
 	ctx := context.Background()
-	cmd = CommandContext(ctx, "echo", "ho")
+	echoName2, echoArgs2 := "echo", []string{"ho"}
+	if runtime.GOOS == "windows" {
+		echoName2, echoArgs2 = "cmd", []string{"/c", "echo", "ho"}
+	}
+	cmd = CommandContext(ctx, echoName2, echoArgs2...)
 	out, err = cmd.Output()
 	if err != nil || strings.TrimSpace(string(out)) != "ho" {
 		t.Fatalf("CommandContext = %q err=%v", out, err)
