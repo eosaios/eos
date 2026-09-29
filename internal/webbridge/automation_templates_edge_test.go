@@ -142,3 +142,24 @@ func TestAutomationTemplateCRUD(t *testing.T) {
 		t.Fatal("missing delete")
 	}
 }
+
+func TestAutomationSchedulerLifecycle(t *testing.T) {
+	withTempHome(t)
+	s := &BridgeService{}
+	// 无模板时 start/stop 幂等
+	s.startAutomationScheduler()
+	s.reloadAutomationSchedules()
+	s.stopAutomationScheduler()
+	s.stopAutomationScheduler() // 二次 stop 幂等
+
+	// 有启用模板时调度
+	_ = s.saveAutomationStore(automationStoreState{
+		Templates: []automationStoreRecord{
+			{ID: "t1", Title: "T", Prompt: "P", Schedule: "0 0 * * *", Enabled: true},
+		},
+		PresetEnabled: map[string]bool{},
+	})
+	s.startAutomationScheduler()
+	s.reloadAutomationSchedules()
+	s.stopAutomationScheduler()
+}
