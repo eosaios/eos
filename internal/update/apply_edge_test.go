@@ -6,6 +6,7 @@ package update
 // 商业使用请联系版权人获得商业授权。
 
 import (
+	"strings"
 	"os"
 	"path/filepath"
 	"testing"
@@ -116,5 +117,20 @@ func TestReplaceBinaryAndCurrentExecutable(t *testing.T) {
 
 	if _, err := currentExecutable(); err != nil {
 		t.Fatalf("currentExecutable = %v", err)
+	}
+}
+
+func TestProgressReaderAndLatestReleasesURL(t *testing.T) {
+	var got int64
+	r := &progressReader{r: strings.NewReader("hello"), total: 5, fn: func(done, total int64) {
+		got = done
+	}}
+	buf := make([]byte, 5)
+	n, err := r.Read(buf)
+	if err != nil || n != 5 || got != 5 {
+		t.Fatalf("read = %d %v got=%d", n, err, got)
+	}
+	if !strings.Contains(latestReleasesPageURL(), "releases/latest") {
+		t.Fatalf("url = %q", latestReleasesPageURL())
 	}
 }
