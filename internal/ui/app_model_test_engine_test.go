@@ -73,6 +73,42 @@ type testEngine struct {
 
 	// caller 注入（plugin/install|search|remove 的 CallCore 路径）。
 	caller coreapi.Caller
+
+	// slash_runtime 批测注入口（零值=原行为）。
+	loadMessagesErr     error                        // LoadSessionMessages 失败臂
+	sessionList         []coreapi.Session            // ListSessions 返回
+	listSessionsErr     error                        // ListSessions 失败臂
+	saveSessionMsgsErr  error                        // SaveSessionMessages 失败臂
+	usageSummaryErr     error                        // UsageSummary 失败臂（/stats）
+	usageSummary        coreapi.UsageSummary         // UsageSummary 返回
+	toolStats           []coreapi.ToolStat           // ToolStats/doctor 统计
+	toolStatsErr        error                        // ToolStats 失败臂
+	toolTraces          []coreapi.ToolTrace          // ToolTraces/doctor 时间线
+	toolTracesErr       error                        // ToolTraces 失败臂
+	taskList            []coreapi.TaskSnapshot       // Tasks.List（doctor 后台任务）
+	agentList           []coreapi.Agent              // Agents.List（doctor 代理任务）
+	todoList            []coreapi.TodoItem           // Todos（doctor 待办）
+	skills              []coreapi.SkillInfo          // ListSkills（doctor/skills 面板）
+	plugins             []coreapi.PluginInfo         // ListPlugins（doctor/插件面板）
+	browserStatus       coreapi.BrowserRuntimeStatus // BrowserStatus（doctor 浏览器行）
+	browserStatusErr    error                        // BrowserStatus 失败臂
+	lspDiagnostics      []string                     // LSP Diagnostics（doctor 摘要）
+	remoteRepo          coreapi.RemoteRepoState      // CurrentRemoteRepo 返回（remoteOK=true 时）
+	remoteOK            bool                         // CurrentRemoteRepo 第二返回值
+	remoteErr           error                        // CurrentRemoteRepo 失败臂
+	goalGetResp         coreapi.GoalGetResponse      // Goals.Get 返回
+	goalGetErr          error                        // Goals.Get 失败臂
+	goalSetResp         coreapi.ThreadGoal           // Goals.Set 返回
+	goalSetErr          error                        // Goals.Set 失败臂
+	goalPauseResumeResp coreapi.ThreadGoal           // Goals.Pause/Resume 返回
+	goalPauseErr        error                        // Goals.Pause 失败臂
+	goalResumeErr       error                        // Goals.Resume 失败臂
+	goalClearErr        error                        // Goals.Clear 失败臂
+	modelCtxSnapshot    coreapi.ModelContextSnapshot // Models.Context 返回（零值回退 activeModel）
+	modelCtxErr         error                        // Models.Context 失败臂
+	selectModelErr      error                        // SelectModelForCurrentContext 失败臂
+	resumeSessionErr    error                        // ResumeSession 失败臂（/resume）
+	reloadSkillsErr     error                        // ReloadSkills 失败臂（/skills reload）
 }
 
 func (e *testEngine) Caller() coreapi.Caller {
@@ -85,36 +121,40 @@ func (e *testEngine) State() coreapi.StateService            { return &testState
 func (e *testEngine) Workspaces() coreapi.WorkspaceService   { return &testWorkspaceService{e: e} }
 func (e *testEngine) Sessions() coreapi.SessionService       { return &testSessionService{e: e} }
 func (e *testEngine) MCP() coreapi.MCPService                { return &testMCPService{e: e} }
-func (e *testEngine) LSP() coreapi.LSPService                { return &testLSPService{} }
+func (e *testEngine) LSP() coreapi.LSPService                { return &testLSPService{e: e} }
 func (e *testEngine) Config() coreapi.ConfigService          { return &testConfigService{e: e} }
 func (e *testEngine) Permissions() coreapi.PermissionService { return &testPermissionService{e: e} }
-func (e *testEngine) Extensions() coreapi.ExtensionService   { return &testExtensionService{} }
+func (e *testEngine) Extensions() coreapi.ExtensionService   { return &testExtensionService{e: e} }
 func (e *testEngine) Context() coreapi.ContextService {
 	return &testContextService{e: e}
 }
-func (e *testEngine) Usage() coreapi.UsageService      { return &testUsageService{} }
+func (e *testEngine) Usage() coreapi.UsageService {
+	return &testUsageService{e: e}
+}
 func (e *testEngine) Versions() coreapi.VersionService { return &testVersionService{} }
-func (e *testEngine) Tasks() coreapi.TaskService       { return &testTaskService{} }
-func (e *testEngine) Goals() coreapi.GoalService       { return &testGoalService{} }
+func (e *testEngine) Tasks() coreapi.TaskService       { return &testTaskService{e: e} }
+func (e *testEngine) Goals() coreapi.GoalService       { return &testGoalService{e: e} }
 func (e *testEngine) Modes() coreapi.ModeService       { return &testModeService{e: e} }
 func (e *testEngine) Models() coreapi.ModelService     { return &testModelService{e: e} }
 func (e *testEngine) RemoteWorkspaces() coreapi.RemoteWorkspaceService {
-	return &testRemoteWorkspaceService{}
+	return &testRemoteWorkspaceService{e: e}
 }
-func (e *testEngine) Git() coreapi.GitService                     { return &testGitService{e: e} }
-func (e *testEngine) Insights() coreapi.InsightService            { return &testInsightsService{} }
-func (e *testEngine) Memory() coreapi.MemoryService               { return &testMemoryService{e: e} }
-func (e *testEngine) Roles() coreapi.RoleService                  { return nil }
-func (e *testEngine) Turns() coreapi.TurnService                  { return nil }
-func (e *testEngine) Approvals() coreapi.ApprovalService          { return &testApprovalsService{} }
-func (e *testEngine) Inquiries() coreapi.InquiryService           { return &testInquiryService{} }
-func (e *testEngine) Agents() coreapi.AgentService                { return &testAgentsService{} }
-func (e *testEngine) Tools() coreapi.ToolExecutor                 { return &testToolExecutor{} }
-func (e *testEngine) ToolCatalog() coreapi.ToolCatalogService     { return nil }
-func (e *testEngine) ToolTelemetry() coreapi.ToolTelemetryService { return &testToolTelemetryService{} }
-func (e *testEngine) Events() coreapi.EventSubscriber             { return &testEventSubscriber{} }
-func (e *testEngine) Sandbox() coreapi.SandboxService             { return &testSandboxService{} }
-func (e *testEngine) Diagnostics() coreapi.DiagnosticsService     { return &testDiagnosticsService{} }
+func (e *testEngine) Git() coreapi.GitService                 { return &testGitService{e: e} }
+func (e *testEngine) Insights() coreapi.InsightService        { return &testInsightsService{} }
+func (e *testEngine) Memory() coreapi.MemoryService           { return &testMemoryService{e: e} }
+func (e *testEngine) Roles() coreapi.RoleService              { return nil }
+func (e *testEngine) Turns() coreapi.TurnService              { return nil }
+func (e *testEngine) Approvals() coreapi.ApprovalService      { return &testApprovalsService{} }
+func (e *testEngine) Inquiries() coreapi.InquiryService       { return &testInquiryService{} }
+func (e *testEngine) Agents() coreapi.AgentService            { return &testAgentsService{e: e} }
+func (e *testEngine) Tools() coreapi.ToolExecutor             { return &testToolExecutor{} }
+func (e *testEngine) ToolCatalog() coreapi.ToolCatalogService { return nil }
+func (e *testEngine) ToolTelemetry() coreapi.ToolTelemetryService {
+	return &testToolTelemetryService{e: e}
+}
+func (e *testEngine) Events() coreapi.EventSubscriber         { return &testEventSubscriber{} }
+func (e *testEngine) Sandbox() coreapi.SandboxService         { return &testSandboxService{} }
+func (e *testEngine) Diagnostics() coreapi.DiagnosticsService { return &testDiagnosticsService{} }
 
 // === Diagnostics ===
 //
@@ -194,10 +234,16 @@ func (s *testSessionService) Create(_ context.Context, req coreapi.CreateSession
 	return out, nil
 }
 func (s *testSessionService) Resume(_ context.Context, req coreapi.ResumeSessionRequest) (coreapi.Session, error) {
+	if s.e.resumeSessionErr != nil {
+		return coreapi.Session{}, s.e.resumeSessionErr
+	}
 	s.e.resumeCalls = append(s.e.resumeCalls, req.SessionID)
 	return coreapi.Session{ID: req.SessionID}, nil
 }
 func (s *testSessionService) List(context.Context, coreapi.ListSessionsRequest) ([]coreapi.Session, error) {
+	if s.e != nil {
+		return s.e.sessionList, s.e.listSessionsErr
+	}
 	return nil, nil
 }
 func (s *testSessionService) Current(context.Context, coreapi.CurrentSessionRequest) (coreapi.Session, error) {
@@ -217,12 +263,18 @@ func (s *testSessionService) SetMeta(context.Context, coreapi.SetSessionMetaRequ
 	return coreapi.Session{}, nil
 }
 func (s *testSessionService) LoadMessages(context.Context, coreapi.LoadSessionMessagesRequest) ([]coreapi.SessionMessage, error) {
+	if s.e.loadMessagesErr != nil {
+		return nil, s.e.loadMessagesErr
+	}
 	if s.e.messages != nil {
 		return s.e.messages, nil
 	}
 	return nil, nil
 }
 func (s *testSessionService) SaveMessages(_ context.Context, req coreapi.SaveSessionMessagesRequest) (coreapi.Session, error) {
+	if s.e.saveSessionMsgsErr != nil {
+		return coreapi.Session{}, s.e.saveSessionMsgsErr
+	}
 	id := req.SessionID
 	if id == "" {
 		id = "test-session"
@@ -395,6 +447,13 @@ func (s *testModelService) Activate(_ context.Context, req coreapi.ModelNameRequ
 }
 func (s *testModelService) SyncEnv(context.Context) error { return nil }
 func (s *testModelService) Context(context.Context, coreapi.ModelContextRequest) (coreapi.ModelContextSnapshot, error) {
+	if s.e.modelCtxErr != nil {
+		return coreapi.ModelContextSnapshot{}, s.e.modelCtxErr
+	}
+	if s.e.modelCtxSnapshot.ResolvedModelName != "" || s.e.modelCtxSnapshot.GlobalDefaultName != "" ||
+		s.e.modelCtxSnapshot.WorkspaceModelName != "" {
+		return s.e.modelCtxSnapshot, nil
+	}
 	return coreapi.ModelContextSnapshot{
 		ResolvedModelName: s.e.activeModel,
 		ResolvedScope:     "global",
@@ -408,6 +467,9 @@ func (s *testModelService) ClearWorkspace(context.Context, coreapi.ClearWorkspac
 	return nil
 }
 func (s *testModelService) SetSession(_ context.Context, req coreapi.SetSessionModelRequest) error {
+	if s.e.selectModelErr != nil {
+		return s.e.selectModelErr
+	}
 	s.e.activeModel = req.ModelName
 	return nil
 }
@@ -448,9 +510,12 @@ func (s *testStateServiceWithEngine) Snapshot(context.Context, coreapi.StateSnap
 // === Usage ===
 // 补全 Usage 空实现，让依赖 refreshCostPanel/UsageSummary 的路径（如启动期 resume）
 // 在测试里不再 nil 解引用。零值无副作用，不改变既有测试行为。
-type testUsageService struct{}
+type testUsageService struct{ e *testEngine }
 
 func (s *testUsageService) Summary(context.Context) (coreapi.UsageSummary, error) {
+	if s.e != nil {
+		return s.e.usageSummary, s.e.usageSummaryErr
+	}
 	return coreapi.UsageSummary{}, nil
 }
 func (s *testUsageService) CostSummary(context.Context) (string, error) { return "", nil }
@@ -492,7 +557,7 @@ func (s *testContextService) Export(context.Context, coreapi.ExportContextReques
 }
 
 // === RemoteWorkspace ===
-type testRemoteWorkspaceService struct{}
+type testRemoteWorkspaceService struct{ e *testEngine }
 
 func (s *testRemoteWorkspaceService) List(context.Context) ([]coreapi.RemoteWorkspace, error) {
 	return nil, nil
@@ -507,16 +572,27 @@ func (s *testRemoteWorkspaceService) ClearCache(context.Context, coreapi.RemoteW
 	return nil
 }
 func (s *testRemoteWorkspaceService) CurrentRepo(context.Context) (coreapi.RemoteRepoState, bool, error) {
+	if s.e != nil {
+		return s.e.remoteRepo, s.e.remoteOK, s.e.remoteErr
+	}
 	return coreapi.RemoteRepoState{}, false, nil
 }
 
 // === Extension ===
-type testExtensionService struct{}
+type testExtensionService struct{ e *testEngine }
 
 func (s *testExtensionService) ListSkills(context.Context) ([]coreapi.SkillInfo, error) {
+	if s.e != nil {
+		return s.e.skills, nil
+	}
 	return nil, nil
 }
-func (s *testExtensionService) ReloadSkills(context.Context) error { return nil }
+func (s *testExtensionService) ReloadSkills(context.Context) error {
+	if s.e != nil {
+		return s.e.reloadSkillsErr
+	}
+	return nil
+}
 func (s *testExtensionService) SetSkillEnabled(context.Context, coreapi.SetExtensionEnabledRequest) error {
 	return nil
 }
@@ -524,12 +600,18 @@ func (s *testExtensionService) InvokeSkill(context.Context, coreapi.InvokeSkillR
 	return coreapi.InvokeSkillResult{}, nil
 }
 func (s *testExtensionService) ListPlugins(context.Context) ([]coreapi.PluginInfo, error) {
+	if s.e != nil {
+		return s.e.plugins, nil
+	}
 	return nil, nil
 }
 func (s *testExtensionService) SetPluginEnabled(context.Context, coreapi.SetExtensionEnabledRequest) error {
 	return nil
 }
 func (s *testExtensionService) BrowserStatus(context.Context) (coreapi.BrowserRuntimeStatus, error) {
+	if s.e != nil {
+		return s.e.browserStatus, s.e.browserStatusErr
+	}
 	return coreapi.BrowserRuntimeStatus{}, nil
 }
 
@@ -577,10 +659,20 @@ func (s *testMCPService) SetEnabled(context.Context, coreapi.SetMCPEnabledReques
 }
 
 // === Task ===
-type testTaskService struct{}
+type testTaskService struct{ e *testEngine }
 
-func (s *testTaskService) List(context.Context) ([]coreapi.TaskSnapshot, error) { return nil, nil }
-func (s *testTaskService) Todos(context.Context) ([]coreapi.TodoItem, error)    { return nil, nil }
+func (s *testTaskService) List(context.Context) ([]coreapi.TaskSnapshot, error) {
+	if s.e != nil {
+		return s.e.taskList, nil
+	}
+	return nil, nil
+}
+func (s *testTaskService) Todos(context.Context) ([]coreapi.TodoItem, error) {
+	if s.e != nil {
+		return s.e.todoList, nil
+	}
+	return nil, nil
+}
 func (s *testTaskService) Tail(context.Context, coreapi.TaskIDRequest) ([]string, error) {
 	return nil, nil
 }
@@ -588,25 +680,42 @@ func (s *testTaskService) Kill(context.Context, coreapi.TaskIDRequest) error { r
 func (s *testTaskService) Cleanup(context.Context) (int, error)              { return 0, nil }
 
 // testGoalService 是 UI 测试用的 goal service 假实现（不触网）。
-type testGoalService struct{}
+type testGoalService struct{ e *testEngine }
 
 func (s *testGoalService) Set(_ context.Context, _ coreapi.GoalSetRequest) (coreapi.ThreadGoal, error) {
+	if s.e != nil {
+		return s.e.goalSetResp, s.e.goalSetErr
+	}
 	return coreapi.ThreadGoal{}, nil
 }
 
 func (s *testGoalService) Get(_ context.Context, _ coreapi.GoalRefRequest) (coreapi.GoalGetResponse, error) {
+	if s.e != nil {
+		return s.e.goalGetResp, s.e.goalGetErr
+	}
 	return coreapi.GoalGetResponse{}, nil
 }
 
 func (s *testGoalService) Pause(_ context.Context, _ coreapi.GoalRefRequest) (coreapi.ThreadGoal, error) {
+	if s.e != nil {
+		return s.e.goalPauseResumeResp, s.e.goalPauseErr
+	}
 	return coreapi.ThreadGoal{}, nil
 }
 
 func (s *testGoalService) Resume(_ context.Context, _ coreapi.GoalRefRequest) (coreapi.ThreadGoal, error) {
+	if s.e != nil {
+		return s.e.goalPauseResumeResp, s.e.goalResumeErr
+	}
 	return coreapi.ThreadGoal{}, nil
 }
 
-func (s *testGoalService) Clear(_ context.Context, _ coreapi.GoalRefRequest) error { return nil }
+func (s *testGoalService) Clear(_ context.Context, _ coreapi.GoalRefRequest) error {
+	if s.e != nil {
+		return s.e.goalClearErr
+	}
+	return nil
+}
 
 // testApprovalsService / testInquiryService / testToolTelemetryService：
 // UI 测试用假实现，避免 engine.X() 返回 nil 后 adapter 解引用 panic。
@@ -618,12 +727,18 @@ type testInquiryService struct{}
 
 func (s *testInquiryService) Respond(context.Context, coreapi.InquiryResponse) error { return nil }
 
-type testToolTelemetryService struct{}
+type testToolTelemetryService struct{ e *testEngine }
 
 func (s *testToolTelemetryService) Traces(context.Context) ([]coreapi.ToolTrace, error) {
+	if s.e != nil {
+		return s.e.toolTraces, s.e.toolTracesErr
+	}
 	return nil, nil
 }
 func (s *testToolTelemetryService) Stats(context.Context) ([]coreapi.ToolStat, error) {
+	if s.e != nil {
+		return s.e.toolStats, s.e.toolStatsErr
+	}
 	return nil, nil
 }
 
@@ -697,7 +812,7 @@ func (s *testMemoryService) RecordDelete(context.Context, coreapi.DeleteMemoryRe
 }
 
 // testLSPService / testVersionService：UI 测试用假实现。
-type testLSPService struct{}
+type testLSPService struct{ e *testEngine }
 
 func (s *testLSPService) List(context.Context) ([]coreapi.LSPServer, error) { return nil, nil }
 func (s *testLSPService) Detect(context.Context, coreapi.LSPLanguageRequest) (string, error) {
@@ -709,7 +824,12 @@ func (s *testLSPService) Start(context.Context, coreapi.LSPLanguageRequest) (str
 func (s *testLSPService) Install(context.Context, coreapi.LSPLanguageRequest) (string, error) {
 	return "", nil
 }
-func (s *testLSPService) Diagnostics(context.Context) ([]string, error) { return nil, nil }
+func (s *testLSPService) Diagnostics(context.Context) ([]string, error) {
+	if s.e != nil {
+		return s.e.lspDiagnostics, nil
+	}
+	return nil, nil
+}
 func (s *testLSPService) DiagnosticsSummary(context.Context) (coreapi.LSPDiagnosticsSummary, error) {
 	return coreapi.LSPDiagnosticsSummary{}, nil
 }
@@ -727,7 +847,7 @@ func (s *testVersionService) DeleteFile(context.Context, coreapi.VersionFileRequ
 func (s *testVersionService) Clear(context.Context) (int, error) { return 0, nil }
 
 // testAgentsService：UI 测试用假 agent service。
-type testAgentsService struct{}
+type testAgentsService struct{ e *testEngine }
 
 func (s *testAgentsService) Spawn(context.Context, coreapi.SpawnAgentRequest) (coreapi.Agent, error) {
 	return coreapi.Agent{ID: "a1", Status: "running"}, nil
@@ -743,10 +863,12 @@ func (s *testAgentsService) RunTool(context.Context, coreapi.AgentToolRequest) (
 	return coreapi.AgentToolResult{}, nil
 }
 func (s *testAgentsService) List(context.Context, coreapi.ListAgentsRequest) ([]coreapi.Agent, error) {
+	if s.e != nil {
+		return s.e.agentList, nil
+	}
 	return nil, nil
 }
 func (s *testAgentsService) Close(context.Context, coreapi.AgentRef) error { return nil }
-
 
 // testToolExecutor：UI 测试用假工具执行器。
 type testToolExecutor struct{}
@@ -754,7 +876,6 @@ type testToolExecutor struct{}
 func (s *testToolExecutor) Execute(context.Context, coreapi.ToolRequest) (coreapi.ToolResult, error) {
 	return coreapi.ToolResult{Status: "success"}, nil
 }
-
 
 // testInsightsService：UI 测试用假 insight service。
 type testInsightsService struct{}

@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
@@ -26,21 +27,44 @@ type fakeCaller struct {
 	responses map[string]string
 	err       error
 	lastMeth  string
+
+	// seq：按调用次序返回响应（耗尽后回退 responses）；mu/calls 供异步
+	// goroutine 命令的测试轮询等待（pluginInstallCmd 等 go func 路径）。
+	mu    sync.Mutex
+	seq   map[string][]string
+	calls int
 }
 
 func (c *fakeCaller) Call(_ context.Context, method string, _ any, out any) error {
+	c.mu.Lock()
+	c.calls++
 	c.lastMeth = method
-	if c.err != nil {
-		return c.err
+	var raw string
+	if list := c.seq[method]; len(list) > 0 {
+		raw = list[0]
+		c.seq[method] = list[1:]
+	} else {
+		raw = c.responses[method]
 	}
-	raw, ok := c.responses[method]
-	if !ok {
+	err := c.err
+	c.mu.Unlock()
+	if err != nil {
+		return err
+	}
+	if raw == "" {
 		return errors.New("unknown method: " + method)
 	}
 	if out == nil {
 		return nil
 	}
 	return json.Unmarshal([]byte(raw), out)
+}
+
+// callCount 返回至今 Call 次数（异步命令测试的等待断言用）。
+func (c *fakeCaller) callCount() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.calls
 }
 
 // ---------- slashCommandHandler 全量分发 ----------
@@ -244,18 +268,18 @@ func TestHandlePermissionsPlanSkills(t *testing.T) {
 	setTestHome(t)
 	engine := newTestEngine()
 	engine.permissionSnap = coreapi.PermissionSnapshot{
-		ExecutionMode:          "plan",
-		AccessMode:             "workspace-write",
-		ApprovalMode:           "on-request",
-		SandboxMode:            "strict",
-		AllowAll:               false,
-		AllowedCategories:      []string{"read"},
-		HasPendingDiff:         true,
-		PendingDiffPath:        "/tmp/x",
-		LastAuthorization:      "allow",
-		LastAuthorizationKind:  "file",
+		ExecutionMode:           "plan",
+		AccessMode:              "workspace-write",
+		ApprovalMode:            "on-request",
+		SandboxMode:             "strict",
+		AllowAll:                false,
+		AllowedCategories:       []string{"read"},
+		HasPendingDiff:          true,
+		PendingDiffPath:         "/tmp/x",
+		LastAuthorization:       "allow",
+		LastAuthorizationKind:   "file",
 		LastAuthorizationTarget: "/tmp/x",
-		LastAuthorizationNote:  "ok",
+		LastAuthorizationNote:   "ok",
 	}
 	app := NewAppModelFromCoreEngine(engine)
 
