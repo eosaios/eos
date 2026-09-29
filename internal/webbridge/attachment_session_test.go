@@ -68,3 +68,19 @@ func TestAttachmentServiceNilBridge(t *testing.T) {
 		_ = err
 	}
 }
+
+func TestBrowserControlNoGateway(t *testing.T) {
+	s := &BridgeService{}
+	if _, err := s.BrowserControlTakeover("r", "n", 0); err == nil {
+		t.Fatal("no gateway")
+	}
+	if _, err := s.BrowserControlConfirm(); err == nil {
+		t.Fatal("no gateway")
+	}
+	if _, err := s.BrowserControlResume(); err == nil {
+		t.Fatal("no gateway")
+	}
+	if _, err := s.BrowserFocus("", ""); err == nil {
+		t.Fatal("no gateway")
+	}
+}
