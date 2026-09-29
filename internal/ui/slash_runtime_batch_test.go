@@ -221,7 +221,7 @@ func TestHandleSessionSlashBatch(t *testing.T) {
 			list[i] = coreapi.Session{ID: "s13"} // 占位，下面改
 		}
 		for i := range list {
-			id := "s" + string(rune('0'+i%10)) // s0..s9 循环，避免依赖 strconv
+			var id string // s01..s12，避免依赖 strconv
 			if i < 10 {
 				id = "s0" + string(rune('0'+i))
 			} else {

@@ -28,16 +28,14 @@ type fakeCaller struct {
 	err       error
 	lastMeth  string
 
-	// seq：按调用次序返回响应（耗尽后回退 responses）；mu/calls 供异步
-	// goroutine 命令的测试轮询等待（pluginInstallCmd 等 go func 路径）。
-	mu    sync.Mutex
-	seq   map[string][]string
-	calls int
+	// seq：按调用次序返回响应（耗尽后回退 responses）；mu 保护并发
+	// goroutine 命令对 Call 状态的访问（pluginInstallCmd 等 go func 路径）。
+	mu  sync.Mutex
+	seq map[string][]string
 }
 
 func (c *fakeCaller) Call(_ context.Context, method string, _ any, out any) error {
 	c.mu.Lock()
-	c.calls++
 	c.lastMeth = method
 	var raw string
 	if list := c.seq[method]; len(list) > 0 {
@@ -58,13 +56,6 @@ func (c *fakeCaller) Call(_ context.Context, method string, _ any, out any) erro
 		return nil
 	}
 	return json.Unmarshal([]byte(raw), out)
-}
-
-// callCount 返回至今 Call 次数（异步命令测试的等待断言用）。
-func (c *fakeCaller) callCount() int {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.calls
 }
 
 // ---------- slashCommandHandler 全量分发 ----------

@@ -22,8 +22,13 @@ func TestDefaultEmbeddedCacheDir(t *testing.T) {
 }
 
 func TestMaterializeEmbeddedNoCore(t *testing.T) {
-	// 未注入内嵌内核时返回错误
+	// 未注入内嵌内核时返回错误。CI/正式构建在当前平台都有 vendored 内核
+	// （embeddedCoreSidecar 非 nil），该分支须临时摘除注入来测。
+	orig := embeddedCoreSidecar
+	embeddedCoreSidecar = nil
+	t.Cleanup(func() { embeddedCoreSidecar = orig })
+
 	if _, err := materializeEmbedded("linux", "amd64"); err == nil {
-		t.Fatal("no embedded core")
+		t.Fatal("expected error when no embedded core sidecar is injected")
 	}
 }
