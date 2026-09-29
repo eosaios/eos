@@ -6,11 +6,12 @@ package ui
 // 商业使用请联系版权人获得商业授权.
 
 import (
-	"time"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/eosaios/eos/internal/pkg/filedialog"
 	"github.com/eosaios/eos/internal/ui/views/confirm"
 )
 
@@ -71,5 +72,50 @@ func TestSavePlanHistoryEntry(t *testing.T) {
 	name2 := app.nextPlanDownloadFileName(planDownloadNow().Add(-time.Hour))
 	if name2 == name {
 		// 时间不同应不同
+	}
+}
+
+func TestHandlePlanDownloadAction(t *testing.T) {
+	setTestHome(t)
+	app := newTestAppModel(t)
+
+	// 无计划条目
+	_ = app.handlePlanDownloadAction(99)
+
+	// 有条目 + chooser 成功
+	app.history = append(app.history, historyEntry{kind: "ai", rawMarkdown: "# p", executionMode: "plan"})
+	orig := choosePlanDownloadDirectory
+	dir := t.TempDir()
+	choosePlanDownloadDirectory = func(string) (string, error) { return dir, nil }
+	t.Cleanup(func() { choosePlanDownloadDirectory = orig })
+	_ = app.handlePlanDownloadAction(0)
+
+	// chooser 取消
+	choosePlanDownloadDirectory = func(string) (string, error) { return "", filedialog.ErrCanceled }
+	_ = app.handlePlanDownloadAction(0)
+
+	// chooser 不可用 → 打开文本确认
+	app.history = append(app.history, historyEntry{kind: "ai", rawMarkdown: "# p2", executionMode: "plan"})
+	idx := len(app.history) - 1
+	choosePlanDownloadDirectory = func(string) (string, error) { return "", filedialog.ErrUnavailable }
+	_ = app.handlePlanDownloadAction(idx)
+	if app.pendingPlanDownload == nil {
+		t.Fatal("pending download")
+	}
+}
+
+func TestHandleConfirmResultBrowserTakeover(t *testing.T) {
+	setTestHome(t)
+	app := newTestAppModel(t)
+	app.prevView = "shell"
+	app.activeView = "confirm"
+	app.browserTakeoverConfirm = true
+
+	next, _ := app.handleConfirmResultBrowserTakeover(confirm.ResultMsg{OptionIndex: 1})
+	if next == nil {
+		t.Fatal("takeover")
+	}
+	if app.browserTakeoverConfirm {
+		t.Fatal("should clear")
 	}
 }
