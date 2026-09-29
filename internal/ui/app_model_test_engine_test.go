@@ -128,6 +128,19 @@ type testEngine struct {
 	invokeSkillErr     error            // Extensions.InvokeSkill 失败臂
 	modelCatalog       *coreapi.ModelCatalogState // Models.Catalog 覆盖（nil=默认）
 	turnStartErr       error // Turns.Start 失败臂（Invoke 异步回包）
+	// 面板刷新批测注入口（零值=原行为）。
+	lspServers        []coreapi.LSPServer
+	lspServersErr     error
+	rulesSnapshot     coreapi.RulesSnapshot
+	rulesSnapshotErr  error
+	contextPreview    []string
+	contextPreviewErr error
+	contextStats      coreapi.ContextStats
+	contextStatsErr   error
+	costItems         []coreapi.CostItem
+	costItemsErr      error
+	memorySnapshot    coreapi.MemorySnapshot
+	memorySnapshotErr error
 }
 
 func (e *testEngine) Caller() coreapi.Caller {
@@ -307,6 +320,12 @@ type testConfigService struct{ e *testEngine }
 
 func (s *testConfigService) GetRules(context.Context) (string, error) { return "", nil }
 func (s *testConfigService) RulesSnapshot(context.Context) (coreapi.RulesSnapshot, error) {
+	if s.e != nil && s.e.rulesSnapshotErr != nil {
+		return coreapi.RulesSnapshot{}, s.e.rulesSnapshotErr
+	}
+	if s.e != nil {
+		return s.e.rulesSnapshot, nil
+	}
 	return coreapi.RulesSnapshot{}, nil
 }
 func (s *testConfigService) SaveRules(context.Context, coreapi.SaveRulesRequest) error {
@@ -551,14 +570,34 @@ func (s *testUsageService) Summary(context.Context) (coreapi.UsageSummary, error
 }
 func (s *testUsageService) CostSummary(context.Context) (string, error) { return "", nil }
 func (s *testUsageService) CostItems(context.Context) ([]coreapi.CostItem, error) {
+	if s.e != nil && s.e.costItemsErr != nil {
+		return nil, s.e.costItemsErr
+	}
+	if s.e != nil {
+		return s.e.costItems, nil
+	}
 	return nil, nil
 }
 
 // === Context ===
 type testContextService struct{ e *testEngine }
 
-func (s *testContextService) Preview(context.Context) ([]string, error) { return nil, nil }
+func (s *testContextService) Preview(context.Context) ([]string, error) {
+	if s.e != nil && s.e.contextPreviewErr != nil {
+		return nil, s.e.contextPreviewErr
+	}
+	if s.e != nil {
+		return s.e.contextPreview, nil
+	}
+	return nil, nil
+}
 func (s *testContextService) Stats(context.Context) (coreapi.ContextStats, error) {
+	if s.e != nil && s.e.contextStatsErr != nil {
+		return coreapi.ContextStats{}, s.e.contextStatsErr
+	}
+	if s.e != nil {
+		return s.e.contextStats, nil
+	}
 	return coreapi.ContextStats{}, nil
 }
 func (s *testContextService) WindowTokens(context.Context) (int, error) { return 0, nil }
@@ -840,6 +879,12 @@ func (s *testGitService) Show(context.Context, coreapi.GitShowRequest) (coreapi.
 type testMemoryService struct{ e *testEngine }
 
 func (s *testMemoryService) Snapshot(context.Context) (coreapi.MemorySnapshot, error) {
+	if s.e != nil && s.e.memorySnapshotErr != nil {
+		return coreapi.MemorySnapshot{}, s.e.memorySnapshotErr
+	}
+	if s.e != nil {
+		return s.e.memorySnapshot, nil
+	}
 	return coreapi.MemorySnapshot{}, nil
 }
 func (s *testMemoryService) Save(context.Context, coreapi.SaveMemoryRequest) error {
@@ -865,7 +910,15 @@ func (s *testMemoryService) RecordDelete(context.Context, coreapi.DeleteMemoryRe
 // testLSPService / testVersionService：UI 测试用假实现。
 type testLSPService struct{ e *testEngine }
 
-func (s *testLSPService) List(context.Context) ([]coreapi.LSPServer, error) { return nil, nil }
+func (s *testLSPService) List(context.Context) ([]coreapi.LSPServer, error) {
+	if s.e != nil && s.e.lspServersErr != nil {
+		return nil, s.e.lspServersErr
+	}
+	if s.e != nil {
+		return s.e.lspServers, nil
+	}
+	return nil, nil
+}
 func (s *testLSPService) Detect(context.Context, coreapi.LSPLanguageRequest) (string, error) {
 	return "go", nil
 }
