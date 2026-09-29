@@ -134,3 +134,64 @@ func TestProgressReaderAndLatestReleasesURL(t *testing.T) {
 		t.Fatalf("url = %q", latestReleasesPageURL())
 	}
 }
+
+func TestVerifyChecksum(t *testing.T) {
+	dir := t.TempDir()
+	archive := filepath.Join(dir, "a.bin")
+	if err := os.WriteFile(archive, []byte("hello"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	sums := filepath.Join(dir, "SHA256SUMS.txt")
+	// 正确 checksum
+	if err := os.WriteFile(sums, []byte("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824  a.bin\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyChecksum(archive, sums, "a.bin"); err != nil {
+		t.Fatal(err)
+	}
+
+	// 错误 checksum
+	if err := os.WriteFile(sums, []byte("deadbeef  a.bin\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyChecksum(archive, sums, "a.bin"); err == nil {
+		t.Fatal("mismatch")
+	}
+
+	// 未列出
+	if err := verifyChecksum(archive, sums, "other.bin"); err == nil {
+		t.Fatal("not listed")
+	}
+
+	// 缺失 sums
+	if err := verifyChecksum(archive, filepath.Join(dir, "nope"), "a.bin"); err == nil {
+		t.Fatal("missing sums")
+	}
+}
+
+func TestExtractArchive(t *testing.T) {
+	dir := t.TempDir()
+	// 非法 zip
+	bad := filepath.Join(dir, "bad.zip")
+	if err := os.WriteFile(bad, []byte("not zip"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := extractZip(bad, dir); err == nil {
+		t.Fatal("bad zip")
+	}
+	// 非法 tar.gz
+	badtgz := filepath.Join(dir, "bad.tar.gz")
+	if err := os.WriteFile(badtgz, []byte("not gz"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := extractTarGz(badtgz, dir); err == nil {
+		t.Fatal("bad tgz")
+	}
+	// extractArchive 按扩展名分发
+	if err := extractArchive(bad, dir); err == nil {
+		t.Fatal("zip dispatch")
+	}
+	if err := extractArchive(badtgz, dir); err == nil {
+		t.Fatal("tgx dispatch")
+	}
+}
