@@ -493,3 +493,55 @@ func TestParamsTypeMismatchDefaults(t *testing.T) {
 		t.Fatal("int mismatch")
 	}
 }
+
+func TestTokenEstimateCache(t *testing.T) {
+	c := NewTokenEstimateCache(2)
+	c.Put(1, 10)
+	c.Put(2, 20)
+	if v, ok := c.Get(1); !ok || v != 10 {
+		t.Fatalf("get = %v %v", v, ok)
+	}
+	if _, ok := c.Get(99); ok {
+		t.Fatal("miss")
+	}
+	// 超容量淘汰最旧
+	c.Put(3, 30)
+	if _, ok := c.Get(2); ok {
+		// 2 可能被淘汰（1 刚被 Get 刷新）
+	}
+	// 负数夹到 0
+	c.Put(4, -5)
+	if v, _ := c.Get(4); v != 0 {
+		t.Fatalf("neg = %d", v)
+	}
+	// 默认容量
+	c2 := NewTokenEstimateCache(0)
+	c2.Put(1, 1)
+	if v, ok := c2.Get(1); !ok || v != 1 {
+		t.Fatal("default cap")
+	}
+}
+
+func TestTokenEstimateKeyAndWeighted(t *testing.T) {
+	k1 := TokenEstimateKey("model", "text")
+	k2 := TokenEstimateKey("model", "text")
+	if k1 != k2 {
+		t.Fatal("stable key")
+	}
+	k3 := TokenEstimateKey("other", "text")
+	if k1 == k3 {
+		t.Fatal("model affects key")
+	}
+
+	n := EstimateTokensWeighted("gpt-4", "hello world this is a test")
+	if n <= 0 {
+		t.Fatalf("estimate = %d", n)
+	}
+	n2 := EstimateTokensWeighted("code", "func main() { if x { return } }")
+	if n2 <= 0 {
+		t.Fatalf("code estimate = %d", n2)
+	}
+	if EstimateTokensWeighted("m", "") != 0 {
+		t.Fatal("empty")
+	}
+}
