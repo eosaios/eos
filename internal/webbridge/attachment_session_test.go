@@ -273,3 +273,20 @@ func TestBrowserPickAndProfileNoGateway(t *testing.T) {
 		t.Fatal("upload")
 	}
 }
+
+func TestModelRulesVersionsChatNoGateway(t *testing.T) {
+	s := &BridgeService{}
+	_, _ = s.UpsertModel("n", "b", "k", "m")
+	_, _ = s.SaveModel(ModelSaveRequest{})
+	_, _ = s.ActivateModel("n")
+	_, _ = s.SelectCurrentModel("n")
+	_, _ = s.DeleteModel("n")
+	_, _ = s.SaveRules(RulesSaveRequest{})
+	_, _ = s.ResetRules(RulesResetRequest{})
+	_, _ = s.RollbackVersion("v")
+	_, _ = s.DeleteVersion("v")
+	_ = s.ClearVersions()
+	_, _ = s.SendChat("s", "/ws", "hi", nil)
+	_, _ = s.SendChatWithReasoning("s", "/ws", "hi", nil, "high")
+	_, _ = s.RollbackChatTurn("s", "m")
+}
