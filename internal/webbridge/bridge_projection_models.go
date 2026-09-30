@@ -97,8 +97,10 @@ func (s *BridgeService) logModelCatalogDegradation(reason string, err error) {
 
 func (s *BridgeService) loadModelCatalog() ModelCatalogState {
 	// Reset the fallback reason at the start of every bootstrap so a stale
-	// value does not leak into a later diagnostic.
-	s.modelCatalogFallback = ""
+	// value does not leak into a later diagnostic. 本函数可从多个 emit
+	// goroutine 的 loadBootstrap 并发进入：fallback 原因走局部变量，
+	// 共享字段收口到 setModelCatalogFallback（stateMu）与只读快照。
+	s.setModelCatalogFallback("")
 	if s.coreReady() {
 		if catalog, err := s.runtimeGatewayClient().CoreModelCatalogRPC(context.Background()); err == nil {
 			if len(catalog.Providers) > 0 || len(catalog.Presets) > 0 {
@@ -120,9 +122,9 @@ func (s *BridgeService) loadModelCatalog() ModelCatalogState {
 	// (binary paths, RPC errors, "fallback", etc.); those details live only in
 	// slog via logModelCatalogDegradation. This branch should not normally be
 	// reached — its presence indicates a core readiness bug to fix separately.
-	s.modelCatalogFallback = modelCatalogUnavailableMessage
-	if s.modelCatalogFallback != "" {
-		s.recordModelCatalogFallbackNotification()
+	s.setModelCatalogFallback(modelCatalogUnavailableMessage)
+	if fallback := s.modelCatalogFallbackSnapshot(); fallback != "" {
+		s.recordModelCatalogFallbackNotification(fallback)
 	}
 	return ModelCatalogState{
 		AllowCustomProvider: true,
@@ -130,12 +132,27 @@ func (s *BridgeService) loadModelCatalog() ModelCatalogState {
 	}
 }
 
+// setModelCatalogFallback 在 stateMu 内更新降级原因（多 emit goroutine 并发
+// 写保护；写点收敛于此）。
+func (s *BridgeService) setModelCatalogFallback(reason string) {
+	s.stateMu.Lock()
+	defer s.stateMu.Unlock()
+	s.modelCatalogFallback = strings.TrimSpace(reason)
+}
+
+// modelCatalogFallbackSnapshot 在 stateMu 内读取降级原因快照。
+func (s *BridgeService) modelCatalogFallbackSnapshot() string {
+	s.stateMu.RLock()
+	defer s.stateMu.RUnlock()
+	return strings.TrimSpace(s.modelCatalogFallback)
+}
+
 // recordModelCatalogFallbackNotification pushes a one-shot warning when the
 // live Rust model catalog could not be loaded.
 // The notification is throttled to once per change in fallback reason so the
 // user is told about the degradation without seeing a stack of duplicates.
-func (s *BridgeService) recordModelCatalogFallbackNotification() {
-	reason := strings.TrimSpace(s.modelCatalogFallback)
+func (s *BridgeService) recordModelCatalogFallbackNotification(reason string) {
+	reason = strings.TrimSpace(reason)
 	if reason == "" {
 		return
 	}

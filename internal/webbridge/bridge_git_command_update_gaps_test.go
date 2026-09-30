@@ -305,7 +305,7 @@ func TestRemoteWorkspaceServiceArms(t *testing.T) {
 			defaultWorkspace: workspace,
 			remoteWorkspace:  adapter.RemoteWorkspace{LocalPath: workspace},
 		}
-		_, chatSvc, _ := newChatSessionsTestBridge(t, gateway)
+		_, chatSvc, rec := newChatSessionsTestBridge(t, gateway)
 		ws := NewWorkspaceService(chatSvc.bridge)
 
 		gateway.remoteErr = errors.New("clone failed")
@@ -320,6 +320,9 @@ func TestRemoteWorkspaceServiceArms(t *testing.T) {
 		if gateway.openRemoteCalls[0] != "repo-id" {
 			t.Fatalf("openRemoteCalls = %v", gateway.openRemoteCalls)
 		}
+		// SelectWorkspace/emit 的后台 loadBootstrap 会写 HOME 目录，
+		// 等事件落地防 tempdir 清理竞态。
+		eventually(t, "shellUpdated after remote open", func() bool { return rec.has(shellUpdatedEventName) })
 	})
 
 	t.Run("forget/clear 成功与失败", func(t *testing.T) {

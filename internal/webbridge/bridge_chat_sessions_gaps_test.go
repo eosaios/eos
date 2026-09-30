@@ -121,6 +121,13 @@ type chatSessionsGatewayStub struct {
 	respondErr        error
 	respondWithReason [][3]interface{}
 
+	// turn 流（批四扩展）
+	turnErr       error
+	turnFailFirst int // 前 N 次 turn/start 注入失败（重试路径）
+	turnEvents    chan adapter.Event
+	turnRequests  []coreapi.StartTurnRequest
+	resumeTurnIDs []string
+
 	// predict / refine
 	predictText string
 	predictErr  error
@@ -487,10 +494,11 @@ func newChatSessionsTestBridge(t *testing.T, gateway *chatSessionsGatewayStub) (
 	t.Setenv("USERPROFILE", home)
 	rec := &emitRecorder{}
 	s := &BridgeService{
-		runtimeGateway: gateway,
-		sessions:       map[string]*sessionState{},
-		prompts:        map[string]*promptState{},
-		emitEvent:      rec.record,
+		runtimeGateway:       gateway,
+		sessions:             map[string]*sessionState{},
+		runningConversations: map[string]*runningConversationState{},
+		prompts:              map[string]*promptState{},
+		emitEvent:            rec.record,
 	}
 	return s, NewChatService(s), rec
 }

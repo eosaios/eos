@@ -22,6 +22,8 @@ func (s *BridgeService) stateProjection() *StateProjectionService {
 	if s == nil {
 		return NewStateProjectionService(nil)
 	}
+	s.stateMu.Lock()
+	defer s.stateMu.Unlock()
 	if s.stateProjectionSvc == nil {
 		s.stateProjectionSvc = NewStateProjectionService(s)
 	}

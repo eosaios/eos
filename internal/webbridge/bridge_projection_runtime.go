@@ -67,7 +67,7 @@ func (s *BridgeService) resourceChecks(bridgeMode string, diagnostics Diagnostic
 		ResourceCheck{Name: "文件对话框与剪贴板", Status: clipboardStatus, Detail: "已补齐附件选择、工作区选择、诊断包导出和剪贴板读写。"},
 		ResourceCheck{Name: "窗口状态桥接", Status: "ready", Detail: fmt.Sprintf("当前窗口 %dx%d，最大化=%t。", window.Width, window.Height, window.Maximised)},
 	)
-	if reason := strings.TrimSpace(s.modelCatalogFallback); reason != "" {
+	if reason := s.modelCatalogFallbackSnapshot(); reason != "" {
 		checks = append(checks, ResourceCheck{
 			Name:   modelCatalogUnavailableTitle,
 			Status: "warning",
