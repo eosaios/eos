@@ -249,5 +249,3 @@ func TestWaitOnStartedClientReturnsLiveChannel(t *testing.T) {
 	}
 	_ = c.Close()
 }
-
-
