@@ -72,6 +72,30 @@ type chatSessionsGatewayStub struct {
 	stateErr      error
 	rollbackErr   error
 	rollbackCalls [][2]interface{}
+	removeErr     error
+
+	// browser 控制面 / settings 内核 / 订阅（批二扩展）
+	browserErr         error
+	takeoverReasons    []string
+	focusURLs          []string
+	defaultProfiles    []string
+	tabNewURLs         []string
+	tabSwitches        []int
+	tabCloses          []*int
+	navigations        []string
+	liveStarts         []coreapi.BrowserLiveStartRequest
+	inputs             []coreapi.BrowserInputRequest
+	historyActions     []string
+	credentialImports  []coreapi.BrowserCredentialsImportRequest
+	profileUpserts     []map[string]any
+	uploadProvides     [][2]interface{}
+	subscribeErr       error
+	eventCh            chan adapter.Event
+	getSettingsErr     error
+	saveSettingsErr    error
+	kernelSettings     coreapi.Settings
+	savedKernels       []coreapi.Settings
+	configPathOverride string
 
 	// predict / refine
 	predictText string
@@ -80,7 +104,18 @@ type chatSessionsGatewayStub struct {
 	refineErr   error
 }
 
-func (g *chatSessionsGatewayStub) CoreConfigPath() string { return "/config/eos.toml" }
+func (g *chatSessionsGatewayStub) CoreConfigPath() string {
+	if g.configPathOverride != "" {
+		return g.configPathOverride
+	}
+	return "/config/eos.toml"
+}
+
+func (g *chatSessionsGatewayStub) CoreRemoveWorkspaceRPC(_ context.Context, path string) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.removeErr
+}
 
 func (g *chatSessionsGatewayStub) CoreDefaultWorkspaceRPC(context.Context) (string, error) {
 	return g.defaultWorkspace, nil
@@ -122,10 +157,21 @@ func (g *chatSessionsGatewayStub) CoreRememberWorkspaceRPC(_ context.Context, pa
 	return nil
 }
 
-func (g *chatSessionsGatewayStub) CoreListSessionsRPC(_ context.Context, _ string) ([]coreapi.Session, error) {
+func (g *chatSessionsGatewayStub) CoreListSessionsRPC(ctx context.Context, workspace string) ([]coreapi.Session, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	return append([]coreapi.Session(nil), g.sessions...), nil
+	all := append([]coreapi.Session(nil), g.sessions...)
+	if strings.TrimSpace(workspace) == "" {
+		return all, nil
+	}
+	// 与内核语义一致：按 workspace 过滤，防跨 workspace 复活。
+	filtered := make([]coreapi.Session, 0, len(all))
+	for _, item := range all {
+		if sameWorkspacePath(strings.TrimSpace(item.WorkspaceRoot), strings.TrimSpace(workspace)) {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered, nil
 }
 
 func (g *chatSessionsGatewayStub) CoreListArchivedSessionsRPC(context.Context) ([]coreapi.Session, error) {
@@ -286,7 +332,12 @@ func (g *chatSessionsGatewayStub) CoreCurrentRemoteRepoRPC(context.Context) (ada
 }
 
 func (g *chatSessionsGatewayStub) CoreGetFullSettingsRPC(context.Context) (coreapi.Settings, error) {
-	return coreapi.Settings{}, nil
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.getSettingsErr != nil {
+		return coreapi.Settings{}, g.getSettingsErr
+	}
+	return g.kernelSettings, nil
 }
 
 func (g *chatSessionsGatewayStub) CorePlanSnapshotRPC(context.Context) (adapter.PlanSnapshot, error) {
@@ -421,14 +472,18 @@ func newChatSessionsTestBridge(t *testing.T, gateway *chatSessionsGatewayStub) (
 }
 
 type emitRecorder struct {
-	mu     sync.Mutex
-	events []string
+	mu       sync.Mutex
+	events   []string
+	payloads []BrowserEventPayload
 }
 
-func (r *emitRecorder) record(name string, _ any) {
+func (r *emitRecorder) record(name string, payload any) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.events = append(r.events, name)
+	if browserPayload, ok := payload.(BrowserEventPayload); ok {
+		r.payloads = append(r.payloads, browserPayload)
+	}
 }
 
 func (r *emitRecorder) has(name string) bool {
@@ -564,7 +619,7 @@ func TestEnsureWorkspaceSessionRestoreAndCreateArms(t *testing.T) {
 		workspace := t.TempDir()
 		gateway := &chatSessionsGatewayStub{
 			defaultWorkspace: workspace,
-			sessions:         []coreapi.Session{{ID: "sess-restore"}},
+			sessions:         []coreapi.Session{{ID: "sess-restore", WorkspaceRoot: workspace}},
 			currentMeta:      adapter.SessionMeta{ID: "sess-restore"},
 		}
 		_, svc, _ := newChatSessionsTestBridge(t, gateway)
