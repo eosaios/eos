@@ -141,6 +141,27 @@ type testEngine struct {
 	costItemsErr      error
 	memorySnapshot    coreapi.MemorySnapshot
 	memorySnapshotErr error
+
+	// slash_runtime 第四轮收尾注入口（零值=原行为）。
+	workspaceAddErr     error // Workspaces.Add 失败臂（/workspace add）
+	workspaceRemoveErr  error // Workspaces.Remove 失败臂（/workspace remove）
+	setExecModeErr      error // Modes.SetExecutionMode 失败臂（/permissions auto）
+	setSandboxModeErr   error // Modes.SetSandboxMode 失败臂（/permissions access）
+	setAccessModeErr    error // Permissions.SetAccessMode 失败臂
+	setApprovalErr      error // Permissions.SetApprovalMode 失败臂（/permissions approval）
+	enterFullAccessErr  error // Permissions.EnterFullAccess 失败臂（danger 档）
+	permissionSnapErr   error // Permissions.Snapshot 失败臂（/permissions 回显）
+	skillsListErr       error // Extensions.ListSkills 失败臂（/skills）
+	pluginsListErr      error // Extensions.ListPlugins 失败臂（/plugin）
+	getSettingsErr      error // Config.GetSettings 失败臂（/theme /plan-style）
+	saveSettingsErr     error // Config.SaveSettings 失败臂（/theme /plan-style）
+	renameSessionErr    error // Sessions.Rename 失败臂（/rename）
+	gitBranchesErr      error // Git.Branches 失败臂（/git branches）
+	gitLogErr           error // Git.Log 失败臂（/git log）
+	gitShowErr          error // Git.Show 失败臂（/git show）
+	currentSessionEmpty bool  // Current 返回空 ID（/export /rename /share 无会话臂）
+	windowTokens        int   // Context.WindowTokens 返回（/status 上下文窗口行）
+	savedMessages       []coreapi.SessionMessage // SaveMessages 请求录制（/session save）
 }
 
 func (e *testEngine) Caller() coreapi.Caller {
@@ -221,10 +242,16 @@ func (s *testWorkspaceService) Forget(context.Context, coreapi.WorkspacePathRequ
 	return nil
 }
 func (s *testWorkspaceService) Add(_ context.Context, req coreapi.WorkspacePathRequest) error {
+	if s.e != nil && s.e.workspaceAddErr != nil {
+		return s.e.workspaceAddErr
+	}
 	s.e.workspaceList = append(s.e.workspaceList, coreapi.Workspace{Path: req.Path, Active: true})
 	return nil
 }
 func (s *testWorkspaceService) Remove(_ context.Context, req coreapi.WorkspacePathRequest) error {
+	if s.e != nil && s.e.workspaceRemoveErr != nil {
+		return s.e.workspaceRemoveErr
+	}
 	out := s.e.workspaceList[:0]
 	for _, w := range s.e.workspaceList {
 		if w.Path != req.Path {
@@ -279,6 +306,9 @@ func (s *testSessionService) List(context.Context, coreapi.ListSessionsRequest) 
 	return nil, nil
 }
 func (s *testSessionService) Current(context.Context, coreapi.CurrentSessionRequest) (coreapi.Session, error) {
+	if s.e != nil && s.e.currentSessionEmpty {
+		return coreapi.Session{ID: ""}, nil
+	}
 	id := strings.TrimSpace(s.e.currentSessionID)
 	if id == "" {
 		id = "test-session"
@@ -290,6 +320,9 @@ func (s *testSessionService) SetCurrent(context.Context, coreapi.SetCurrentSessi
 }
 func (s *testSessionService) Delete(context.Context, coreapi.DeleteSessionRequest) error { return nil }
 func (s *testSessionService) Rename(context.Context, coreapi.RenameSessionRequest) (coreapi.Session, error) {
+	if s.e != nil && s.e.renameSessionErr != nil {
+		return coreapi.Session{}, s.e.renameSessionErr
+	}
 	return coreapi.Session{}, nil
 }
 func (s *testSessionService) SetMeta(context.Context, coreapi.SetSessionMetaRequest) (coreapi.Session, error) {
@@ -307,6 +340,9 @@ func (s *testSessionService) LoadMessages(context.Context, coreapi.LoadSessionMe
 func (s *testSessionService) SaveMessages(_ context.Context, req coreapi.SaveSessionMessagesRequest) (coreapi.Session, error) {
 	if s.e.saveSessionMsgsErr != nil {
 		return coreapi.Session{}, s.e.saveSessionMsgsErr
+	}
+	if s.e != nil {
+		s.e.savedMessages = req.Messages
 	}
 	id := req.SessionID
 	if id == "" {
@@ -336,9 +372,15 @@ func (s *testConfigService) SaveRules(context.Context, coreapi.SaveRulesRequest)
 }
 func (s *testConfigService) ResetRules(context.Context) error { return nil }
 func (s *testConfigService) GetSettings(context.Context) (coreapi.Settings, error) {
+	if s.e != nil && s.e.getSettingsErr != nil {
+		return coreapi.Settings{}, s.e.getSettingsErr
+	}
 	return s.e.settings, nil
 }
 func (s *testConfigService) SaveSettings(_ context.Context, settings coreapi.Settings) error {
+	if s.e != nil && s.e.saveSettingsErr != nil {
+		return s.e.saveSettingsErr
+	}
 	s.e.settings = settings
 	// 同步写 .eos/settings.json，模拟 eos-core 的 workspace 持久化路径。
 	wd, _ := os.Getwd()
@@ -363,6 +405,9 @@ func (s *testConfigService) SaveSettings(_ context.Context, settings coreapi.Set
 type testPermissionService struct{ e *testEngine }
 
 func (s *testPermissionService) Snapshot(context.Context) (coreapi.PermissionSnapshot, error) {
+	if s.e != nil && s.e.permissionSnapErr != nil {
+		return coreapi.PermissionSnapshot{}, s.e.permissionSnapErr
+	}
 	return s.e.permissionSnap, nil
 }
 func (s *testPermissionService) PendingReview(context.Context) (coreapi.PendingReview, error) {
@@ -373,6 +418,9 @@ func (s *testPermissionService) PendingReview(context.Context) (coreapi.PendingR
 }
 func (s *testPermissionService) ClearPendingReview(context.Context) error { return nil }
 func (s *testPermissionService) SetAccessMode(_ context.Context, req coreapi.SetModeRequest) error {
+	if s.e != nil && s.e.setAccessModeErr != nil {
+		return s.e.setAccessModeErr
+	}
 	s.e.permissionSnap.AccessMode = req.Mode
 	switch req.Mode {
 	case "danger-full-access", "danger_full_access", "full_access", "full-access":
@@ -385,10 +433,16 @@ func (s *testPermissionService) SetAccessMode(_ context.Context, req coreapi.Set
 	return nil
 }
 func (s *testPermissionService) SetApprovalMode(_ context.Context, req coreapi.SetModeRequest) error {
+	if s.e != nil && s.e.setApprovalErr != nil {
+		return s.e.setApprovalErr
+	}
 	s.e.permissionSnap.ApprovalMode = req.Mode
 	return nil
 }
 func (s *testPermissionService) EnterFullAccess(_ context.Context, req coreapi.EnterFullAccessRequest) error {
+	if s.e != nil && s.e.enterFullAccessErr != nil {
+		return s.e.enterFullAccessErr
+	}
 	s.e.permissionSnap.ApprovalMode = "never"
 	s.e.permissionSnap.SandboxMode = "danger-full-access"
 	return nil
@@ -534,6 +588,9 @@ func (s *testModeService) Snapshot(context.Context) (coreapi.ModeSnapshot, error
 	return coreapi.ModeSnapshot{}, nil
 }
 func (s *testModeService) SetExecutionMode(context.Context, coreapi.SetModeRequest) error {
+	if s.e != nil && s.e.setExecModeErr != nil {
+		return s.e.setExecModeErr
+	}
 	return nil
 }
 
@@ -541,6 +598,9 @@ func (s *testModeService) SetExecutionMode(context.Context, coreapi.SetModeReque
 // permission_snapshot.sandbox_mode（内核行为见 eos-core-runtime 的
 // runtime_sandbox_mode_sync 回归测试）。
 func (s *testModeService) SetSandboxMode(_ context.Context, req coreapi.SetModeRequest) error {
+	if s.e != nil && s.e.setSandboxModeErr != nil {
+		return s.e.setSandboxModeErr
+	}
 	s.e.permissionSnap.SandboxMode = req.Mode
 	return nil
 }
@@ -600,7 +660,12 @@ func (s *testContextService) Stats(context.Context) (coreapi.ContextStats, error
 	}
 	return coreapi.ContextStats{}, nil
 }
-func (s *testContextService) WindowTokens(context.Context) (int, error) { return 0, nil }
+func (s *testContextService) WindowTokens(context.Context) (int, error) {
+	if s.e != nil {
+		return s.e.windowTokens, nil
+	}
+	return 0, nil
+}
 func (s *testContextService) PinDocument(context.Context, coreapi.PinDocumentRequest) error {
 	return nil
 }
@@ -653,6 +718,9 @@ type testExtensionService struct{ e *testEngine }
 
 func (s *testExtensionService) ListSkills(context.Context) ([]coreapi.SkillInfo, error) {
 	if s.e != nil {
+		if s.e.skillsListErr != nil {
+			return nil, s.e.skillsListErr
+		}
 		return s.e.skills, nil
 	}
 	return nil, nil
@@ -677,6 +745,9 @@ func (s *testExtensionService) InvokeSkill(context.Context, coreapi.InvokeSkillR
 }
 func (s *testExtensionService) ListPlugins(context.Context) ([]coreapi.PluginInfo, error) {
 	if s.e != nil {
+		if s.e.pluginsListErr != nil {
+			return nil, s.e.pluginsListErr
+		}
 		return s.e.plugins, nil
 	}
 	return nil, nil
@@ -858,18 +929,27 @@ func (s *testGitService) Diff(context.Context, coreapi.GitDiffRequest) (coreapi.
 }
 func (s *testGitService) Branches(context.Context, coreapi.GitBranchesRequest) (coreapi.GitBranchesResult, error) {
 	if s.e != nil {
+		if s.e.gitBranchesErr != nil {
+			return coreapi.GitBranchesResult{}, s.e.gitBranchesErr
+		}
 		return s.e.gitBranches, nil
 	}
 	return coreapi.GitBranchesResult{}, nil
 }
 func (s *testGitService) Log(context.Context, coreapi.GitLogRequest) (coreapi.GitLogResult, error) {
 	if s.e != nil {
+		if s.e.gitLogErr != nil {
+			return coreapi.GitLogResult{}, s.e.gitLogErr
+		}
 		return s.e.gitLog, nil
 	}
 	return coreapi.GitLogResult{}, nil
 }
 func (s *testGitService) Show(context.Context, coreapi.GitShowRequest) (coreapi.GitShowResult, error) {
 	if s.e != nil {
+		if s.e.gitShowErr != nil {
+			return coreapi.GitShowResult{}, s.e.gitShowErr
+		}
 		return s.e.gitShow, nil
 	}
 	return coreapi.GitShowResult{}, nil

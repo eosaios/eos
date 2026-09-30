@@ -1298,9 +1298,6 @@ func (m *AppModel) handleThemeSlash(args []string) tea.Cmd {
 			return nil
 		}
 		current := s.Theme
-		if current == "" {
-			current = "dark"
-		}
 		m.appendSystem(fmt.Sprintf("%s: %s", m.localize("当前主题", "Current theme"), current), "info")
 		return nil
 	}
