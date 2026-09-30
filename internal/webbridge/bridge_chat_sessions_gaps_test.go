@@ -97,6 +97,30 @@ type chatSessionsGatewayStub struct {
 	savedKernels       []coreapi.Settings
 	configPathOverride string
 
+	// git / remote workspace / bash / tasks（批三扩展）
+	gitErr            error
+	gitRepos          coreapi.GitReposResult
+	gitRepoRoots      []string
+	stageCalls        [][4]interface{}
+	commitMessages    [][2]string
+	pushRoots         []string
+	gitPushResult     coreapi.GitPushResult
+	abortRoots        []string
+	suggestRoots      []string
+	remoteErr         error
+	remoteWorkspace   adapter.RemoteWorkspace
+	openRemoteCalls   []string
+	forgetRemoteCalls []string
+	clearRemoteCalls  []string
+	bashErr           error
+	bashEvents        chan adapter.Event
+	bashCommands      []string
+	killErr           error
+	killCalls         []string
+	cleanupCalls      int
+	respondErr        error
+	respondWithReason [][3]interface{}
+
 	// predict / refine
 	predictText string
 	predictErr  error
