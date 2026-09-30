@@ -14,22 +14,22 @@ import (
 
 func TestDetectThinkingCapabilityMatrix(t *testing.T) {
 	cases := map[string]ThinkingCapability{
-		"":                ThinkingNone,
-		"gpt-4o":          ThinkingNone,
-		"o1":              ThinkingHigh,
-		"o1-mini":         ThinkingMedium,
-		"o1-preview":      ThinkingMedium,
-		"deepseek-r1":     ThinkingHigh,
+		"":                  ThinkingNone,
+		"gpt-4o":            ThinkingNone,
+		"o1":                ThinkingHigh,
+		"o1-mini":           ThinkingMedium,
+		"o1-preview":        ThinkingMedium,
+		"deepseek-r1":       ThinkingHigh,
 		"deepseek-reasoner": ThinkingHigh,
-		"kimi-k2.5":       ThinkingMedium,
-		"kimi-thinking":   ThinkingMedium,
-		"glm-4.7":         ThinkingMedium,
-		"glm-thinking":    ThinkingMedium,
-		"qwen-thinking":   ThinkingMedium,
-		"qwen-reasoning":  ThinkingHigh,
-		"qwen-qwq":        ThinkingHigh,
-		"doubao-thinking": ThinkingMedium,
-		"claude-3":        ThinkingNone,
+		"kimi-k2.5":         ThinkingMedium,
+		"kimi-thinking":     ThinkingMedium,
+		"glm-4.7":           ThinkingMedium,
+		"glm-thinking":      ThinkingMedium,
+		"qwen-thinking":     ThinkingMedium,
+		"qwen-reasoning":    ThinkingHigh,
+		"qwen-qwq":          ThinkingHigh,
+		"doubao-thinking":   ThinkingMedium,
+		"claude-3":          ThinkingNone,
 	}
 	for name, want := range cases {
 		if got := DetectThinkingCapability(name); got != want {
@@ -76,8 +76,8 @@ func (s *fakeModelSvc) Catalog(context.Context) (coreapi.ModelCatalogState, erro
 	return coreapi.ModelCatalogState{}, nil
 }
 func (s *fakeModelSvc) Upsert(context.Context, coreapi.UpsertModelRequest) error { return nil }
-func (s *fakeModelSvc) Save(context.Context, coreapi.ModelSaveRequest) error    { return nil }
-func (s *fakeModelSvc) Delete(context.Context, coreapi.ModelNameRequest) error  { return nil }
+func (s *fakeModelSvc) Save(context.Context, coreapi.ModelSaveRequest) error     { return nil }
+func (s *fakeModelSvc) Delete(context.Context, coreapi.ModelNameRequest) error   { return nil }
 func (s *fakeModelSvc) Activate(context.Context, coreapi.ModelNameRequest) error {
 	return nil
 }

@@ -45,4 +45,3 @@ type ModelInfo struct {
 	SupportsReasoningEffort bool               // 是否支持 ReasoningEffort 参数
 	Provider                string             // 提供商 (openai, anthropic, etc.)
 }
-

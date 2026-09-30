@@ -7,7 +7,6 @@ package ai
 
 import (
 	"strings"
-
 )
 
 // DetectThinkingCapability 尝试从模型名称检测思考能力
@@ -64,4 +63,3 @@ func DetectThinkingCapability(modelName string) ThinkingCapability {
 
 	return ThinkingNone
 }
-

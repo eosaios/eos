@@ -24,4 +24,3 @@ func getContextWindowOverride(model string) (int, bool) {
 	}
 	return 0, false
 }
-

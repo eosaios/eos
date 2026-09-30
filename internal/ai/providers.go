@@ -41,23 +41,23 @@ const (
 
 // ProviderConfig 服务商配置
 type ProviderConfig struct {
-	ID                     string                      // 唯一标识
-	Name                   string                      // 显示名称
-	Type                   ProviderType                // 服务商类型
-	DefaultAPIBase         string                      // 默认 Base URL（标准 API）
-	CodePlanAPIBase        string                      // Code/Plan API Base URL (OpenAI 兼容)
-	ClaudeAPIBase          string                      // Claude 兼容 API Base URL (Anthropic 协议)
-	AgentPlanAPIBase       string                      // Agent Plan API Base URL (OpenAI 兼容)
-	AgentPlanClaudeAPIBase string                      // Agent Plan Claude 兼容 API Base URL
-	APIKeyEnv              string                      // API Key 环境变量名
-	Website                string                      // 官方网站
-	HasCodePlan            bool                        // 是否支持 Code/Plan 套餐
-	HasClaudeCode          bool                        // 是否支持 Claude 兼容 API 模式
-	HasAgentPlan           bool                        // 是否支持 Agent Plan
-	HasTokenPlan           bool                        // 是否支持 Token Plan
-	TokenPlanAPIBase       string                      // Token Plan API Base URL (OpenAI 兼容)
-	TokenPlanClaudeAPIBase string                      // Token Plan Claude 兼容 API Base URL
-	DefaultModels          []string                    // 默认/推荐模型列表
+	ID                     string                     // 唯一标识
+	Name                   string                     // 显示名称
+	Type                   ProviderType               // 服务商类型
+	DefaultAPIBase         string                     // 默认 Base URL（标准 API）
+	CodePlanAPIBase        string                     // Code/Plan API Base URL (OpenAI 兼容)
+	ClaudeAPIBase          string                     // Claude 兼容 API Base URL (Anthropic 协议)
+	AgentPlanAPIBase       string                     // Agent Plan API Base URL (OpenAI 兼容)
+	AgentPlanClaudeAPIBase string                     // Agent Plan Claude 兼容 API Base URL
+	APIKeyEnv              string                     // API Key 环境变量名
+	Website                string                     // 官方网站
+	HasCodePlan            bool                       // 是否支持 Code/Plan 套餐
+	HasClaudeCode          bool                       // 是否支持 Claude 兼容 API 模式
+	HasAgentPlan           bool                       // 是否支持 Agent Plan
+	HasTokenPlan           bool                       // 是否支持 Token Plan
+	TokenPlanAPIBase       string                     // Token Plan API Base URL (OpenAI 兼容)
+	TokenPlanClaudeAPIBase string                     // Token Plan Claude 兼容 API Base URL
+	DefaultModels          []string                   // 默认/推荐模型列表
 	Endpoints              []coreapi.ProviderEndpoint // 内核原始端点向量，(plan, format) 查 base 的真相源
 }
 
@@ -192,4 +192,3 @@ func GetAPIBase(provider ProviderType, apiType APIType, customBase string) strin
 		return cfg.DefaultAPIBase
 	}
 }
-
