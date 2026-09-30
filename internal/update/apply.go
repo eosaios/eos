@@ -38,6 +38,7 @@ type ApplyOutcome struct {
 //   - core/：Release 归档自带 sidecar（eos + core/<triple>/）。无论当前是
 //     Release 布局（exe 旁有 core/）还是 go install 布局（无 core/），都把
 //     新 core/ 落到 exe 同级——resolver 优先读 exe 同级，内核随之升级。
+//
 // 允许注入显式代理客户端（nil = 默认）。
 func ApplyWithClient(ctx context.Context, res *CheckResult, progress ProgressFn, client *http.Client) (*ApplyOutcome, error) {
 	if res == nil || res.DownloadURL == "" || res.AssetName == "" {
@@ -130,8 +131,8 @@ func currentExecutable() (string, error) {
 // 几 KB 的 SHA256SUMS.txt 被 RST 的情况实测常见。下载统一带重试 + 断点
 // 续传（Range），重试从已落盘字节继续，不做整包重来。
 var (
-	downloadAttempts      = 4
-	downloadRetryBackoff  = 1 * time.Second
+	downloadAttempts     = 4
+	downloadRetryBackoff = 1 * time.Second
 )
 
 func downloadTo(ctx context.Context, url, dst string, progress ProgressFn, client *http.Client) error {

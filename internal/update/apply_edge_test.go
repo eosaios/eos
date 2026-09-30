@@ -6,9 +6,9 @@ package update
 // 商业使用请联系版权人获得商业授权。
 
 import (
-	"strings"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
