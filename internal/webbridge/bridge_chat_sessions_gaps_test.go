@@ -14,6 +14,7 @@ package webbridge
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -134,6 +135,13 @@ type chatSessionsGatewayStub struct {
 	mcpEnabled    [][2]interface{}
 	skillEnabled  [][2]interface{}
 	pluginEnabled [][2]interface{}
+
+	// CoreCallRPC / Invoke（批九扩展）
+	callRPCErr    error
+	callRPCResult json.RawMessage
+	callRPCs      [][2]string
+	invokeErr     error
+	invokeEvents  chan adapter.Event
 
 	// turn 流（批四扩展）
 	turnErr       error
