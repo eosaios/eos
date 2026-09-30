@@ -49,13 +49,13 @@ func TestWorkbookPlainTextAndFirstSheet(t *testing.T) {
 
 func TestNormalizeFormat(t *testing.T) {
 	cases := map[string]string{
-		"docx":       "docx",
-		".DOCX":      "docx",
-		"a/b/c.PDF":  "pdf",
+		"docx":        "docx",
+		".DOCX":       "docx",
+		"a/b/c.PDF":   "pdf",
 		"report.XlSx": "xlsx",
-		"md":         "",
-		"":           "",
-		"archive":    "",
+		"md":          "",
+		"":            "",
+		"archive":     "",
 	}
 	for in, want := range cases {
 		if got := NormalizeFormat(in); got != want {
