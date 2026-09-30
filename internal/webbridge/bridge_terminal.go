@@ -72,6 +72,8 @@ func (s *BridgeService) terminalService() *TerminalService {
 	if s == nil {
 		return NewTerminalService(nil)
 	}
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
 	if s.terminalSvc == nil {
 		s.terminalSvc = NewTerminalService(s)
 	}

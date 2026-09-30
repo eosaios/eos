@@ -33,6 +33,8 @@ func (s *BridgeService) workspaceFilesService() *WorkspaceFilesService {
 	if s == nil {
 		return NewWorkspaceFilesService(nil)
 	}
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
 	if s.workspaceFilesSvc == nil {
 		s.workspaceFilesSvc = NewWorkspaceFilesService(s)
 	}

@@ -274,7 +274,7 @@ func TestSendChatArms(t *testing.T) {
 	t.Run("persist 失败软着陆", func(t *testing.T) {
 		workspace := t.TempDir()
 		gateway := &chatSessionsGatewayStub{defaultWorkspace: workspace, saveErr: errors.New("disk full")}
-		s, svc, _ := newChatSessionsTestBridge(t, gateway)
+		s, svc, rec := newChatSessionsTestBridge(t, gateway)
 		s.stateMu.Lock()
 		s.sessions["sess-1"] = &sessionState{ID: "sess-1", WorkspacePath: workspace}
 		s.currentSessionID = "sess-1"
@@ -292,6 +292,8 @@ func TestSendChatArms(t *testing.T) {
 		if !needsAttention {
 			t.Fatal("session should flag NeedsAttention after persist failure")
 		}
+		// 软着陆路径的 emit goroutine 会写 HOME 目录，等事件落地防清理竞态。
+		eventually(t, "shellUpdated after soft-land", func() bool { return rec.has(shellUpdatedEventName) })
 	})
 
 	t.Run("成功起跑与流收尾", func(t *testing.T) {
@@ -404,10 +406,10 @@ func TestConversationRuntimeHelpers(t *testing.T) {
 	t.Run("resolveSendSessionLocked 各态", func(t *testing.T) {
 		gateway := &chatSessionsGatewayStub{}
 		s := &BridgeService{
-			runtimeGateway:      gateway,
-			sessions:            map[string]*sessionState{},
+			runtimeGateway:       gateway,
+			sessions:             map[string]*sessionState{},
 			runningConversations: map[string]*runningConversationState{},
-			prompts:             map[string]*promptState{},
+			prompts:              map[string]*promptState{},
 		}
 
 		// 显式 session 命中。

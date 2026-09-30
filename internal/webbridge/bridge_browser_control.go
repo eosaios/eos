@@ -78,7 +78,7 @@ func (s *BridgeService) BrowserFocus(url string, profile string) (map[string]int
 		return nil, err
 	}
 	req := coreapi.BrowserFocusRequest{
-		URL:    strings.TrimSpace(url),
+		URL:     strings.TrimSpace(url),
 		Profile: strings.TrimSpace(profile),
 	}
 	if err := gateway.CoreBrowserFocusRPC(coreCtx(), req); err != nil {

@@ -31,7 +31,9 @@ type GoalSnapshot struct {
 
 // goalSnapshotReadOnly 投影当前会话的目标状态（无 runtime / 无会话 → 空快照）。
 func (s *BridgeService) goalSnapshotReadOnly() GoalSnapshot {
+	s.stateMu.RLock()
 	sessionID := strings.TrimSpace(s.currentSessionID)
+	s.stateMu.RUnlock()
 	if sessionID == "" {
 		return GoalSnapshot{}
 	}

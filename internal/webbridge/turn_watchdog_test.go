@@ -54,13 +54,13 @@ func TestTurnWatchdogTimerFiresAfterSilence(t *testing.T) {
 func TestStreamEventWithWatchdogTripsOnSilentStream(t *testing.T) {
 	stream := make(chan adapter.Event) // 不发事件、不关闭，模拟 Rust 卡死
 
-	var gotCause error
+	causeCh := make(chan error, 1)
 	causeCtx, cancelWithCause := context.WithCancelCause(context.Background())
 	defer cancelWithCause(context.Canceled)
-	// 捕获 cancel 时的 cause。
+	// 捕获 cancel 时的 cause（channel 交接，避免跨 goroutine 无同步读写）。
 	go func() {
 		<-causeCtx.Done()
-		gotCause = context.Cause(causeCtx)
+		causeCh <- context.Cause(causeCtx)
 	}()
 
 	var interruptCalled int32
@@ -105,9 +105,11 @@ func TestStreamEventWithWatchdogTripsOnSilentStream(t *testing.T) {
 	}
 
 	// 等 cause 被捕获。
-	deadline := time.Now().Add(500 * time.Millisecond)
-	for time.Now().Before(deadline) && gotCause == nil {
-		time.Sleep(10 * time.Millisecond)
+	var gotCause error
+	select {
+	case gotCause = <-causeCh:
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("cancel cause 未被捕获")
 	}
 	if !errors.Is(gotCause, errTurnWatchdogTripped) {
 		t.Fatalf("cancel cause = %v, want errTurnWatchdogTripped", gotCause)

@@ -518,6 +518,12 @@ func (r *emitRecorder) record(name string, payload any) {
 	}
 }
 
+func (r *emitRecorder) count() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.events)
+}
+
 func (r *emitRecorder) has(name string) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -1166,13 +1172,13 @@ func TestRunShellSyncDebouncerEmitsPerSession(t *testing.T) {
 	s.stateMu.Lock()
 	s.runningConversations["sess-run"] = &runningConversationState{}
 	s.stateMu.Unlock()
-	before := len(rec.events)
+	before := rec.count()
 	sources <- "event.filesystem"
 	deadline := time.Now().Add(2 * time.Second)
-	for time.Now().Before(deadline) && len(rec.events) == before {
+	for time.Now().Before(deadline) && rec.count() == before {
 		time.Sleep(10 * time.Millisecond)
 	}
-	if len(rec.events) == before {
+	if rec.count() == before {
 		t.Fatal("per-session shellUpdated not emitted for running conversation")
 	}
 

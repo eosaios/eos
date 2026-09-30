@@ -154,17 +154,17 @@ func TestMaybeReloadAutomationFromFile(t *testing.T) {
 
 func TestNormalizeSandboxModeAliases(t *testing.T) {
 	cases := map[string]string{
-		"read-only":        "read-only",
-		"readonly":         "read-only",
-		"RO":               "read-only",
-		"workspace-write":  "workspace-write",
-		"workspace":        "workspace-write",
-		"ww":               "workspace-write",
+		"read-only":          "read-only",
+		"readonly":           "read-only",
+		"RO":                 "read-only",
+		"workspace-write":    "workspace-write",
+		"workspace":          "workspace-write",
+		"ww":                 "workspace-write",
 		"danger-full-access": "danger-full-access",
-		"full":             "danger-full-access",
-		"完全访问":           "danger-full-access",
-		"nope":             defaultSandboxMode,
-		"":                 defaultSandboxMode,
+		"full":               "danger-full-access",
+		"完全访问":               "danger-full-access",
+		"nope":               defaultSandboxMode,
+		"":                   defaultSandboxMode,
 	}
 	for in, want := range cases {
 		if got := NormalizeSandboxMode(in); got != want {

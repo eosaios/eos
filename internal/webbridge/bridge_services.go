@@ -22,6 +22,8 @@ func (s *BridgeService) capabilityService() *CapabilityService {
 	if s == nil {
 		return NewCapabilityService(nil)
 	}
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
 	if s.capabilitySvc == nil {
 		s.capabilitySvc = NewCapabilityService(s)
 	}
@@ -42,6 +44,8 @@ func (s *BridgeService) chatService() *ChatService {
 	if s == nil {
 		return NewChatService(nil)
 	}
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
 	if s.chatSvc == nil {
 		s.chatSvc = NewChatService(s)
 	}
@@ -62,6 +66,8 @@ func (s *BridgeService) systemService() *SystemService {
 	if s == nil {
 		return NewSystemService(nil)
 	}
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
 	if s.systemSvc == nil {
 		s.systemSvc = NewSystemService(s)
 	}
@@ -83,6 +89,8 @@ func (s *BridgeService) automationService() *AutomationService {
 	if s == nil {
 		return NewAutomationService(nil)
 	}
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
 	if s.automationSvc == nil {
 		s.automationSvc = NewAutomationService(s)
 	}

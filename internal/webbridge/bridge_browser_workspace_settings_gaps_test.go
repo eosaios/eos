@@ -1068,9 +1068,9 @@ func TestMessageCodecChangeSetRollbackRoundTrip(t *testing.T) {
 
 	t.Run("chatMessageFromRuntime 顶层 changeset/rollback 优先", func(t *testing.T) {
 		msg := chatMessageFromRuntime(adapter.SessionMessage{
-			Role:     "assistant",
-			Content:  "改完",
-			Time:     time.Unix(1700000000, 0).UTC(),
+			Role:    "assistant",
+			Content: "改完",
+			Time:    time.Unix(1700000000, 0).UTC(),
 			ChangeSet: &coreapi.MessageChangeSet{
 				ID:    "cs-top",
 				Files: []coreapi.ChangedFile{{Path: "c.go"}},

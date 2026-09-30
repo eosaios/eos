@@ -249,14 +249,14 @@ type PromptCard struct {
 	Title              string `json:"title"`
 	Message            string `json:"message"`
 	AllowText          bool   `json:"allowText"`
-	SessionID          string   `json:"sessionId"`
-	AssistantMessageID string   `json:"assistantMessageId"`
-	WorkspacePath      string   `json:"workspacePath"`
-	DiffPath           string   `json:"diffPath,omitempty"`
-	Diff               string   `json:"diff,omitempty"`
-	Status             string   `json:"status,omitempty"`
-	ResolvedAt         string   `json:"resolvedAt,omitempty"`
-	CreatedAt          string   `json:"createdAt"`
+	SessionID          string `json:"sessionId"`
+	AssistantMessageID string `json:"assistantMessageId"`
+	WorkspacePath      string `json:"workspacePath"`
+	DiffPath           string `json:"diffPath,omitempty"`
+	Diff               string `json:"diff,omitempty"`
+	Status             string `json:"status,omitempty"`
+	ResolvedAt         string `json:"resolvedAt,omitempty"`
+	CreatedAt          string `json:"createdAt"`
 	// RiskLevel carries the kernel-side risk classification (low/medium/high)
 	// from tool.approval_required event's inline ApprovalPreviewResponse. The
 	// shell renders this for styling (color/icon) but does not decide it —

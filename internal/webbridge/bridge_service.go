@@ -6,9 +6,9 @@ package webbridge
 // 商业使用请联系版权人获得商业授权。
 
 import (
-	"sync/atomic"
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/eosaios/eos/internal/webbridge/adapter"
@@ -30,7 +30,7 @@ const (
 
 type BridgeService struct {
 	// stayInTrayListener 是「驻留系统托盘」开关变更回调（web 模式下无托盘，恒为空）。
-	stayInTrayListener           func(enabled bool)
+	stayInTrayListener func(enabled bool)
 	// browserFrame 最新 screencast 帧缓存（HTTP 路由拉取；事件通道只发轻载荷）
 	browserFrame                 atomic.Pointer[browserFrameCache]
 	runtimeGateway               bridgeRuntimeGateway
@@ -57,7 +57,10 @@ type BridgeService struct {
 	stopCh                       chan struct{}
 	conversationWG               sync.WaitGroup
 
-	stateMu                   sync.RWMutex
+	stateMu sync.RWMutex
+	// serviceMu 保护惰性 service 字段的并发首建（多 emit goroutine 并发
+	// loadBootstrap 时 accessor 可能同时进入；独立于 stateMu 防嵌套死锁）。
+	serviceMu                 sync.Mutex
 	activeWorkspace           string
 	currentSessionID          string
 	bootstrapHydrated         bool

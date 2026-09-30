@@ -24,6 +24,8 @@ func (s *BridgeService) settingsService() *SettingsService {
 	if s == nil {
 		return NewSettingsService(nil)
 	}
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
 	if s.settingsSvc == nil {
 		s.settingsSvc = NewSettingsService(s)
 	}

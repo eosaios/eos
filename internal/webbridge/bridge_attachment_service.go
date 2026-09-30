@@ -29,6 +29,8 @@ func (s *BridgeService) attachmentService() *AttachmentService {
 	if s == nil {
 		return NewAttachmentService(nil)
 	}
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
 	if s.attachmentSvc == nil {
 		s.attachmentSvc = NewAttachmentService(s)
 	}

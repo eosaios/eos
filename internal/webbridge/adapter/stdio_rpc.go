@@ -199,6 +199,7 @@ func (g *StdioGateway) CoreBrowserProfilesRPC(ctx context.Context) ([]coreapi.Br
 	}
 	return out, nil
 }
+
 // CoreBrowserCredentialsImportRPC 外部浏览器登录态导入。
 func (g *StdioGateway) CoreBrowserCredentialsImportRPC(ctx context.Context, req coreapi.BrowserCredentialsImportRequest) (coreapi.BrowserCredentialsImportResult, error) {
 	var out coreapi.BrowserCredentialsImportResult

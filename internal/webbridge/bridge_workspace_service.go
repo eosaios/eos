@@ -24,6 +24,8 @@ func (s *BridgeService) workspaceService() *WorkspaceService {
 	if s == nil {
 		return NewWorkspaceService(nil)
 	}
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
 	if s.workspaceSvc == nil {
 		s.workspaceSvc = NewWorkspaceService(s)
 	}

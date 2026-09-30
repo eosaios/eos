@@ -23,6 +23,8 @@ func (s *BridgeService) commandService() *CommandService {
 	if s == nil {
 		return NewCommandService(nil)
 	}
+	s.serviceMu.Lock()
+	defer s.serviceMu.Unlock()
 	if s.commandSvc == nil {
 		s.commandSvc = NewCommandService(s)
 	}
