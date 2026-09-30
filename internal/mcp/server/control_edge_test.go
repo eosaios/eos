@@ -104,8 +104,8 @@ func (m *edgeModels) SetSession(_ context.Context, req coreapi.SetSessionModelRe
 
 // 其余 ModelService 方法：本测试不触达，返回零值。
 func (m *edgeModels) Upsert(context.Context, coreapi.UpsertModelRequest) error { return nil }
-func (m *edgeModels) Save(context.Context, coreapi.ModelSaveRequest) error    { return nil }
-func (m *edgeModels) Delete(context.Context, coreapi.ModelNameRequest) error  { return nil }
+func (m *edgeModels) Save(context.Context, coreapi.ModelSaveRequest) error     { return nil }
+func (m *edgeModels) Delete(context.Context, coreapi.ModelNameRequest) error   { return nil }
 func (m *edgeModels) Activate(context.Context, coreapi.ModelNameRequest) error {
 	return nil
 }

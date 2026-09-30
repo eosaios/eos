@@ -188,8 +188,8 @@ func (s *fakeHLModels) Catalog(context.Context) (coreapi.ModelCatalogState, erro
 	return coreapi.ModelCatalogState{}, nil
 }
 func (s *fakeHLModels) Upsert(context.Context, coreapi.UpsertModelRequest) error { return nil }
-func (s *fakeHLModels) Save(context.Context, coreapi.ModelSaveRequest) error    { return nil }
-func (s *fakeHLModels) Delete(context.Context, coreapi.ModelNameRequest) error  { return nil }
+func (s *fakeHLModels) Save(context.Context, coreapi.ModelSaveRequest) error     { return nil }
+func (s *fakeHLModels) Delete(context.Context, coreapi.ModelNameRequest) error   { return nil }
 func (s *fakeHLModels) Activate(context.Context, coreapi.ModelNameRequest) error {
 	return nil
 }

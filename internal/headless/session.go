@@ -2,7 +2,7 @@
 // turn 驱动原语：会话解析、模型覆盖、turn 事件订阅与统一事件泵。
 //
 // 提取自 internal/cli/print.go（2026-09）：eos mcp serve 的委托工具
-//（eos_chat 等）与 CLI headless 模式共用同一套语义，避免复制粘贴漂移。
+// （eos_chat 等）与 CLI headless 模式共用同一套语义，避免复制粘贴漂移。
 package headless
 
 // Copyright (c) 2026 EOSAIOS

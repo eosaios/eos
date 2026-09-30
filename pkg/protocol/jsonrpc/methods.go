@@ -66,7 +66,7 @@ const (
 	MethodBrowserTabs                = "browser/tabs"
 	MethodBrowserProfiles            = "browser/profiles"
 	MethodBrowserProfileUpsert       = "browser/profile_upsert"
-	MethodBrowserCredentialsImport  = "browser/credentials_import"
+	MethodBrowserCredentialsImport   = "browser/credentials_import"
 	MethodBrowserControlTakeover     = "browser/control_takeover"
 	MethodBrowserControlConfirm      = "browser/control_confirm"
 	MethodBrowserControlResume       = "browser/control_resume"

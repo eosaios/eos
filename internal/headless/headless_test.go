@@ -25,6 +25,8 @@ type headlessSessionCaller struct {
 	mu      sync.Mutex
 	calls   []headlessSessionCall
 	replies map[string]any
+	// failMethods 非空时指定 method 直接报错（错误注入）。
+	failMethods map[string]error
 }
 
 type headlessSessionCall struct {
@@ -36,7 +38,11 @@ func (c *headlessSessionCaller) Call(_ context.Context, method string, params an
 	c.mu.Lock()
 	c.calls = append(c.calls, headlessSessionCall{method: method, params: params})
 	reply := c.replies[method]
+	failErr := c.failMethods[method]
 	c.mu.Unlock()
+	if failErr != nil {
+		return failErr
+	}
 	if out == nil || reply == nil {
 		return nil
 	}
