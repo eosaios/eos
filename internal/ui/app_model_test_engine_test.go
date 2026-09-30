@@ -116,18 +116,18 @@ type testEngine struct {
 	reloadSkillsErr     error                        // ReloadSkills 失败臂（/skills reload）
 
 	// app_send / startup 批测注入口（零值=原行为）。
-	toolExecResult   coreapi.ToolResult // Tools.Execute 返回
-	toolExecErr      error              // Tools.Execute 失败臂
-	predictText      string             // Insights.PredictNextUserMessage 返回
-	predictErr       error              // Insights.Predict 失败臂
-	modelsSaveErr    error              // Models.Save 失败臂（SwitchPlanModel）
-	activateModelErr error              // Models.Activate 失败臂
-	setWorkspaceErr  error              // Models.SetWorkspace 失败臂
-	healNote         string             // HealCurrentSessionModel 提示文案（经 Sessions.Current 驱动）
-	invokeSkillInvoked bool             // Extensions.InvokeSkill 返回 Invoked
-	invokeSkillErr     error            // Extensions.InvokeSkill 失败臂
+	toolExecResult     coreapi.ToolResult         // Tools.Execute 返回
+	toolExecErr        error                      // Tools.Execute 失败臂
+	predictText        string                     // Insights.PredictNextUserMessage 返回
+	predictErr         error                      // Insights.Predict 失败臂
+	modelsSaveErr      error                      // Models.Save 失败臂（SwitchPlanModel）
+	activateModelErr   error                      // Models.Activate 失败臂
+	setWorkspaceErr    error                      // Models.SetWorkspace 失败臂
+	healNote           string                     // HealCurrentSessionModel 提示文案（经 Sessions.Current 驱动）
+	invokeSkillInvoked bool                       // Extensions.InvokeSkill 返回 Invoked
+	invokeSkillErr     error                      // Extensions.InvokeSkill 失败臂
 	modelCatalog       *coreapi.ModelCatalogState // Models.Catalog 覆盖（nil=默认）
-	turnStartErr       error // Turns.Start 失败臂（Invoke 异步回包）
+	turnStartErr       error                      // Turns.Start 失败臂（Invoke 异步回包）
 	// 面板刷新批测注入口（零值=原行为）。
 	lspServers        []coreapi.LSPServer
 	lspServersErr     error
@@ -143,25 +143,42 @@ type testEngine struct {
 	memorySnapshotErr error
 
 	// slash_runtime 第四轮收尾注入口（零值=原行为）。
-	workspaceAddErr     error // Workspaces.Add 失败臂（/workspace add）
-	workspaceRemoveErr  error // Workspaces.Remove 失败臂（/workspace remove）
-	setExecModeErr      error // Modes.SetExecutionMode 失败臂（/permissions auto）
-	setSandboxModeErr   error // Modes.SetSandboxMode 失败臂（/permissions access）
-	setAccessModeErr    error // Permissions.SetAccessMode 失败臂
-	setApprovalErr      error // Permissions.SetApprovalMode 失败臂（/permissions approval）
-	enterFullAccessErr  error // Permissions.EnterFullAccess 失败臂（danger 档）
-	permissionSnapErr   error // Permissions.Snapshot 失败臂（/permissions 回显）
-	skillsListErr       error // Extensions.ListSkills 失败臂（/skills）
-	pluginsListErr      error // Extensions.ListPlugins 失败臂（/plugin）
-	getSettingsErr      error // Config.GetSettings 失败臂（/theme /plan-style）
-	saveSettingsErr     error // Config.SaveSettings 失败臂（/theme /plan-style）
-	renameSessionErr    error // Sessions.Rename 失败臂（/rename）
-	gitBranchesErr      error // Git.Branches 失败臂（/git branches）
-	gitLogErr           error // Git.Log 失败臂（/git log）
-	gitShowErr          error // Git.Show 失败臂（/git show）
-	currentSessionEmpty bool  // Current 返回空 ID（/export /rename /share 无会话臂）
-	windowTokens        int   // Context.WindowTokens 返回（/status 上下文窗口行）
+	workspaceAddErr     error                    // Workspaces.Add 失败臂（/workspace add）
+	workspaceRemoveErr  error                    // Workspaces.Remove 失败臂（/workspace remove）
+	setExecModeErr      error                    // Modes.SetExecutionMode 失败臂（/permissions auto）
+	setSandboxModeErr   error                    // Modes.SetSandboxMode 失败臂（/permissions access）
+	setAccessModeErr    error                    // Permissions.SetAccessMode 失败臂
+	setApprovalErr      error                    // Permissions.SetApprovalMode 失败臂（/permissions approval）
+	enterFullAccessErr  error                    // Permissions.EnterFullAccess 失败臂（danger 档）
+	permissionSnapErr   error                    // Permissions.Snapshot 失败臂（/permissions 回显）
+	skillsListErr       error                    // Extensions.ListSkills 失败臂（/skills）
+	pluginsListErr      error                    // Extensions.ListPlugins 失败臂（/plugin）
+	getSettingsErr      error                    // Config.GetSettings 失败臂（/theme /plan-style）
+	saveSettingsErr     error                    // Config.SaveSettings 失败臂（/theme /plan-style）
+	renameSessionErr    error                    // Sessions.Rename 失败臂（/rename）
+	gitBranchesErr      error                    // Git.Branches 失败臂（/git branches）
+	gitLogErr           error                    // Git.Log 失败臂（/git log）
+	gitShowErr          error                    // Git.Show 失败臂（/git show）
+	currentSessionEmpty bool                     // Current 返回空 ID（/export /rename /share 无会话臂）
+	windowTokens        int                      // Context.WindowTokens 返回（/status 上下文窗口行）
 	savedMessages       []coreapi.SessionMessage // SaveMessages 请求录制（/session save）
+
+	// MCP 面板批测注入口（零值=原行为）。
+	mcpListErr       error // MCP.List 失败臂
+	mcpSetEnabledErr error // MCP.SetEnabled 失败臂
+	mcpDeleteErr     error // MCP.Delete 失败臂（含重命名删旧臂）
+	mcpUpsertErr     error // MCP.Upsert 失败臂
+	mcpImportErr     error // MCP.ImportJSON 失败臂（AddMCPEntries）
+
+	// 版本面板批测注入口（零值=原行为；testVersionService 经 engine 共享）。
+	versionList    []coreapi.VersionItem // Versions.List 返回
+	versionListErr error                 // Versions.List 失败臂
+	rollbackErr    error                 // Versions.Rollback 失败臂
+	versionDelErr  error                 // Versions.Delete 失败臂
+	deleteFileErr  error                 // Versions.DeleteFile 失败臂
+	deleteFileN    int                   // Versions.DeleteFile 返回条数
+	clearErr       error                 // Versions.Clear 失败臂
+	clearN         int                   // Versions.Clear 返回条数
 }
 
 func (e *testEngine) Caller() coreapi.Caller {
@@ -184,11 +201,13 @@ func (e *testEngine) Context() coreapi.ContextService {
 func (e *testEngine) Usage() coreapi.UsageService {
 	return &testUsageService{e: e}
 }
-func (e *testEngine) Versions() coreapi.VersionService { return &testVersionService{} }
-func (e *testEngine) Tasks() coreapi.TaskService       { return &testTaskService{e: e} }
-func (e *testEngine) Goals() coreapi.GoalService       { return &testGoalService{e: e} }
-func (e *testEngine) Modes() coreapi.ModeService       { return &testModeService{e: e} }
-func (e *testEngine) Models() coreapi.ModelService     { return &testModelService{e: e} }
+func (e *testEngine) Versions() coreapi.VersionService {
+	return &testVersionService{e: e}
+}
+func (e *testEngine) Tasks() coreapi.TaskService   { return &testTaskService{e: e} }
+func (e *testEngine) Goals() coreapi.GoalService   { return &testGoalService{e: e} }
+func (e *testEngine) Modes() coreapi.ModeService   { return &testModeService{e: e} }
+func (e *testEngine) Models() coreapi.ModelService { return &testModelService{e: e} }
 func (e *testEngine) RemoteWorkspaces() coreapi.RemoteWorkspaceService {
 	return &testRemoteWorkspaceService{e: e}
 }
@@ -794,14 +813,33 @@ func (s *testExtensionService) BrowserProfiles(ctx context.Context) ([]coreapi.B
 type testMCPService struct{ e *testEngine }
 
 func (s *testMCPService) List(context.Context) ([]coreapi.MCPServer, error) {
+	if s.e != nil && s.e.mcpListErr != nil {
+		return nil, s.e.mcpListErr
+	}
 	return s.e.mcpList, nil
 }
-func (s *testMCPService) Upsert(context.Context, coreapi.UpsertMCPRequest) error { return nil }
-func (s *testMCPService) ImportJSON(context.Context, coreapi.ImportMCPJSONRequest) error {
+func (s *testMCPService) Upsert(context.Context, coreapi.UpsertMCPRequest) error {
+	if s.e != nil {
+		return s.e.mcpUpsertErr
+	}
 	return nil
 }
-func (s *testMCPService) Delete(context.Context, coreapi.MCPNameRequest) error { return nil }
+func (s *testMCPService) ImportJSON(context.Context, coreapi.ImportMCPJSONRequest) error {
+	if s.e != nil {
+		return s.e.mcpImportErr
+	}
+	return nil
+}
+func (s *testMCPService) Delete(context.Context, coreapi.MCPNameRequest) error {
+	if s.e != nil {
+		return s.e.mcpDeleteErr
+	}
+	return nil
+}
 func (s *testMCPService) SetEnabled(context.Context, coreapi.SetMCPEnabledRequest) error {
+	if s.e != nil {
+		return s.e.mcpSetEnabledErr
+	}
 	return nil
 }
 
@@ -1018,17 +1056,49 @@ func (s *testLSPService) DiagnosticsSummary(context.Context) (coreapi.LSPDiagnos
 	return coreapi.LSPDiagnosticsSummary{}, nil
 }
 
-type testVersionService struct{}
+type testVersionService struct{ e *testEngine }
 
-func (s *testVersionService) List(context.Context) ([]coreapi.VersionItem, error) { return nil, nil }
+func (s *testVersionService) List(context.Context) ([]coreapi.VersionItem, error) {
+	if s.e != nil {
+		if s.e.versionListErr != nil {
+			return nil, s.e.versionListErr
+		}
+		if s.e.versionList != nil {
+			return s.e.versionList, nil
+		}
+	}
+	return nil, nil
+}
 func (s *testVersionService) Rollback(context.Context, coreapi.VersionIDRequest) error {
+	if s.e != nil {
+		return s.e.rollbackErr
+	}
 	return nil
 }
-func (s *testVersionService) Delete(context.Context, coreapi.VersionIDRequest) error { return nil }
+func (s *testVersionService) Delete(context.Context, coreapi.VersionIDRequest) error {
+	if s.e != nil {
+		return s.e.versionDelErr
+	}
+	return nil
+}
 func (s *testVersionService) DeleteFile(context.Context, coreapi.VersionFileRequest) (int, error) {
+	if s.e != nil {
+		if s.e.deleteFileErr != nil {
+			return 0, s.e.deleteFileErr
+		}
+		return s.e.deleteFileN, nil
+	}
 	return 0, nil
 }
-func (s *testVersionService) Clear(context.Context) (int, error) { return 0, nil }
+func (s *testVersionService) Clear(context.Context) (int, error) {
+	if s.e != nil {
+		if s.e.clearErr != nil {
+			return 0, s.e.clearErr
+		}
+		return s.e.clearN, nil
+	}
+	return 0, nil
+}
 
 // testAgentsService：UI 测试用假 agent service。
 type testAgentsService struct{ e *testEngine }
