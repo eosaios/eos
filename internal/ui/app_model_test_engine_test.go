@@ -163,6 +163,11 @@ type testEngine struct {
 	windowTokens        int                      // Context.WindowTokens 返回（/status 上下文窗口行）
 	savedMessages       []coreapi.SessionMessage // SaveMessages 请求录制（/session save）
 
+	// confirm 面板批测注入口（零值=原行为）。
+	approvalRespondErr error // Approvals.Respond 失败臂（审批回包）
+	killTaskErr        error // Tasks.Kill 失败臂（bg_kill 确认）
+	trustWorkspaceErr  error // Workspaces.Trust 失败臂（workspace_trust 同步）
+
 	// MCP 面板批测注入口（零值=原行为）。
 	mcpListErr       error // MCP.List 失败臂
 	mcpSetEnabledErr error // MCP.SetEnabled 失败臂
@@ -216,7 +221,7 @@ func (e *testEngine) Insights() coreapi.InsightService        { return &testInsi
 func (e *testEngine) Memory() coreapi.MemoryService           { return &testMemoryService{e: e} }
 func (e *testEngine) Roles() coreapi.RoleService              { return nil }
 func (e *testEngine) Turns() coreapi.TurnService              { return &testTurnService{e: e} }
-func (e *testEngine) Approvals() coreapi.ApprovalService      { return &testApprovalsService{} }
+func (e *testEngine) Approvals() coreapi.ApprovalService      { return &testApprovalsServiceWithError{e: e} }
 func (e *testEngine) Inquiries() coreapi.InquiryService       { return &testInquiryService{} }
 func (e *testEngine) Agents() coreapi.AgentService            { return &testAgentsService{e: e} }
 func (e *testEngine) Tools() coreapi.ToolExecutor             { return &testToolExecutor{e: e} }
@@ -293,7 +298,12 @@ func (s *testWorkspaceService) Use(_ context.Context, req coreapi.WorkspacePathR
 func (s *testWorkspaceService) SetForeground(context.Context, coreapi.WorkspacePathRequest) error {
 	return nil
 }
-func (s *testWorkspaceService) Trust(context.Context, coreapi.WorkspacePathRequest) error { return nil }
+func (s *testWorkspaceService) Trust(context.Context, coreapi.WorkspacePathRequest) error {
+	if s.e != nil {
+		return s.e.trustWorkspaceErr
+	}
+	return nil
+}
 func (s *testWorkspaceService) ListWorktrees(context.Context) ([]coreapi.Worktree, error) {
 	return nil, nil
 }
@@ -861,8 +871,13 @@ func (s *testTaskService) Todos(context.Context) ([]coreapi.TodoItem, error) {
 func (s *testTaskService) Tail(context.Context, coreapi.TaskIDRequest) ([]string, error) {
 	return nil, nil
 }
-func (s *testTaskService) Kill(context.Context, coreapi.TaskIDRequest) error { return nil }
-func (s *testTaskService) Cleanup(context.Context) (int, error)              { return 0, nil }
+func (s *testTaskService) Kill(context.Context, coreapi.TaskIDRequest) error {
+	if s.e != nil {
+		return s.e.killTaskErr
+	}
+	return nil
+}
+func (s *testTaskService) Cleanup(context.Context) (int, error) { return 0, nil }
 
 // testGoalService 是 UI 测试用的 goal service 假实现（不触网）。
 type testGoalService struct{ e *testEngine }
@@ -921,6 +936,16 @@ func (s *testTurnService) Resume(context.Context, coreapi.TurnRef) (coreapi.Turn
 type testApprovalsService struct{}
 
 func (s *testApprovalsService) Respond(context.Context, coreapi.ApprovalResponse) error { return nil }
+
+// testApprovalsServiceWithError：经 engine 注入失败臂。
+type testApprovalsServiceWithError struct{ e *testEngine }
+
+func (s *testApprovalsServiceWithError) Respond(context.Context, coreapi.ApprovalResponse) error {
+	if s.e != nil {
+		return s.e.approvalRespondErr
+	}
+	return nil
+}
 
 type testInquiryService struct{}
 
