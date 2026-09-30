@@ -121,6 +121,19 @@ type chatSessionsGatewayStub struct {
 	respondErr        error
 	respondWithReason [][3]interface{}
 
+	// goal / capability 写（批六扩展）
+	capErr        error
+	goalSets      []coreapi.GoalSetRequest
+	goalPaused    []string
+	goalResumed   []string
+	goalCleared   []string
+	mcpUpserts    [][4]interface{}
+	mcpImports    []string
+	mcpDeletes    []string
+	mcpEnabled    [][2]interface{}
+	skillEnabled  [][2]interface{}
+	pluginEnabled [][2]interface{}
+
 	// turn 流（批四扩展）
 	turnErr       error
 	turnFailFirst int // 前 N 次 turn/start 注入失败（重试路径）
