@@ -673,7 +673,7 @@ func TestEnsureWorkspaceSessionRestoreAndCreateArms(t *testing.T) {
 			sessions:         []coreapi.Session{{ID: "sess-restore", WorkspaceRoot: workspace}},
 			currentMeta:      adapter.SessionMeta{ID: "sess-restore"},
 		}
-		_, svc, _ := newChatSessionsTestBridge(t, gateway)
+		_, svc, rec := newChatSessionsTestBridge(t, gateway)
 		state, err := svc.EnsureWorkspaceSession(workspace)
 		if err != nil {
 			t.Fatalf("EnsureWorkspaceSession error = %v", err)
@@ -689,16 +689,20 @@ func TestEnsureWorkspaceSessionRestoreAndCreateArms(t *testing.T) {
 			defer gateway.mu.Unlock()
 			return len(gateway.resumed) > 0
 		})
+		// emit goroutine 内 loadBootstrap 写 HOME 目录，锚定防清理竞态。
+		eventually(t, "shellUpdated after ensure", func() bool { return rec.has(shellUpdatedEventName) })
 	})
 
 	t.Run("无历史会话则新建", func(t *testing.T) {
 		workspace := t.TempDir()
 		gateway := &chatSessionsGatewayStub{defaultWorkspace: workspace}
-		_, svc, _ := newChatSessionsTestBridge(t, gateway)
+		_, svc, rec := newChatSessionsTestBridge(t, gateway)
 		state, err := svc.EnsureWorkspaceSession(workspace)
 		if err != nil {
 			t.Fatalf("EnsureWorkspaceSession error = %v", err)
 		}
+		// emit goroutine 内 loadBootstrap 写 HOME 目录，锚定防清理竞态。
+		eventually(t, "shellUpdated after silent create", func() bool { return rec.has(shellUpdatedEventName) })
 		if state.CurrentSessionID == "" {
 			t.Fatal("CurrentSessionID empty after silent create")
 		}
