@@ -123,6 +123,7 @@ type chatSessionsGatewayStub struct {
 
 	// goal / capability 写（批六扩展）
 	capErr        error
+	tasksList     []coreapi.TaskSnapshot
 	goalSets      []coreapi.GoalSetRequest
 	goalPaused    []string
 	goalResumed   []string
@@ -453,7 +454,9 @@ func (g *chatSessionsGatewayStub) CoreCostSummaryRPC(context.Context) (string, e
 }
 
 func (g *chatSessionsGatewayStub) CoreTaskListRPC(context.Context) ([]coreapi.TaskSnapshot, error) {
-	return nil, nil
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return append([]coreapi.TaskSnapshot(nil), g.tasksList...), nil
 }
 
 func (g *chatSessionsGatewayStub) CorePendingReviewRPC(context.Context) (adapter.PendingReview, error) {
