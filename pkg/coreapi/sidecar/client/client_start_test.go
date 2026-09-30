@@ -45,12 +45,14 @@ func TestMain(m *testing.M) {
 func runFakeCore(mode string) {
 	// 看门狗：stdin 因父进程句柄泄漏等原因迟迟不 EOF 时，保证子进程
 	// 仍会退出，避免 CloseWithTimeout 走到 "did not exit after kill"。
+	// 30s：Windows 下进程冷启动 + Content-Length 握手在并行满载时可超 1s，
+	// 过短会误杀正常握手（铁则：计时留 3 倍余量防并行满载 flaky）。
 	done := make(chan struct{})
 	defer close(done)
 	go func() {
 		select {
 		case <-done:
-		case <-time.After(1 * time.Second):
+		case <-time.After(30 * time.Second):
 			os.Exit(0)
 		}
 	}()

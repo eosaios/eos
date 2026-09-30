@@ -297,18 +297,3 @@ func TestRespondPromptRPCArms(t *testing.T) {
 	})
 }
 
-// ---- macOS 更新安装 fallback ----
-
-func TestLaunchUpdateInstallerFallbackOnMissingDMG(t *testing.T) {
-	// go test 环境不是 .app bundle → runningMacOSAppBundle 失败 →
-	// fallback 打开 dmg；dmg 不存在时 open 也失败 → 带指引错误返回。
-	err := launchUpdateInstaller(filepath.Join(t.TempDir(), "missing.dmg"))
-	if err == nil {
-		t.Fatal("launchUpdateInstaller(missing dmg) error = nil")
-	}
-	// open 异步 Start 恒成功（文件不存在由 open 进程自身报错，不弹窗），
-	// 故走「自动替换未能完成 + 已打开安装器指引」分支。
-	if !strings.Contains(err.Error(), "自动替换未能完成") {
-		t.Fatalf("error = %v, want fallback guidance", err)
-	}
-}

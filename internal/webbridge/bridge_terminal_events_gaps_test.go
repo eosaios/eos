@@ -14,6 +14,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -199,7 +200,8 @@ func TestTerminalLifecycleArms(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CreateTerminalSession('') error = %v", err)
 		}
-		if !strings.HasSuffix(state.Sessions[0].Cwd, ".eos/workspace") {
+		// Windows 下 Cwd 是反斜杠分隔：统一 ToSlash 后断言后缀。
+		if !strings.HasSuffix(filepath.ToSlash(state.Sessions[0].Cwd), ".eos/workspace") {
 			t.Fatalf("empty workspace should fall back to default, cwd = %q", state.Sessions[0].Cwd)
 		}
 		if _, err := NewTerminalService(nil).CloseTerminalSession("x"); err == nil {
