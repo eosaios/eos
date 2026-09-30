@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -173,12 +174,13 @@ func TestRemoteEngineSupportedMethodsCallSidecar(t *testing.T) {
 		protocoljsonrpc.MethodTurnStart,
 		protocoljsonrpc.MethodTurnInterrupt,
 	}
-	if len(caller.calls) != len(wantMethods) {
-		t.Fatalf("calls=%+v, want %d calls", caller.calls, len(wantMethods))
+	calls := caller.snapshotCalls()
+	if len(calls) != len(wantMethods) {
+		t.Fatalf("calls=%+v, want %d calls", calls, len(wantMethods))
 	}
 	for i, want := range wantMethods {
-		if caller.calls[i].method != want {
-			t.Fatalf("call[%d].method=%q, want %q", i, caller.calls[i].method, want)
+		if calls[i].method != want {
+			t.Fatalf("call[%d].method=%q, want %q", i, calls[i].method, want)
 		}
 	}
 }
@@ -206,8 +208,9 @@ func TestRemoteEngineInitializeCachesResult(t *testing.T) {
 	if first.ServerName != "rust-core" || second.ServerName != first.ServerName {
 		t.Fatalf("Initialize() results = %+v / %+v, want cached rust-core", first, second)
 	}
-	if len(caller.calls) != 1 || caller.calls[0].method != protocoljsonrpc.MethodInitialize {
-		t.Fatalf("calls=%+v, want one initialize call", caller.calls)
+	initCalls := caller.snapshotCalls()
+	if len(initCalls) != 1 || initCalls[0].method != protocoljsonrpc.MethodInitialize {
+		t.Fatalf("calls=%+v, want one initialize call", initCalls)
 	}
 }
 
@@ -330,12 +333,13 @@ func TestRemoteEngineMigratedMethodsCallSidecar(t *testing.T) {
 		protocoljsonrpc.MethodConfigSettingsGet,
 		protocoljsonrpc.MethodConfigSettingsSave,
 	}
-	if len(caller.calls) != len(wantMethods) {
-		t.Fatalf("calls=%d, want %d", len(caller.calls), len(wantMethods))
+	cfgCalls := caller.snapshotCalls()
+	if len(cfgCalls) != len(wantMethods) {
+		t.Fatalf("calls=%d, want %d", len(cfgCalls), len(wantMethods))
 	}
 	for i, want := range wantMethods {
-		if caller.calls[i].method != want {
-			t.Fatalf("call[%d].method=%q, want %q", i, caller.calls[i].method, want)
+		if cfgCalls[i].method != want {
+			t.Fatalf("call[%d].method=%q, want %q", i, cfgCalls[i].method, want)
 		}
 	}
 }
@@ -516,20 +520,26 @@ type fakeEngineCall struct {
 }
 
 type fakeEngineCaller struct {
+	// mu：Events().Subscribe 的内部 goroutine 会并发 Call——所有字段
+	// 读写必须持锁（否则 -race 下与测试主线程读 calls 竞争）。
+	mu      sync.Mutex
 	calls   []fakeEngineCall
 	results map[string]any
 	errs    map[string]error
 }
 
 func (f *fakeEngineCaller) Call(_ context.Context, method string, params any, out any) error {
+	f.mu.Lock()
 	f.calls = append(f.calls, fakeEngineCall{method: method, params: params})
-	if err := f.errs[method]; err != nil {
+	err := f.errs[method]
+	result := f.results[method]
+	f.mu.Unlock()
+	if err != nil {
 		return err
 	}
 	if out == nil {
 		return nil
 	}
-	result := f.results[method]
 	if result == nil {
 		return nil
 	}
@@ -538,6 +548,13 @@ func (f *fakeEngineCaller) Call(_ context.Context, method string, params any, ou
 		return err
 	}
 	return json.Unmarshal(data, out)
+}
+
+// snapshotCalls 带锁取调用快照（测试断言用）。
+func (f *fakeEngineCaller) snapshotCalls() []fakeEngineCall {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]fakeEngineCall(nil), f.calls...)
 }
 
 func TestRemoteEngineEventSubscribeReceivesNotifications(t *testing.T) {
@@ -784,12 +801,13 @@ func TestRemoteEnginePermissionServiceCallsSidecar(t *testing.T) {
 		protocoljsonrpc.MethodPermissionAccessModeSet,
 		protocoljsonrpc.MethodPermissionApprovalModeSet,
 	}
-	if len(caller.calls) != len(wantMethods) {
-		t.Fatalf("calls=%+v, want %d calls", caller.calls, len(wantMethods))
+	calls := caller.snapshotCalls()
+	if len(calls) != len(wantMethods) {
+		t.Fatalf("calls=%+v, want %d calls", calls, len(wantMethods))
 	}
 	for i, want := range wantMethods {
-		if caller.calls[i].method != want {
-			t.Fatalf("call[%d].method=%q, want %q", i, caller.calls[i].method, want)
+		if calls[i].method != want {
+			t.Fatalf("call[%d].method=%q, want %q", i, calls[i].method, want)
 		}
 	}
 }
@@ -839,12 +857,13 @@ func TestRemoteEngineModeServiceCallsSidecar(t *testing.T) {
 		protocoljsonrpc.MethodRuntimeSandboxModeSet,
 		protocoljsonrpc.MethodRuntimeReasoningLevelSet,
 	}
-	if len(caller.calls) != len(wantMethods) {
-		t.Fatalf("calls=%+v, want %d calls", caller.calls, len(wantMethods))
+	calls := caller.snapshotCalls()
+	if len(calls) != len(wantMethods) {
+		t.Fatalf("calls=%+v, want %d calls", calls, len(wantMethods))
 	}
 	for i, want := range wantMethods {
-		if caller.calls[i].method != want {
-			t.Fatalf("call[%d].method=%q, want %q", i, caller.calls[i].method, want)
+		if calls[i].method != want {
+			t.Fatalf("call[%d].method=%q, want %q", i, calls[i].method, want)
 		}
 	}
 }
@@ -911,12 +930,13 @@ func TestRemoteEngineModelServiceCallsSidecar(t *testing.T) {
 		protocoljsonrpc.MethodModelActivate,
 		protocoljsonrpc.MethodModelSyncEnv,
 	}
-	if len(caller.calls) != len(wantMethods) {
-		t.Fatalf("calls=%+v, want %d calls", caller.calls, len(wantMethods))
+	calls := caller.snapshotCalls()
+	if len(calls) != len(wantMethods) {
+		t.Fatalf("calls=%+v, want %d calls", calls, len(wantMethods))
 	}
 	for i, want := range wantMethods {
-		if caller.calls[i].method != want {
-			t.Fatalf("call[%d].method=%q, want %q", i, caller.calls[i].method, want)
+		if calls[i].method != want {
+			t.Fatalf("call[%d].method=%q, want %q", i, calls[i].method, want)
 		}
 	}
 }
@@ -1155,12 +1175,13 @@ func TestRemoteEngineeringServicesCallSidecar(t *testing.T) {
 		protocoljsonrpc.MethodUsageCostSummary,
 		protocoljsonrpc.MethodUsageCostItems,
 	}
-	if len(caller.calls) != len(wantMethods) {
-		t.Fatalf("calls=%+v, want %d calls", caller.calls, len(wantMethods))
+	calls := caller.snapshotCalls()
+	if len(calls) != len(wantMethods) {
+		t.Fatalf("calls=%+v, want %d calls", calls, len(wantMethods))
 	}
 	for i, want := range wantMethods {
-		if caller.calls[i].method != want {
-			t.Fatalf("call[%d].method=%q, want %q", i, caller.calls[i].method, want)
+		if calls[i].method != want {
+			t.Fatalf("call[%d].method=%q, want %q", i, calls[i].method, want)
 		}
 	}
 }
@@ -1357,12 +1378,13 @@ func TestRemoteEngineRemoteWorkspaceServiceCallsSidecar(t *testing.T) {
 		protocoljsonrpc.MethodRemoteWorkspaceClearCache,
 		protocoljsonrpc.MethodRemoteRepoCurrent,
 	}
-	if len(caller.calls) != len(wantMethods) {
-		t.Fatalf("calls=%d, want %d", len(caller.calls), len(wantMethods))
+	cfgCalls := caller.snapshotCalls()
+	if len(cfgCalls) != len(wantMethods) {
+		t.Fatalf("calls=%d, want %d", len(cfgCalls), len(wantMethods))
 	}
 	for i, want := range wantMethods {
-		if caller.calls[i].method != want {
-			t.Fatalf("call[%d].method=%q, want %q", i, caller.calls[i].method, want)
+		if cfgCalls[i].method != want {
+			t.Fatalf("call[%d].method=%q, want %q", i, cfgCalls[i].method, want)
 		}
 	}
 }
@@ -1420,12 +1442,13 @@ func TestRemoteEngineToolTelemetryServiceCallsSidecar(t *testing.T) {
 		protocoljsonrpc.MethodToolTraces,
 		protocoljsonrpc.MethodToolStats,
 	}
-	if len(caller.calls) != len(wantMethods) {
-		t.Fatalf("calls=%d, want %d", len(caller.calls), len(wantMethods))
+	cfgCalls := caller.snapshotCalls()
+	if len(cfgCalls) != len(wantMethods) {
+		t.Fatalf("calls=%d, want %d", len(cfgCalls), len(wantMethods))
 	}
 	for i, want := range wantMethods {
-		if caller.calls[i].method != want {
-			t.Fatalf("call[%d].method=%q, want %q", i, caller.calls[i].method, want)
+		if cfgCalls[i].method != want {
+			t.Fatalf("call[%d].method=%q, want %q", i, cfgCalls[i].method, want)
 		}
 	}
 }
@@ -1462,12 +1485,13 @@ func TestRemoteEngineSandboxPolicyCallsSidecar(t *testing.T) {
 		protocoljsonrpc.MethodSandboxPolicy,
 		protocoljsonrpc.MethodSandboxSetPolicy,
 	}
-	if len(caller.calls) != len(wantMethods) {
-		t.Fatalf("calls=%d, want %d", len(caller.calls), len(wantMethods))
+	cfgCalls := caller.snapshotCalls()
+	if len(cfgCalls) != len(wantMethods) {
+		t.Fatalf("calls=%d, want %d", len(cfgCalls), len(wantMethods))
 	}
 	for i, want := range wantMethods {
-		if caller.calls[i].method != want {
-			t.Fatalf("call[%d].method=%q, want %q", i, caller.calls[i].method, want)
+		if cfgCalls[i].method != want {
+			t.Fatalf("call[%d].method=%q, want %q", i, cfgCalls[i].method, want)
 		}
 	}
 }
