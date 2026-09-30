@@ -136,6 +136,18 @@ type chatSessionsGatewayStub struct {
 	skillEnabled  [][2]interface{}
 	pluginEnabled [][2]interface{}
 
+	// 模型与版本写（批十扩展）
+	modelErr           error
+	modelUpserts       [][4]string
+	modelSaves         []adapter.ModelSaveRequest
+	modelActivations   []string
+	modelDeletes       []string
+	sessionModelSets   [][2]string
+	workspaceModelSets [][2]string
+	versionRollbacks   []string
+	versionDeletes     []string
+	versionClears      int
+
 	// CoreCallRPC / Invoke（批九扩展）
 	callRPCErr    error
 	callRPCResult json.RawMessage
