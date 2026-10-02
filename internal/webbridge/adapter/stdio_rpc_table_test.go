@@ -6,10 +6,12 @@ package adapter
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/eosaios/eos/pkg/coreapi"
 	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
+	"github.com/eosaios/eos/pkg/sandbox"
 )
 
 // newReplayGateway 起一个 net.Pipe 回放服务器：按 method 查表回 result。
@@ -483,4 +485,198 @@ func TestGatewayGitVersionsSettingsInsightSweep(t *testing.T) {
 	_ = g.ContextPreview()
 	_ = g.ContextStats()
 	_ = g.CostSummary()
+}
+
+func TestGatewayMiscCompositeSweep(t *testing.T) {
+	policy := map[string]any{"mode": "workspace-write", "workspace_root": "/tmp/ws"}
+	g := newReplayGateway(t, map[string]any{
+		protocoljsonrpc.MethodInitialize:                map[string]any{"server_name": "eos-core"},
+		protocoljsonrpc.MethodSessionList:               []any{},
+		protocoljsonrpc.MethodSandboxBackend:            map[string]any{"goos": "darwin", "backend": "sandbox-exec"},
+		protocoljsonrpc.MethodSandboxPolicy:             policy,
+		protocoljsonrpc.MethodSandboxSetPolicy:          policy,
+		protocoljsonrpc.MethodSandboxDerivePolicy:       policy,
+		protocoljsonrpc.MethodPermissionEnterFullAccess: policy,
+		protocoljsonrpc.MethodApprovalPreview:           map[string]any{"lines": []any{}},
+		protocoljsonrpc.MethodGoalSet:                   map[string]any{"objective": "目标", "status": "active"},
+		protocoljsonrpc.MethodGoalGet:                   map[string]any{"goal": map[string]any{"objective": "目标"}},
+		protocoljsonrpc.MethodGoalPause:                 map[string]any{"status": "paused"},
+		protocoljsonrpc.MethodGoalResume:                map[string]any{"status": "active"},
+		protocoljsonrpc.MethodGoalClear:                 map[string]any{},
+		protocoljsonrpc.MethodTaskList:                  []any{},
+		protocoljsonrpc.MethodTaskKill:                  map[string]any{},
+		protocoljsonrpc.MethodTaskCleanup:               map[string]any{"count": 2},
+		protocoljsonrpc.MethodNetworkList:               map[string]any{"enabled": false, "records": []any{}},
+		protocoljsonrpc.MethodNetworkClear:              map[string]any{"removed": 3},
+		protocoljsonrpc.MethodModelVerify:               map[string]any{"ok": true},
+		protocoljsonrpc.MethodModelSave:                 map[string]any{},
+		protocoljsonrpc.MethodInsightRefineInput:        map[string]any{"text": "润色"},
+		protocoljsonrpc.MethodSessionCurrent:            map[string]any{"id": "s-1"},
+		protocoljsonrpc.MethodSessionSetMeta:            map[string]any{},
+		protocoljsonrpc.MethodPermissionApprovalModeSet: map[string]any{},
+	})
+	ctx := context.Background()
+
+	if _, err := g.CoreInitializeRPC(ctx); err != nil {
+		t.Fatalf("initialize: %v", err)
+	}
+	if _, err := g.CoreListArchivedSessionsRPC(ctx); err != nil {
+		t.Fatalf("archived sessions: %v", err)
+	}
+	if err := g.CoreSetApprovalModeRPC(ctx, "auto"); err != nil {
+		t.Fatalf("set approval mode: %v", err)
+	}
+	if err := g.CoreArchiveSessionRPC(ctx, "s-1", true); err != nil {
+		t.Fatalf("archive session: %v", err)
+	}
+	if _, err := g.CoreCurrentSessionRPC(ctx, "/tmp/ws"); err != nil {
+		t.Fatalf("current session: %v", err)
+	}
+	if _, err := g.CoreModelContextRPC(ctx, ModelContextRequest{}); err != nil {
+		t.Fatalf("model context: %v", err)
+	}
+	if err := g.CoreSaveModelRPC(ctx, ModelSaveRequest{Name: "m1"}); err != nil {
+		t.Fatalf("save model: %v", err)
+	}
+	if _, err := g.CoreVerifyModelRPC(ctx, ModelSaveRequest{Name: "m1"}); err != nil {
+		t.Fatalf("verify model: %v", err)
+	}
+	if s, err := g.CoreRefineInputRPC(ctx, "草稿"); err != nil || s != "润色" {
+		t.Fatalf("refine: %v %q", err, s)
+	}
+	if _, err := g.CoreCallRPC(ctx, "session/list", json.RawMessage("{}")); err != nil {
+		t.Fatalf("call rpc: %v", err)
+	}
+	if _, err := g.CoreToolExecuteRPC(ctx, json.RawMessage(`{"name":"bash"}`)); err != nil {
+		t.Fatalf("tool execute: %v", err)
+	}
+	if _, err := g.CoreNetworkListRPC(ctx, 10); err != nil {
+		t.Fatalf("network list: %v", err)
+	}
+	if n, err := g.CoreNetworkClearRPC(ctx); err != nil || n != 3 {
+		t.Fatalf("network clear: %v %d", err, n)
+	}
+	if err := g.CoreKillTaskRPC(ctx, "t-1"); err != nil {
+		t.Fatalf("kill task: %v", err)
+	}
+	if _, err := g.CoreTaskListRPC(ctx); err != nil {
+		t.Fatalf("task list: %v", err)
+	}
+	if n, err := g.CoreCleanupTasksRPC(ctx); err != nil || n != 2 {
+		t.Fatalf("cleanup tasks: %v %d", err, n)
+	}
+	if _, err := g.CoreSandboxPolicyRPC(ctx, "s-1"); err != nil {
+		t.Fatalf("sandbox policy: %v", err)
+	}
+	if err := g.CoreSetSandboxPolicyRPC(ctx, "s-1", sandbox.Policy{Mode: "workspace-write"}); err != nil {
+		t.Fatalf("set sandbox policy: %v", err)
+	}
+	if _, err := g.CoreDeriveSandboxPolicyRPC(ctx, "workspace-write", "/tmp/ws"); err != nil {
+		t.Fatalf("derive policy: %v", err)
+	}
+	if _, err := g.CoreEnterFullAccessRPC(ctx, "/tmp/ws"); err != nil {
+		t.Fatalf("enter full access: %v", err)
+	}
+	if _, err := g.CoreApprovalPreviewRPC(ctx, coreapi.ApprovalPreviewRequest{}); err != nil {
+		t.Fatalf("approval preview: %v", err)
+	}
+	if _, err := g.CoreSandboxBackendStatusRPC(ctx); err != nil {
+		t.Fatalf("sandbox backend: %v", err)
+	}
+	goal, err := g.CoreGoalSetRPC(ctx, coreapi.GoalSetRequest{Objective: "目标"})
+	if err != nil || goal.Status != "active" {
+		t.Fatalf("goal set: %v %+v", err, goal)
+	}
+	if _, err := g.CoreGoalGetRPC(ctx, "s-1"); err != nil {
+		t.Fatalf("goal get: %v", err)
+	}
+	if _, err := g.CoreGoalPauseRPC(ctx, "s-1"); err != nil {
+		t.Fatalf("goal pause: %v", err)
+	}
+	if _, err := g.CoreGoalResumeRPC(ctx, "s-1"); err != nil {
+		t.Fatalf("goal resume: %v", err)
+	}
+	if err := g.CoreGoalClearRPC(ctx, "s-1"); err != nil {
+		t.Fatalf("goal clear: %v", err)
+	}
+	_ = g.KillTask("t-1")
+	_ = g.CleanupTasks()
+}
+
+func TestGatewayTurnStreamAndPureHelpers(t *testing.T) {
+	g := newReplayGateway(t, map[string]any{
+		protocoljsonrpc.MethodEventSubscribe:   map[string]any{"subscription_id": "sub-1"},
+		protocoljsonrpc.MethodEventUnsubscribe: map[string]any{},
+		protocoljsonrpc.MethodTurnStart:        map[string]any{"id": "t-1", "session_id": "s-1"},
+		protocoljsonrpc.MethodTurnResume:       map[string]any{"id": "t-1"},
+		protocoljsonrpc.MethodTurnInterrupt:    map[string]any{},
+	})
+	ctx := context.Background()
+
+	// 订阅/退订往返
+	_, unsub, err := g.CoreSubscribeEventsRPC(ctx, "s-1", "t-1", "", 8)
+	if err != nil {
+		t.Fatalf("subscribe: %v", err)
+	}
+	unsub()
+
+	// turn 流启动（订阅+start 调用后立即中断消费）
+	ch, turn, err := g.CoreStartTurnStreamWithRequestRPC(ctx, coreapi.StartTurnRequest{
+		SessionID: "s-1", Input: "你好",
+		ImagePaths:  []string{" a.png ", "", "a.png"},
+		Attachments: []coreapi.Attachment{{Name: " n ", Path: " p.png "}, {Path: "  "}},
+	})
+	if err != nil {
+		t.Fatalf("start turn stream: %v", err)
+	}
+	if !strings.HasPrefix(turn.ID, "turn_") {
+		t.Fatalf("turn id 应为本地生成的 turn_ 前缀: %+v", turn)
+	}
+	// 事件通道由后台桥接 goroutine 驱动——等一拍后中断 ctx 结束
+	_ = ch
+
+	// resume 流
+	if _, _, err := g.CoreResumeTurnStreamRPC(ctx, "s-1", "t-1"); err != nil {
+		t.Fatalf("resume stream: %v", err)
+	}
+	if err := g.CoreInterruptTurnRPC(ctx, "s-1", "t-1"); err != nil {
+		t.Fatalf("interrupt: %v", err)
+	}
+
+	// 纯 helper 域
+	if _, err := g.CoreRunBashStreamRPC(ctx, "ls"); err == nil {
+		t.Fatal("bash stream should be not-implemented")
+	}
+	// stdio 网关不落配置文件——CoreConfigPath 恒空（行为固化）
+	if p := g.CoreConfigPath(); p != "" {
+		t.Fatalf("config path should be empty over stdio, got %q", p)
+	}
+	if err := g.SaveModel(ModelSaveRequest{Name: "m1"}); err != nil {
+		t.Fatalf("save model: %v", err)
+	}
+	g.ResolveConfirmation("ap-1", coreapi.ApprovalAccept)
+	if c := g.ThreadCoreIfExists("s-1"); c != nil {
+		t.Fatalf("stdio gateway has no thread core, got %v", c)
+	}
+	d := g.StartupDiagnostics()
+	_ = d
+
+	// compact helpers 语义
+	atts := stdioCompactCoreAPIAttachments([]coreapi.Attachment{
+		{Name: " n ", Path: " p.png "}, {Path: "  "}, {Path: "k.png"},
+	})
+	if len(atts) != 2 || atts[0].Name != "n" || atts[0].Path != "p.png" {
+		t.Fatalf("attachments compact: %+v", atts)
+	}
+	strs := stdioCompactStringSlice([]string{" a ", "", "a", "b ", "b"})
+	if len(strs) != 2 || strs[0] != "a" || strs[1] != "b" {
+		t.Fatalf("string compact（trim+去重）: %v", strs)
+	}
+	if id := stdioNewTurnID(); id == "" {
+		t.Fatal("turn id should be non-empty")
+	}
+
+	// not-implemented 错误文案
+	var nie *stdioNotImplementedError
+	_ = nie.Error()
 }
