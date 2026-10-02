@@ -459,6 +459,10 @@ func TestStatusSlashRichLines(t *testing.T) {
 func TestFastSlashSwitchBackSelectError(t *testing.T) {
 	setTestHome(t)
 	home := t.TempDir()
+	// setTestHome 已设 HOME；此处再锚一次到本测试自己的目录——否则 darwin
+	// 上生产 config.Load() 读 HOME（先设），测试写 USERPROFILE（后设），
+	// 两个目录错位导致 FastModel 恒空、断言环境敏感（CI linux 过 darwin 挂）。
+	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 	cfgPath := filepath.Join(home, ".eos.json")
 	if err := config.Save(config.Config{FastModel: "fast-model", Active: "default-model"}, cfgPath); err != nil {

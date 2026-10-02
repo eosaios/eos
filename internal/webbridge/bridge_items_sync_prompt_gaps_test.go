@@ -296,4 +296,3 @@ func TestRespondPromptRPCArms(t *testing.T) {
 		}
 	})
 }
-
