@@ -46,10 +46,13 @@ type CoreClientAdapter struct {
 	subscribers    map[int]chan RuntimeEvent
 	nextSubscriber int
 
-	pumpOnce       sync.Once
-	pumpReady      chan struct{}
-	pumpClosed     chan struct{}
-	pumpCancel     context.CancelFunc
+	pumpOnce   sync.Once
+	pumpReady  chan struct{}
+	pumpClosed chan struct{}
+	pumpCancel context.CancelFunc
+	// pumpMu 保护 pumpCancel：Close 可能与首次 ensurePumpStarted 并发
+	// （sync.Once 只防泵重复启动，不防 Close 侧读到写一半的字段）。
+	pumpMu         sync.Mutex
 	dispatcherDone chan struct{}
 	closeOnce      sync.Once
 	closeErr       error
@@ -105,9 +108,12 @@ func (a *CoreClientAdapter) Close() error {
 		return nil
 	}
 	a.closeOnce.Do(func() {
-		pumpStopped := a.pumpCancel == nil
-		if a.pumpCancel != nil {
-			a.pumpCancel()
+		a.pumpMu.Lock()
+		pumpCancel := a.pumpCancel
+		a.pumpMu.Unlock()
+		pumpStopped := pumpCancel == nil
+		if pumpCancel != nil {
+			pumpCancel()
 			if a.pumpClosed != nil {
 				select {
 				case <-a.pumpClosed:
@@ -189,7 +195,9 @@ func (a *CoreClientAdapter) ensurePumpStarted() {
 			return
 		}
 		ctx, cancel := context.WithCancel(context.Background())
+		a.pumpMu.Lock()
 		a.pumpCancel = cancel
+		a.pumpMu.Unlock()
 		go func() {
 			defer close(a.pumpClosed)
 			a.runNotificationPump(ctx)

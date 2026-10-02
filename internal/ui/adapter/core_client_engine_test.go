@@ -21,52 +21,52 @@ import (
 type fakeEngine struct {
 	mu sync.Mutex
 
-	state           coreapi.StateSnapshot
-	workspaceList   []coreapi.Workspace
-	models          []coreapi.ModelConfig
-	modelContext    coreapi.ModelContextSnapshot
-	settings        coreapi.Settings
-	permissionSnap  coreapi.PermissionSnapshot
-	modeSnap        coreapi.ModeSnapshot
-	usageSummary    coreapi.UsageSummary
-	costItems       []coreapi.CostItem
-	taskList        []coreapi.TaskSnapshot
-	todos           []coreapi.TodoItem
-	skills          []coreapi.SkillInfo
-	plugins         []coreapi.PluginInfo
-	mcpList         []coreapi.MCPServer
-	lspList         []coreapi.LSPServer
-	contextPreview  []string
-	contextStats    coreapi.ContextStats
-	goalGet         coreapi.GoalGetResponse
-	goalSetResult   coreapi.ThreadGoal
-	memorySnap      coreapi.MemorySnapshot
-	insightPlan     coreapi.PlanSnapshot
+	state            coreapi.StateSnapshot
+	workspaceList    []coreapi.Workspace
+	models           []coreapi.ModelConfig
+	modelContext     coreapi.ModelContextSnapshot
+	settings         coreapi.Settings
+	permissionSnap   coreapi.PermissionSnapshot
+	modeSnap         coreapi.ModeSnapshot
+	usageSummary     coreapi.UsageSummary
+	costItems        []coreapi.CostItem
+	taskList         []coreapi.TaskSnapshot
+	todos            []coreapi.TodoItem
+	skills           []coreapi.SkillInfo
+	plugins          []coreapi.PluginInfo
+	mcpList          []coreapi.MCPServer
+	lspList          []coreapi.LSPServer
+	contextPreview   []string
+	contextStats     coreapi.ContextStats
+	goalGet          coreapi.GoalGetResponse
+	goalSetResult    coreapi.ThreadGoal
+	memorySnap       coreapi.MemorySnapshot
+	insightPlan      coreapi.PlanSnapshot
 	remoteWorkspaces []coreapi.RemoteWorkspace
-	remoteRepo      coreapi.RemoteRepoState
-	remoteRepoOK    bool
-	gitBranches     coreapi.GitBranchesResult
-	gitSummary      coreapi.GitSummaryResult
-	gitLog          coreapi.GitLogResult
-	versions        []coreapi.VersionItem
-	rulesSnap       coreapi.RulesSnapshot
-	diagnostics     coreapi.StartupDiagnosticsResult
-	browserStatus   coreapi.BrowserRuntimeStatus
-	browserTabs     []coreapi.BrowserTabInfo
-	browserProfiles []coreapi.BrowserProfileRecord
-	traces          []coreapi.ToolTrace
-	toolStats       []coreapi.ToolStat
-	toolCatalog     []coreapi.ToolDefinition
-	toolExecResult  coreapi.ToolResult
-	turnResult      coreapi.Turn
-	approvalErr     error
+	remoteRepo       coreapi.RemoteRepoState
+	remoteRepoOK     bool
+	gitBranches      coreapi.GitBranchesResult
+	gitSummary       coreapi.GitSummaryResult
+	gitLog           coreapi.GitLogResult
+	versions         []coreapi.VersionItem
+	rulesSnap        coreapi.RulesSnapshot
+	diagnostics      coreapi.StartupDiagnosticsResult
+	browserStatus    coreapi.BrowserRuntimeStatus
+	browserTabs      []coreapi.BrowserTabInfo
+	browserProfiles  []coreapi.BrowserProfileRecord
+	traces           []coreapi.ToolTrace
+	toolStats        []coreapi.ToolStat
+	toolCatalog      []coreapi.ToolDefinition
+	toolExecResult   coreapi.ToolResult
+	turnResult       coreapi.Turn
+	approvalErr      error
 
 	// 可观测记录
-	resumeCalls  []string
-	turnStarts   []coreapi.StartTurnRequest
-	modeSets     []string
-	activeModel  string
-	eventsSub    *fakeEvents
+	resumeCalls []string
+	turnStarts  []coreapi.StartTurnRequest
+	modeSets    []string
+	activeModel string
+	eventsSub   *fakeEvents
 }
 
 func (e *fakeEngine) Caller() coreapi.Caller                 { return nil }
@@ -88,16 +88,16 @@ func (e *fakeEngine) Models() coreapi.ModelService           { return &fakeModel
 func (e *fakeEngine) RemoteWorkspaces() coreapi.RemoteWorkspaceService {
 	return &fakeRemote{e: e}
 }
-func (e *fakeEngine) Git() coreapi.GitService          { return &fakeGit{e: e} }
-func (e *fakeEngine) Insights() coreapi.InsightService { return &fakeInsights{e: e} }
-func (e *fakeEngine) Memory() coreapi.MemoryService    { return &fakeMemory{e: e} }
-func (e *fakeEngine) Roles() coreapi.RoleService       { return &fakeRoles{} }
-func (e *fakeEngine) Turns() coreapi.TurnService       { return &fakeTurns{e: e} }
-func (e *fakeEngine) Approvals() coreapi.ApprovalService { return &fakeApprovals{e: e} }
-func (e *fakeEngine) Inquiries() coreapi.InquiryService  { return &fakeInquiries{} }
-func (e *fakeEngine) Agents() coreapi.AgentService       { return &fakeAgents{} }
-func (e *fakeEngine) Tools() coreapi.ToolExecutor        { return &fakeTools{e: e} }
-func (e *fakeEngine) ToolCatalog() coreapi.ToolCatalogService { return &fakeToolCatalog{e: e} }
+func (e *fakeEngine) Git() coreapi.GitService                     { return &fakeGit{e: e} }
+func (e *fakeEngine) Insights() coreapi.InsightService            { return &fakeInsights{e: e} }
+func (e *fakeEngine) Memory() coreapi.MemoryService               { return &fakeMemory{e: e} }
+func (e *fakeEngine) Roles() coreapi.RoleService                  { return &fakeRoles{} }
+func (e *fakeEngine) Turns() coreapi.TurnService                  { return &fakeTurns{e: e} }
+func (e *fakeEngine) Approvals() coreapi.ApprovalService          { return &fakeApprovals{e: e} }
+func (e *fakeEngine) Inquiries() coreapi.InquiryService           { return &fakeInquiries{} }
+func (e *fakeEngine) Agents() coreapi.AgentService                { return &fakeAgents{} }
+func (e *fakeEngine) Tools() coreapi.ToolExecutor                 { return &fakeTools{e: e} }
+func (e *fakeEngine) ToolCatalog() coreapi.ToolCatalogService     { return &fakeToolCatalog{e: e} }
 func (e *fakeEngine) ToolTelemetry() coreapi.ToolTelemetryService { return &fakeToolTelemetry{e: e} }
 func (e *fakeEngine) Events() coreapi.EventSubscriber {
 	if e.eventsSub == nil {
@@ -105,7 +105,7 @@ func (e *fakeEngine) Events() coreapi.EventSubscriber {
 	}
 	return e.eventsSub
 }
-func (e *fakeEngine) Sandbox() coreapi.SandboxService    { return &fakeSandbox{} }
+func (e *fakeEngine) Sandbox() coreapi.SandboxService         { return &fakeSandbox{} }
 func (e *fakeEngine) Diagnostics() coreapi.DiagnosticsService { return &fakeDiagnostics{e: e} }
 
 type fakeState struct{ e *fakeEngine }
@@ -119,8 +119,8 @@ type fakeWorkspaces struct{ e *fakeEngine }
 func (s *fakeWorkspaces) List(context.Context, coreapi.WorkspaceListRequest) ([]coreapi.Workspace, error) {
 	return s.e.workspaceList, nil
 }
-func (s *fakeWorkspaces) Default(context.Context) (string, error)   { return "/ws/default", nil }
-func (s *fakeWorkspaces) Last(context.Context) (string, error)      { return "/ws/last", nil }
+func (s *fakeWorkspaces) Default(context.Context) (string, error) { return "/ws/default", nil }
+func (s *fakeWorkspaces) Last(context.Context) (string, error)    { return "/ws/last", nil }
 func (s *fakeWorkspaces) ResolveForeground(context.Context, coreapi.ResolveForegroundWorkspaceRequest) (string, error) {
 	return "/ws/fg", nil
 }
@@ -521,7 +521,7 @@ type fakeAgents struct{}
 func (fakeAgents) Spawn(context.Context, coreapi.SpawnAgentRequest) (coreapi.Agent, error) {
 	return coreapi.Agent{}, nil
 }
-func (fakeAgents) SendInput(context.Context, coreapi.AgentInput) error       { return nil }
+func (fakeAgents) SendInput(context.Context, coreapi.AgentInput) error { return nil }
 func (fakeAgents) Wait(context.Context, coreapi.AgentRef) (coreapi.Agent, error) {
 	return coreapi.Agent{}, nil
 }
@@ -558,16 +558,43 @@ func (s *fakeToolTelemetry) Stats(context.Context) ([]coreapi.ToolStat, error) {
 }
 
 type fakeEvents struct {
-	ch     chan protocol.Envelope
-	err    error
+	ch  chan protocol.Envelope
+	err error
+	// ctxAware 时返回按订阅者派生的通道：源关闭或 ctx 取消都会收口
+	// （语义对齐真实 sink 的 per-subscriber 关闭；默认 false 保持既有
+	// 测试的共享通道行为——多订阅者共享读、不随 ctx 关闭）。
+	ctxAware bool
 }
 
-func (f *fakeEvents) Subscribe(context.Context, coreapi.EventFilter) (<-chan protocol.Envelope, error) {
+func (f *fakeEvents) Subscribe(ctx context.Context, _ coreapi.EventFilter) (<-chan protocol.Envelope, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
 	if f.ch != nil {
-		return f.ch, nil
+		if !f.ctxAware {
+			return f.ch, nil
+		}
+		src := f.ch
+		out := make(chan protocol.Envelope, 64)
+		go func() {
+			defer close(out)
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case env, ok := <-src:
+					if !ok {
+						return
+					}
+					select {
+					case out <- env:
+					case <-ctx.Done():
+						return
+					}
+				}
+			}
+		}()
+		return out, nil
 	}
 	ch := make(chan protocol.Envelope)
 	close(ch)
