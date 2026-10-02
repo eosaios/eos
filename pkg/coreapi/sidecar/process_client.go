@@ -35,6 +35,14 @@ type ProcessClient struct {
 	client *protocoljsonrpc.StreamClient
 	waitCh chan error
 
+	// waitDone/waitErr：进程收割后关闭/落账。waitCh 是单值通道，
+	// 会被 Wait() 消费者抽干（如 StartRemoteEngine 的退出监看），
+	// Close 需要一个可多读者共享的退出信号才能不误等超时。
+	waitDoneOnce sync.Once
+	waitDone     chan struct{}
+	waitMu       sync.Mutex
+	waitErr      error
+
 	closeOnce sync.Once
 	closeErr  error
 }
@@ -100,12 +108,18 @@ func StartProcess(ctx context.Context, opts ProcessOptions) (*ProcessClient, err
 	}
 
 	pc := &ProcessClient{
-		cmd:    cmd,
-		client: client,
-		waitCh: make(chan error, 1),
+		cmd:      cmd,
+		client:   client,
+		waitCh:   make(chan error, 1),
+		waitDone: make(chan struct{}),
 	}
 	go func() {
-		pc.waitCh <- cmd.Wait()
+		err := cmd.Wait()
+		pc.waitMu.Lock()
+		pc.waitErr = err
+		pc.waitMu.Unlock()
+		pc.waitDoneOnce.Do(func() { close(pc.waitDone) })
+		pc.waitCh <- err
 	}()
 	return pc, nil
 }
@@ -154,6 +168,13 @@ func (c *ProcessClient) Wait() <-chan error {
 	return c.waitCh
 }
 
+// readWaitErr 在 waitDone 已关后读取收割结果（waitCh 可能已被 Wait() 消费者取走）。
+func (c *ProcessClient) readWaitErr() {
+	c.waitMu.Lock()
+	c.closeErr = c.waitErr
+	c.waitMu.Unlock()
+}
+
 func (c *ProcessClient) CloseWithTimeout(timeout time.Duration) error {
 	if c == nil {
 		return nil
@@ -170,6 +191,8 @@ func (c *ProcessClient) CloseWithTimeout(timeout time.Duration) error {
 		select {
 		case err := <-c.waitCh:
 			c.closeErr = err
+		case <-c.waitDone:
+			c.readWaitErr()
 		case <-timer.C:
 			if c.cmd != nil && c.cmd.Process != nil {
 				_ = c.cmd.Process.Kill()
@@ -177,6 +200,8 @@ func (c *ProcessClient) CloseWithTimeout(timeout time.Duration) error {
 			select {
 			case err := <-c.waitCh:
 				c.closeErr = err
+			case <-c.waitDone:
+				c.readWaitErr()
 			case <-time.After(500 * time.Millisecond):
 				c.closeErr = fmt.Errorf("core sidecar process did not exit after kill")
 			}
