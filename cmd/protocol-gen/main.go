@@ -97,47 +97,51 @@ func main() {
 	outDir := flag.String("out", "", "output directory for generated files")
 	flag.Parse()
 
-	if *schemaPath == "" {
-		*schemaPath = filepath.Join("..", "eos-core-rs", "crates", "eos-core-protocol", "schema.json")
+	if err := run(*schemaPath, *outDir); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+// run 执行生成全链；错误文案带阶段前缀（与历史 stderr 输出一致）。
+// 从 main 中提出以便单测直调（子进程路径对 coverage 不可见）。
+func run(schemaPath, outDir string) error {
+	if schemaPath == "" {
+		schemaPath = filepath.Join("..", "eos-core-rs", "crates", "eos-core-protocol", "schema.json")
 	}
 
-	data, err := os.ReadFile(*schemaPath)
+	data, err := os.ReadFile(schemaPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "read schema: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("read schema: %v", err)
 	}
 
 	var schema Schema
 	if err := json.Unmarshal(data, &schema); err != nil {
-		fmt.Fprintf(os.Stderr, "parse schema: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("parse schema: %v", err)
 	}
 
-	if *outDir == "" {
-		*outDir = filepath.Join("pkg", "coreapi", "generated")
+	if outDir == "" {
+		outDir = filepath.Join("pkg", "coreapi", "generated")
 	}
 
-	if err := os.MkdirAll(*outDir, 0o755); err != nil {
-		fmt.Fprintf(os.Stderr, "create output dir: %v\n", err)
-		os.Exit(1)
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		return fmt.Errorf("create output dir: %v", err)
 	}
 
-	if err := generateMethods(schema, *outDir); err != nil {
-		fmt.Fprintf(os.Stderr, "generate methods: %v\n", err)
-		os.Exit(1)
+	if err := generateMethods(schema, outDir); err != nil {
+		return fmt.Errorf("generate methods: %v", err)
 	}
 
-	if err := generateTypes(schema, *outDir); err != nil {
-		fmt.Fprintf(os.Stderr, "generate types: %v\n", err)
-		os.Exit(1)
+	if err := generateTypes(schema, outDir); err != nil {
+		return fmt.Errorf("generate types: %v", err)
 	}
 
-	if err := generateTest(schema, *outDir); err != nil {
-		fmt.Fprintf(os.Stderr, "generate test: %v\n", err)
-		os.Exit(1)
+	if err := generateTest(schema, outDir); err != nil {
+		return fmt.Errorf("generate test: %v", err)
 	}
 
-	fmt.Printf("Generated %d methods, %d types in %s\n", len(schema.Methods), len(schema.Types), *outDir)
+	fmt.Printf("Generated %d methods, %d types in %s\n", len(schema.Methods), len(schema.Types), outDir)
+	return nil
 }
 
 func generateMethods(schema Schema, outDir string) error {
