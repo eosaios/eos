@@ -70,15 +70,17 @@ type StdioResolvedBinary struct {
 // StdioClient launches an external `eos-core --stdio` process
 // and communicates with it over Content-Length framed JSON-RPC via stdin/stdout.
 type StdioClient struct {
-	opts           StdioClientOptions
-	cmd            *exec.Cmd
-	stream         *streamAdapter
-	client         *stdioRPCClient
-	done           chan struct{}
-	exited         bool
-	restartMu      sync.Mutex
-	resolvedBinary StdioResolvedBinary
-	mu             sync.Mutex
+	opts   StdioClientOptions
+	cmd    *exec.Cmd
+	stream *streamAdapter
+	client *stdioRPCClient
+	done   chan struct{}
+	exited bool
+	// cmdProcessState：Wait 收割后的进程状态快照（锁内传递，防直读竞态）。
+	cmdProcessState *os.ProcessState
+	restartMu       sync.Mutex
+	resolvedBinary  StdioResolvedBinary
+	mu              sync.Mutex
 }
 
 // streamAdapter bridges io.Reader/io.Writer from cmd.StdinPipe/StdoutPipe
@@ -186,9 +188,11 @@ func (sc *StdioClient) startProcessLocked(ctx context.Context) error {
 			sc.cmd.Stderr = nil
 		} else {
 			sc.cmd.Stderr = coreLog
+			logDone := sc.done
 			go func() {
 				// Keep the file handle alive until the process exits.
-				<-sc.done
+				// done 同样闭包捕获：restart 会替换 sc.done（无锁读竞态）。
+				<-logDone
 				_ = coreLog.Close()
 			}()
 		}
@@ -215,10 +219,17 @@ func (sc *StdioClient) startProcessLocked(ctx context.Context) error {
 	}
 
 	// Monitor process exit
+	// cmd 闭包捕获：监看若在运行期读 sc.cmd，与 Close()/restart() 置 nil 的
+	// 窗口竞争（eos-app -race 实测同源代码）。捕获后 Wait 作用于已启动进程。
+	monitorCmd := sc.cmd
+	monitorDone := sc.done
 	go func() {
-		_ = sc.cmd.Wait()
+		_ = monitorCmd.Wait()
+		// ProcessState 经锁内快照传递：cmd.ProcessState 由 Wait 写（无锁），
+		// 外侧 ProcessState() 直读该字段构成数据竞争——快照后双锁同步。
 		sc.mu.Lock()
-		close(sc.done)
+		sc.cmdProcessState = monitorCmd.ProcessState
+		close(monitorDone)
 		sc.exited = true
 		client := sc.client
 		sc.mu.Unlock()
@@ -432,6 +443,8 @@ func (sc *StdioClient) Close() error {
 
 // Done returns a channel that closes when the app-server process exits.
 func (sc *StdioClient) Done() <-chan struct{} {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
 	return sc.done
 }
 
@@ -439,10 +452,10 @@ func (sc *StdioClient) Done() <-chan struct{} {
 func (sc *StdioClient) ProcessState() *stdioProcessState {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
-	if sc.cmd == nil || sc.cmd.ProcessState == nil {
+	if sc.cmdProcessState == nil {
 		return nil
 	}
-	return &stdioProcessState{ps: sc.cmd.ProcessState}
+	return &stdioProcessState{ps: sc.cmdProcessState}
 }
 
 // stdioProcessState is a thin wrapper around os.ProcessState.
