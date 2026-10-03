@@ -129,3 +129,18 @@ func TestApplyDefaultWorkspaceFlagDisabledKeepsCWD(t *testing.T) {
 		t.Fatalf("cwd changed unexpectedly: %q -> %q", origWd, wd)
 	}
 }
+
+func TestRootRunVersionArm(t *testing.T) {
+	// version 臂：置位后 Run 直接打印并返回（不进入 print/TUI 路径）。
+	old := cliShowVersion
+	cliShowVersion = true
+	t.Cleanup(func() { cliShowVersion = old })
+	// Run 不应 panic/退出即覆盖该臂。
+	rootCmd.Run(rootCmd, nil)
+}
+
+func TestRootHelpers(t *testing.T) {
+	if rootShort() == "" || rootLong() == "" {
+		t.Fatal("根命令描述不应为空")
+	}
+}
