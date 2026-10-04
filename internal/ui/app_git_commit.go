@@ -47,6 +47,48 @@ type GitCommitHintMsg struct {
 	Ahead  int
 }
 
+// GitBaselineMsg 是 turn 开始时的工作区计数快照结果（提交提醒的对照基线）。
+// OK=false 表示非 git / 查询失败——基线缺失，本轮结束不提示。
+type GitBaselineMsg struct {
+	OK    bool
+	Dirty int
+	Ahead int
+}
+
+// snapshotGitBaseline 在 AI turn 开始时快照工作区计数，作为本轮结束评估
+// 提交提醒的对照基线（2026-10-04 语义修正：只有计数相对本轮开始净增加才
+// 提示，纯提问/只读轮不弹「本轮修改了 N 个文件」）。
+func (m *AppModel) snapshotGitBaseline() tea.Cmd {
+	if m == nil || m.adapter == nil {
+		return nil
+	}
+	adapter := m.adapter
+	return func() tea.Msg {
+		ctx := context.Background()
+		result, err := adapter.GitSummary(ctx, "")
+		if err != nil {
+			return GitBaselineMsg{OK: false}
+		}
+		return GitBaselineMsg{
+			OK:    true,
+			Dirty: len(result.Changes),
+			Ahead: int(result.Ahead),
+		}
+	}
+}
+
+// handleGitBaselineMsg 落盘本轮基线；查询失败按缺失（-1）处理。
+func (m *AppModel) handleGitBaselineMsg(msg GitBaselineMsg) (tea.Model, tea.Cmd) {
+	if msg.OK {
+		m.gitBaselineDirty = msg.Dirty
+		m.gitBaselineAhead = msg.Ahead
+	} else {
+		m.gitBaselineDirty = -1
+		m.gitBaselineAhead = -1
+	}
+	return m, nil
+}
+
 // scheduleGitCommitReminder turn 结束后拉一次设置与 git 概览，
 // 由 handleGitCommitHintMsg 决定是否提示。
 func (m *AppModel) scheduleGitCommitReminder() tea.Cmd {
@@ -74,19 +116,21 @@ func (m *AppModel) scheduleGitCommitReminder() tea.Cmd {
 }
 
 // handleGitCommitHintMsg 依据 turn 结束时的 git 概览决定是否提示，
-// 并顺带刷新状态栏 git 项。
+// 并顺带刷新状态栏 git 项。提示条件：计数相对本轮开始基线净增加
+// （gitBaselineDirty < 0 = 基线缺失，不提示）。
 func (m *AppModel) handleGitCommitHintMsg(msg GitCommitHintMsg) (tea.Model, tea.Cmd) {
 	if m.shell != nil {
 		m.shell.SetGitSummary(msg.Branch, msg.Dirty, msg.Ahead)
 	}
-	if !msg.OK || m.state.Processing || (msg.Dirty <= 0 && msg.Ahead <= 0) {
+	if !msg.OK || m.state.Processing {
 		return m, m.finalizeUpdate(nil)
 	}
-	if msg.Dirty == m.gitHintedDirty && msg.Ahead == m.gitHintedAhead {
+	if m.gitBaselineDirty < 0 {
 		return m, m.finalizeUpdate(nil)
 	}
-	m.gitHintedDirty = msg.Dirty
-	m.gitHintedAhead = msg.Ahead
+	if msg.Dirty <= m.gitBaselineDirty && msg.Ahead <= m.gitBaselineAhead {
+		return m, m.finalizeUpdate(nil)
+	}
 	m.appendSystem(gitCommitHintText(m.state.Language, msg.Dirty, msg.Ahead), "info")
 	return m, m.finalizeUpdate(nil)
 }

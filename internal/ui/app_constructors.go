@@ -156,8 +156,8 @@ func newAppModel(adapter *adapter.CoreClientAdapter, resumeSessionID string) *Ap
 		memoryInjectionEnabled: memoryInjectionEnabled,
 		diffTheme:              diffTheme,
 		pendingResumeSession:   pendingResume,
-		gitHintedDirty:         -1,
-		gitHintedAhead:         -1,
+		gitBaselineDirty:         -1,
+		gitBaselineAhead:         -1,
 	}
 
 	model.msgRenderer.SetChromaTheme(diffTheme)

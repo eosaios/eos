@@ -250,7 +250,8 @@ func (m *AppModel) sendMessageText(text string, withPendingImages bool) tea.Cmd 
 		}
 		return InvokeDoneMsg{Content: content}
 	}
-	return tea.Batch(invoke, m.shell.StatusTick())
+	// 本轮开始快照 git 计数基线：turn 结束评估提交提醒时按净增加判定（纯提问/只读轮不弹）。
+	return tea.Batch(invoke, m.shell.StatusTick(), m.snapshotGitBaseline())
 }
 
 // sendBashCommand 执行 Bash 命令

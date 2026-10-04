@@ -120,10 +120,11 @@ type AppModel struct {
 	gitSummaryRoot      string
 	gitSummaryCheckedAt time.Time
 
-	// gitHintedDirty / gitHintedAhead 是上次提交提醒时的计数（-1 = 从未提示），
-	// 计数相对上次提示无变化则不重复提醒，避免刷屏。
-	gitHintedDirty int
-	gitHintedAhead int
+	// gitBaselineDirty / gitBaselineAhead 是本轮 AI turn 开始时的工作区计数
+	// 快照（-1 = 基线缺失：非 git / 查询失败 / 快照未及返回）。turn 结束评估
+	// 提交提醒时只有计数相对基线净增加才提示——纯提问/只读轮不弹。
+	gitBaselineDirty int
+	gitBaselineAhead int
 
 	trustPendingPath   string
 	trustPendingAction string
@@ -202,6 +203,8 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleGitSummaryMsg(msg)
 	case GitCommitHintMsg:
 		return m.handleGitCommitHintMsg(msg)
+	case GitBaselineMsg:
+		return m.handleGitBaselineMsg(msg)
 	case tea.WindowSizeMsg:
 		return m.handleWindowSizeMsg(msg)
 	case tea.MouseMsg:
