@@ -153,6 +153,10 @@ func (s *BridgeService) ArchiveSession(sessionID string, archived bool) (Bootstr
 	return s.chatService().ArchiveSession(sessionID, archived)
 }
 
+func (s *BridgeService) ArchiveWorkspaceSessions(workspacePath string, archived bool) (BootstrapState, error) {
+	return s.chatService().ArchiveWorkspaceSessions(workspacePath, archived)
+}
+
 func (s *BridgeService) LoadArchivedSessions() []SessionCard {
 	return s.loadArchivedSessionCardsReadOnly()
 }
