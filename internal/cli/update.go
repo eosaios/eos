@@ -66,8 +66,8 @@ func newUpdateCmd() *cobra.Command {
 			outcome, err := update.ApplyWithClient(ctx, result, func(done, total int64) {
 				if total > 0 {
 					pct := int(float64(done) / float64(total) * 100)
-				fmt.Printf(i18n.T("update.progress", lang), pct,
-					float64(done)/1024/1024, float64(total)/1024/1024)
+					fmt.Printf(i18n.T("update.progress", lang), pct,
+						float64(done)/1024/1024, float64(total)/1024/1024)
 				}
 			}, proxyClient)
 			if err != nil {

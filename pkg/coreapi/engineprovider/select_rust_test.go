@@ -68,9 +68,9 @@ func TestSelectRustPaths(t *testing.T) {
 }
 
 type fakeRemote struct {
-	initErr  error
-	methods  []string
-	onClose  func()
+	initErr error
+	methods []string
+	onClose func()
 }
 
 func (f *fakeRemote) Initialize(context.Context) (coreapijsonrpc.InitializeResult, error) {

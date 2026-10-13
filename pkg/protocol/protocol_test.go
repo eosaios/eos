@@ -137,21 +137,21 @@ func TestRequestLifecycleEnvelopeCarriesStableFields(t *testing.T) {
 
 func TestNormalizeEventTypeAllMappings(t *testing.T) {
 	cases := map[EventType]EventType{
-		EventTypeTurnStarted:            EventTypeRequestStarted,
-		EventTypeTurnItemStarted:        EventTypeItemStarted,
-		EventTypeTurnItemDelta:          EventTypeItemDelta,
-		EventTypeTurnItemCompleted:      EventTypeItemCompleted,
-		EventTypeTurnCompleted:          EventTypeRequestDone,
-		EventTypeTurnError:              EventTypeRequestFailed,
-		EventTypeTurnCancelled:          EventTypeRequestFailed,
-		EventTypeTurnInterrupted:        EventTypeRequestFailed,
-		EventTypeTurnWaitingApproval:    EventTypeApprovalReq,
-		EventTypeTurnPreCompact:         EventTypeTextReasoning,
-		EventTypeTurnMidCompact:         EventTypeTextReasoning,
-		EventTypeTurnModelDownshift:     EventTypeTextReasoning,
+		EventTypeTurnStarted:               EventTypeRequestStarted,
+		EventTypeTurnItemStarted:           EventTypeItemStarted,
+		EventTypeTurnItemDelta:             EventTypeItemDelta,
+		EventTypeTurnItemCompleted:         EventTypeItemCompleted,
+		EventTypeTurnCompleted:             EventTypeRequestDone,
+		EventTypeTurnError:                 EventTypeRequestFailed,
+		EventTypeTurnCancelled:             EventTypeRequestFailed,
+		EventTypeTurnInterrupted:           EventTypeRequestFailed,
+		EventTypeTurnWaitingApproval:       EventTypeApprovalReq,
+		EventTypeTurnPreCompact:            EventTypeTextReasoning,
+		EventTypeTurnMidCompact:            EventTypeTextReasoning,
+		EventTypeTurnModelDownshift:        EventTypeTextReasoning,
 		EventTypeTurnContextWindowExceeded: EventTypeTextReasoning,
-		EventTypeTurnToolLoopExhausted:  EventTypeTextReasoning,
-		EventType("custom.event"):       EventType("custom.event"),
+		EventTypeTurnToolLoopExhausted:     EventTypeTextReasoning,
+		EventType("custom.event"):          EventType("custom.event"),
 	}
 	for in, want := range cases {
 		if got := NormalizeEventType(in); got != want {
