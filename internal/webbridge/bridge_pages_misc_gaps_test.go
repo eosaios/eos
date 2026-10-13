@@ -188,7 +188,7 @@ func TestBridgePagesSettingsSandboxDelegates(t *testing.T) {
 
 func TestNetworkMemoryScreenshotGitSummaryDelegates(t *testing.T) {
 	extras := &delegateExtrasGateway{
-		networkList: coreapi.NetworkListResult{Enabled: true},
+		networkList:  coreapi.NetworkListResult{Enabled: true},
 		networkClear: 3,
 		gitSummary: coreapi.GitSummaryResult{
 			Branch: "main",
@@ -400,7 +400,10 @@ func TestServerShellHelpersAndPureFunctions(t *testing.T) {
 func TestFakeOpenInterceptedCommands(t *testing.T) {
 	fakeBin := t.TempDir()
 	callsFile := filepath.Join(fakeBin, "calls")
-	script := "#!/bin/sh\nprintf '%s %s\\n' \"$0\" \"$*\" >> " + callsFile + "\nexit 0\n"
+	// Separate complete argv records prevent an earlier substring match from
+	// letting a later background child outlive TempDir cleanup.
+	quotedCalls := "'" + strings.ReplaceAll(callsFile, "'", "'\\''") + "'"
+	script := "#!/bin/sh\nrecord=" + quotedCalls + ".$$\nprintf '%s\\n' \"$@\" '__EOS_FIXTURE_COMPLETE__' > \"$record\"\nexit 0\n"
 	for _, name := range []string{"open", "xdg-open"} {
 		if err := os.WriteFile(filepath.Join(fakeBin, name), []byte(script), 0o755); err != nil {
 			t.Fatalf("写假 %s: %v", name, err)
@@ -408,16 +411,23 @@ func TestFakeOpenInterceptedCommands(t *testing.T) {
 	}
 	t.Setenv("PATH", fakeBin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
-	waitCalls := func(t *testing.T, substr string) {
+	waitCalls := func(t *testing.T, args ...string) {
 		t.Helper()
+		want := strings.Join(args, "\n") + "\n__EOS_FIXTURE_COMPLETE__\n"
 		deadline := time.Now().Add(3 * time.Second)
 		for time.Now().Before(deadline) {
-			if data, err := os.ReadFile(callsFile); err == nil && strings.Contains(string(data), substr) {
-				return
+			files, err := filepath.Glob(callsFile + ".*")
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, file := range files {
+				if data, err := os.ReadFile(file); err == nil && string(data) == want {
+					return
+				}
 			}
 			time.Sleep(20 * time.Millisecond)
 		}
-		t.Fatalf("假命令未拦截到 %q", substr)
+		t.Fatalf("假命令未完成参数 %q", args)
 	}
 
 	// 反馈入口：https 成功臂 + 非 https/空校验臂。
@@ -452,7 +462,7 @@ func TestFakeOpenInterceptedCommands(t *testing.T) {
 	if err := openTerminalApp(dir); err != nil {
 		t.Fatalf("openTerminalApp: %v", err)
 	}
-	waitCalls(t, dir)
+	waitCalls(t, "-a", "Terminal", dir)
 }
 
 func TestExternalAppCatalogAndProbes(t *testing.T) {
@@ -551,11 +561,11 @@ func TestStdioGatewayStartErrorArm(t *testing.T) {
 	// 不会触碰 ~/.eos/core 真内核。
 	emptyRoot := t.TempDir()
 	_, closeFn, _, err := startBridgeStdioGatewayProcess(context.Background(), adapter.StdioClientOptions{
-		CorePath:     filepath.Join(emptyRoot, "missing-eos-core"),
-		CoreBinDir:   emptyRoot,
-		Workspace:    home,
-		StoreDir:     filepath.Join(home, ".eos", "core"),
-		SandboxMode:  "workspace-write",
+		CorePath:    filepath.Join(emptyRoot, "missing-eos-core"),
+		CoreBinDir:  emptyRoot,
+		Workspace:   home,
+		StoreDir:    filepath.Join(home, ".eos", "core"),
+		SandboxMode: "workspace-write",
 	})
 	if err == nil {
 		if closeFn != nil {
