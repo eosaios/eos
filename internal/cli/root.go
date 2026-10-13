@@ -67,19 +67,19 @@ var rootCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return applyDefaultWorkspaceFlag(cmd)
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		slog.Info("cli.start", "lang", rootLang())
 
 		if cliShowVersion {
 			printVersion()
-			return
+			return nil
 		}
 
 		// Handle --print mode
 		if printQuery != "" {
 			access, approval := mergeConfigPermissions(cmd.Flags(), "sandbox-mode", cliAccessMode, cliApprovalMode)
 			modes := resolveModeConfig(access, approval, cliSandboxMode, cliSkipPermissions)
-			if err := RunPrintMode(PrintOptions{
+			return RunPrintMode(PrintOptions{
 				Query:           printQuery,
 				OutputFormat:    outputFormat,
 				AccessMode:      modes.AccessMode,
@@ -87,10 +87,7 @@ var rootCmd = &cobra.Command{
 				SandboxMode:     modes.SandboxMode,
 				SkipPermissions: modes.SkipAllChecks,
 				ModelOverride:   cliModel,
-			}); err != nil {
-				os.Exit(1)
-			}
-			return
+			})
 		}
 
 		// Build TUI options from CLI flags. 权限模式先经 resolveModeConfig 归一
@@ -133,6 +130,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		ui.StartInteractiveTUIWithOptions(opts)
+		return nil
 	},
 }
 
