@@ -11,13 +11,14 @@ package sidecar
 
 import (
 	"context"
-	"github.com/eosaios/eos/internal/testexec"
 	"os"
 
 	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/eosaios/eos/internal/testexec"
 )
 
 func newScriptProc(t *testing.T) (string, string) {

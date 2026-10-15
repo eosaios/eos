@@ -17,6 +17,7 @@ import (
 
 func TestResolveWorkspaceSettingsPathNoHome(t *testing.T) {
 	t.Setenv("HOME", "")
+	t.Setenv("USERPROFILE", "")
 	got := ResolveWorkspaceSettingsPath("")
 	if got != filepath.Join(".eos", workspaceSettingsFileName) {
 		t.Fatalf("无 HOME 回落 = %q", got)

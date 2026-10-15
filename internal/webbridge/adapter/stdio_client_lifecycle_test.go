@@ -20,8 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eosaios/eos/internal/testexec"
 	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
+
+	"github.com/eosaios/eos/internal/testexec"
 )
 
 // newScriptCore 构建一个原生 eos-core 测试程序：stdin 读到 EOF 后短睡退出。

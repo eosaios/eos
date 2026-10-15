@@ -9,12 +9,13 @@ package main
 // 好/坏 schema 两条退出路径（go run 子进程驱动）。
 
 import (
-	"github.com/eosaios/eos/internal/testexec"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/eosaios/eos/internal/testexec"
 )
 
 // runGen 构建一次生成器二进制并带参运行，返回进程退出态（构建失败返回 nil）。

@@ -16,8 +16,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/eosaios/eos/internal/testexec"
 	sidecarclient "github.com/eosaios/eos/pkg/coreapi/sidecar/client"
+
+	"github.com/eosaios/eos/internal/testexec"
 )
 
 // writeFakeKernel starts a native framed peer on every supported platform.

@@ -42,7 +42,7 @@ func main(){io.Copy(io.Discard,os.Stdin)}
 	if err := client.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := logFile.Stat(); !errors.Is(err, os.ErrClosed) {
+	if _, err := logFile.Write([]byte("must-not-be-written")); !errors.Is(err, os.ErrClosed) {
 		t.Fatalf("Close returned before releasing log: %v", err)
 	}
 	select {

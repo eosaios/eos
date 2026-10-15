@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eosaios/eos/internal/testexec"
 	"github.com/eosaios/eos/pkg/protocol/jsonrpc"
+
+	"github.com/eosaios/eos/internal/testexec"
 )
 
 func TestRPCPeerFramingUnicodeAndErrors(t *testing.T) {

@@ -14,11 +14,12 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/eosaios/eos/internal/testexec"
 	"github.com/eosaios/eos/pkg/coreapi"
 
 	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
 	"github.com/eosaios/eos/pkg/sandbox"
+
+	"github.com/eosaios/eos/internal/testexec"
 )
 
 type failingSidecarCaller struct{}

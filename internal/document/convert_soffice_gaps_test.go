@@ -10,11 +10,12 @@ package document
 
 import (
 	"fmt"
-	"github.com/eosaios/eos/internal/testexec"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/eosaios/eos/internal/testexec"
 )
 
 func TestConvertSameFormatIOErrors(t *testing.T) {

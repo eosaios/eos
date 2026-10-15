@@ -13,7 +13,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/eosaios/eos/internal/testexec"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -24,6 +23,8 @@ import (
 
 	"github.com/eosaios/eos/internal/webbridge/adapter"
 	"github.com/eosaios/eos/pkg/coreapi"
+
+	"github.com/eosaios/eos/internal/testexec"
 )
 
 // eventNames 快照已发事件名（心跳/启动波次断言用）。
