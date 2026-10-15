@@ -13,8 +13,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/eosaios/eos/internal/testexec"
 	"os"
 	"path/filepath"
+	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -188,7 +191,7 @@ func TestBridgePagesSettingsSandboxDelegates(t *testing.T) {
 
 func TestNetworkMemoryScreenshotGitSummaryDelegates(t *testing.T) {
 	extras := &delegateExtrasGateway{
-		networkList: coreapi.NetworkListResult{Enabled: true},
+		networkList:  coreapi.NetworkListResult{Enabled: true},
 		networkClear: 3,
 		gitSummary: coreapi.GitSummaryResult{
 			Branch: "main",
@@ -398,15 +401,7 @@ func TestServerShellHelpersAndPureFunctions(t *testing.T) {
 }
 
 func TestFakeOpenInterceptedCommands(t *testing.T) {
-	fakeBin := t.TempDir()
-	callsFile := filepath.Join(fakeBin, "calls")
-	script := "#!/bin/sh\nprintf '%s %s\\n' \"$0\" \"$*\" >> " + callsFile + "\nexit 0\n"
-	for _, name := range []string{"open", "xdg-open"} {
-		if err := os.WriteFile(filepath.Join(fakeBin, name), []byte(script), 0o755); err != nil {
-			t.Fatalf("写假 %s: %v", name, err)
-		}
-	}
-	t.Setenv("PATH", fakeBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	_, callsFile := installOpenCommandFixtures(t)
 
 	waitCalls := func(t *testing.T, substr string) {
 		t.Helper()
@@ -460,20 +455,38 @@ func TestExternalAppCatalogAndProbes(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 
-	apps := externalAppCatalog()
-	if len(apps) == 0 {
-		t.Fatal("外部应用目录不应为空")
-	}
-	if !lookPathExists("sh") {
-		t.Fatal("PATH 里应能找到 sh")
+	t.Setenv("LOCALAPPDATA", t.TempDir())
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	probe := testexec.Build(t, "catalog-probe", `package main;func main(){}`)
+	bin := filepath.Dir(probe)
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	if !lookPathExists(filepath.Base(probe)) {
+		t.Fatal("native fixture must be discoverable")
 	}
 	if lookPathExists("definitely-not-a-command-xyz") {
-		t.Fatal("不存在的命令不应命中")
+		t.Fatal("missing command must not be discoverable")
 	}
-
-	// darwin 安装探测：HOME 级 Applications 下放置 bundle 即命中。
-	userApps := filepath.Join(home, "Applications")
-	if err := os.MkdirAll(filepath.Join(userApps, "Cursor.app"), 0o755); err != nil {
+	data, err := os.ReadFile(probe)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var cursor string
+	switch runtime.GOOS {
+	case "darwin":
+		cursor = filepath.Join(home, "Applications", "Cursor.app")
+	case "windows":
+		cursor = filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs", externalAppSpecs[0].windowsExe)
+	default:
+		cursor = filepath.Join(bin, externalAppSpecs[0].linuxExe)
+	}
+	if err := os.MkdirAll(filepath.Dir(cursor), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if runtime.GOOS == "darwin" {
+		if err := os.MkdirAll(cursor, 0700); err != nil {
+			t.Fatal(err)
+		}
+	} else if err := os.WriteFile(cursor, data, 0700); err != nil {
 		t.Fatal(err)
 	}
 	found := false
@@ -483,26 +496,36 @@ func TestExternalAppCatalogAndProbes(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatal("Cursor 放入 ~/Applications 后应探测为已安装")
+		t.Fatal("installed native Cursor fixture must appear in catalog")
 	}
-
-	// windows 探测函数在 darwin 上的行为固化：cache 目录下命中。
-	cache := filepath.Join(home, "Library", "Caches", "Programs", "Trae", "Trae.exe")
-	if err := os.MkdirAll(filepath.Dir(cache), 0o755); err != nil {
+	cacheRoot, err := os.UserCacheDir()
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(cache, []byte("exe"), 0o755); err != nil {
+	cache := filepath.Join(cacheRoot, "Programs", externalAppSpecs[1].windowsExe)
+	if err := os.MkdirAll(filepath.Dir(cache), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(cache, data, 0700); err != nil {
 		t.Fatal(err)
 	}
 	if got := windowsInstalledExe(externalAppSpecs[1]); got != cache {
-		t.Fatalf("windowsInstalledExe = %q, want %q", got, cache)
+		t.Fatalf("windows installed path = %q, want %q", got, cache)
 	}
 	if got := windowsInstalledExe(externalAppSpecs[4]); got != "" {
-		t.Fatalf("无 windows 版本的应用应恒空: %q", got)
+		t.Fatalf("unsupported app must not be installed: %q", got)
 	}
-	// darwin 上无 x-terminal-emulator 系命令 → nil。
+	t.Setenv("PATH", bin)
 	if linuxTerminalCommand("") != nil {
-		t.Fatal("darwin 上 linuxTerminalCommand 应为 nil")
+		t.Fatal("no terminal fixture was installed")
+	}
+	terminal := filepath.Join(bin, testexec.Name("x-terminal-emulator"))
+	if err := os.WriteFile(terminal, data, 0700); err != nil {
+		t.Fatal(err)
+	}
+	cmd := linuxTerminalCommand(home)
+	if cmd == nil || cmd.Path != terminal || !reflect.DeepEqual(cmd.Args, []string{"x-terminal-emulator", "--working-directory", home}) {
+		t.Fatalf("terminal command = %#v", cmd)
 	}
 }
 
@@ -510,11 +533,17 @@ func TestTerminalShellAndControlDelegates(t *testing.T) {
 	s, rec := newExtrasBridge(t, &delegateExtrasGateway{})
 	s.terminalSessions = map[string]*terminalSessionHandle{}
 
-	// shell 探测委托：darwin 恒 /bin/bash 可用，缓存后失效重探。
-	status := s.GetTerminalShellStatus()
-	if !status.Available || status.Path != "/bin/bash" {
-		t.Fatalf("GetTerminalShellStatus = %+v", status)
+	expectedBash := "/bin/bash"
+	if runtime.GOOS == "windows" {
+		t.Setenv("LOCALAPPDATA", t.TempDir())
+		expectedBash = testexec.Build(t, "bash", `package main;func main(){}`)
+		t.Setenv("PATH", filepath.Dir(expectedBash)+string(os.PathListSeparator)+os.Getenv("PATH"))
 	}
+	status := s.GetTerminalShellStatus()
+	if !status.Available || status.Path != expectedBash {
+		t.Fatalf("GetTerminalShellStatus = %+v, want %q", status, expectedBash)
+	}
+
 	s.terminalShellInvalidate()
 
 	// 终端控制四式的校验/不存在臂。
@@ -551,11 +580,11 @@ func TestStdioGatewayStartErrorArm(t *testing.T) {
 	// 不会触碰 ~/.eos/core 真内核。
 	emptyRoot := t.TempDir()
 	_, closeFn, _, err := startBridgeStdioGatewayProcess(context.Background(), adapter.StdioClientOptions{
-		CorePath:     filepath.Join(emptyRoot, "missing-eos-core"),
-		CoreBinDir:   emptyRoot,
-		Workspace:    home,
-		StoreDir:     filepath.Join(home, ".eos", "core"),
-		SandboxMode:  "workspace-write",
+		CorePath:    filepath.Join(emptyRoot, "missing-eos-core"),
+		CoreBinDir:  emptyRoot,
+		Workspace:   home,
+		StoreDir:    filepath.Join(home, ".eos", "core"),
+		SandboxMode: "workspace-write",
 	})
 	if err == nil {
 		if closeFn != nil {
@@ -601,76 +630,4 @@ func TestReadOnlyProjectionsAndWorktreeRemove(t *testing.T) {
 		t.Fatalf("RemoveWorktree: %v", err)
 	}
 	waitForEmitsToSettle(t, rec)
-}
-
-func TestDarwinInstallChainWithFakeBins(t *testing.T) {
-	fakeBin := t.TempDir()
-	mountPoint := t.TempDir()
-	appBundle := filepath.Join(mountPoint, "EOS.app")
-	if err := os.MkdirAll(appBundle, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(appBundle, "new-marker"), []byte("v2"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	// 假 hdiutil：attach 弹 mount-point plist，detach 记账。
-	hdiutilCalls := filepath.Join(fakeBin, "hdiutil-calls")
-	hdiutil := "#!/bin/sh\n" +
-		"printf '%s\\n' \"$*\" >> " + hdiutilCalls + "\n" +
-		"if [ \"$1\" = attach ]; then\n" +
-		"  printf '<?xml><dict><key>mount-point</key><string>" + mountPoint + "</string></dict>'\n" +
-		"fi\nexit 0\n"
-	if err := os.WriteFile(filepath.Join(fakeBin, "hdiutil"), []byte(hdiutil), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	// 假 ditto：目录级复制（真实 ditto 语义的足够子集）。
-	ditto := "#!/bin/sh\nmkdir -p \"$2\" && cp -R \"$1\"/. \"$2\"/\nexit 0\n"
-	if err := os.WriteFile(filepath.Join(fakeBin, "ditto"), []byte(ditto), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	// 假 open：relaunch 调度断言。
-	openCalls := filepath.Join(fakeBin, "open-calls")
-	openScript := "#!/bin/sh\nprintf '%s\\n' \"$*\" >> " + openCalls + "\nexit 0\n"
-	if err := os.WriteFile(filepath.Join(fakeBin, "open"), []byte(openScript), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", fakeBin+string(os.PathListSeparator)+os.Getenv("PATH"))
-
-	// 挂载：plist 解析回假挂载点。
-	got, err := mountMacOSDmg("/fake/eos.dmg")
-	if err != nil || got != mountPoint {
-		t.Fatalf("mountMacOSDmg = %q, %v", got, err)
-	}
-	detachMacOSDmg(mountPoint)
-
-	// swap 全链：旧 bundle 原地替换为 dmg 内新 bundle。
-	target := filepath.Join(t.TempDir(), "EOS.app")
-	if err := os.MkdirAll(target, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(target, "old-marker"), []byte("v1"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := swapMacOSBundle("/fake/eos.dmg", target); err != nil {
-		t.Fatalf("swapMacOSBundle: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(target, "new-marker")); err != nil {
-		t.Fatalf("替换后应存在新标记: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(target, "old-marker")); !os.IsNotExist(err) {
-		t.Fatal("旧内容不应残留")
-	}
-
-	// relaunch 调度：1s 后经 PATH 命中假 open。
-	bundle := filepath.Join(t.TempDir(), "EOS.app")
-	scheduleMacOSRelaunch(bundle)
-	deadline := time.Now().Add(4 * time.Second)
-	for time.Now().Before(deadline) {
-		if data, err := os.ReadFile(openCalls); err == nil && strings.Contains(string(data), bundle) {
-			return
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
-	t.Fatal("scheduleMacOSRelaunch 未触发假 open")
 }

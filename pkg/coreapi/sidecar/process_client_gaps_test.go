@@ -11,6 +11,7 @@ package sidecar
 
 import (
 	"context"
+	"github.com/eosaios/eos/internal/testexec"
 	"os"
 
 	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
@@ -24,41 +25,8 @@ func newScriptProc(t *testing.T) (string, string) {
 	t.Setenv("EOS_CORE_PATH", "")
 	t.Setenv("EOS_CORE_MANIFEST", "")
 	t.Setenv("EOS_CORE_BIN_DIR", "")
-	dir := t.TempDir()
-	path := filepath.Join(dir, "eos-core")
-	script := "#!/usr/bin/env python3\n" +
-		"import sys, json\n" +
-		"def read_frame():\n" +
-		"    length = 0\n" +
-		"    while True:\n" +
-		"        line = sys.stdin.readline()\n" +
-		"        if not line:\n" +
-		"            return None\n" +
-		"        line = line.strip()\n" +
-		"        if not line:\n" +
-		"            break\n" +
-		"        if line.lower().startswith('content-length:'):\n" +
-		"            length = int(line.split(':', 1)[1].strip())\n" +
-		"    if length <= 0:\n" +
-		"        return None\n" +
-		"    return sys.stdin.read(length)\n" +
-		"def send(obj):\n" +
-		"    out = json.dumps(obj)\n" +
-		"    sys.stdout.write('Content-Length: %d\\n\\n%s' % (len(out), out))\n" +
-		"    sys.stdout.flush()\n" +
-		"while True:\n" +
-		"    raw = read_frame()\n" +
-		"    if raw is None:\n" +
-		"        break\n" +
-		"    try:\n" +
-		"        req = json.loads(raw)\n" +
-		"    except Exception:\n" +
-		"        continue\n" +
-		"    send({'jsonrpc': '2.0', 'id': req.get('id'), 'result': {}})\n"
-	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	return path, dir
+	binary := testexec.RPCServer(t, nil)
+	return binary, filepath.Dir(binary)
 }
 
 func TestStartProcessPreconditions(t *testing.T) {

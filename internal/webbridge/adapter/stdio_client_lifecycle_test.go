@@ -5,7 +5,7 @@ package adapter
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
 
-// stdio_client 进程生命周期批测：真实脚本子进程驱动 Start/退出监看/
+// stdio_client 进程生命周期批测：原生测试子进程驱动 Start/退出监看/
 // 重启链/Close 双路径，外加 derivedEnv / mergeStdioEnv / streamAdapter
 // 纯函数矩阵。显式 CorePath 走 resolver 的免 manifest 分支（requireFile
 // 即过），脚本行为=吃 stdin、收到 EOF 后数秒退出。
@@ -20,19 +20,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/eosaios/eos/internal/testexec"
 	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
 
-// newScriptCore 写一个假 eos-core 脚本：stdin 读到 EOF 后短睡退出。
+// newScriptCore 构建一个原生 eos-core 测试程序：stdin 读到 EOF 后短睡退出。
 func newScriptCore(t *testing.T) string {
 	t.Helper()
-	dir := t.TempDir()
-	path := filepath.Join(dir, "eos-core")
-	script := "#!/bin/sh\nwhile read line; do :; done\nsleep 2\nexit 0\n"
-	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
-		t.Fatalf("write script core: %v", err)
-	}
-	return path
+	return testexec.Build(t, "eos-core", `package main
+import("io";"os";"time")
+func main(){io.Copy(io.Discard,os.Stdin);time.Sleep(2*time.Second)}
+`)
 }
 
 func newLifecycleClient(t *testing.T) *StdioClient {
@@ -149,10 +147,11 @@ func TestStdioClientStartFailuresAndCloseKill(t *testing.T) {
 
 	// Close 强杀路径：脚本忽略 stdin EOF（不吃 stdin，长睡），
 	// Close 关流后 500ms 内进程不退 → Kill 兜底。
-	longSleep := filepath.Join(dir, "eos-core-sleep")
-	if err := os.WriteFile(longSleep, []byte("#!/bin/sh\nsleep 30\n"), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	longSleep := testexec.Build(t, "eos-core-sleep", `package main
+import "time"
+func main(){time.Sleep(30*time.Second)}
+`)
+
 	client3 := NewStdioClient(StdioClientOptions{CorePath: longSleep})
 	if err := client3.Start(context.Background()); err != nil {
 		t.Fatalf("sleep core Start: %v", err)

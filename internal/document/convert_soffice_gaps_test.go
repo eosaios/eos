@@ -9,6 +9,8 @@ package document
 // soffice 拦截：成功/失败/产物改名搬运/缺二进制三态）。
 
 import (
+	"fmt"
+	"github.com/eosaios/eos/internal/testexec"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,36 +44,19 @@ func TestConvertSameFormatIOErrors(t *testing.T) {
 // mode=fail 直接退 1 带 stderr。
 func newFakeSoffice(t *testing.T, mode string) string {
 	t.Helper()
-	bin := t.TempDir()
-	script := `#!/bin/sh
-outdir=""
-src=""
-fmt=""
-prev=""
-for arg in "$@"; do
-  case "$prev" in
-    --outdir) outdir="$arg" ;;
-    --convert-to) fmt="$arg" ;;
-  esac
-  prev="$arg"
-  case "$arg" in
-    /*|./*) src="$arg" ;;
-  esac
-done
-if [ "` + mode + `" = "fail" ]; then
-  echo "soffice boom" >&2
-  exit 1
-fi
-base=$(basename "$src")
-name="${base%.*}"
-printf 'fake-converted' > "$outdir/$name.$fmt"
-echo "convert ok"
-`
-	path := filepath.Join(bin, "soffice")
-	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	return bin
+	binary := testexec.Build(t, "soffice", fmt.Sprintf(`package main
+import("fmt";"os";"path/filepath";"strings")
+func main(){
+ if %q == "fail"{fmt.Fprintln(os.Stderr,"soffice boom");os.Exit(1)}
+ var outdir,format string
+ for idx,arg:=range os.Args[1:]{if arg=="--outdir"{outdir=os.Args[idx+2]};if arg=="--convert-to"{format=os.Args[idx+2]}}
+ src:=os.Args[len(os.Args)-1];base:=filepath.Base(src);name:=strings.TrimSuffix(base,filepath.Ext(base))
+ dest:=filepath.Join(outdir,name+"."+strings.Split(format,":")[0])
+ if err:=os.WriteFile(dest,[]byte("fake-converted"),0600);err!=nil{panic(err)}
+ fmt.Println("convert ok")
+}
+`, mode))
+	return filepath.Dir(binary)
 }
 
 func withPath(t *testing.T, dir string) {
