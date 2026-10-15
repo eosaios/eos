@@ -5,55 +5,22 @@ package webbridge
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
 
-// server Run 主链批测：说话脚本内核驱动整条 web 服务装配（桥启动/
+// server Run 主链批测：原生测试内核驱动整条 web 服务装配（桥启动/
 // 事件扇出/HTTP 监听/ctx 取消优雅关停），外加 openBrowser 拦截臂。
 
 import (
 	"context"
+	"io"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
-)
 
-// newSpeakingCoreForServer 与 cli 包同款帧应答脚本内核（对所有请求回 {}）。
-func newSpeakingCoreForServer(t *testing.T) string {
-	t.Helper()
-	script := "#!/usr/bin/env python3\n" +
-		"import sys, json\n" +
-		"def read_frame():\n" +
-		"    length = 0\n" +
-		"    while True:\n" +
-		"        line = sys.stdin.readline()\n" +
-		"        if not line:\n" +
-		"            return None\n" +
-		"        line = line.strip()\n" +
-		"        if not line:\n" +
-		"            break\n" +
-		"        if line.lower().startswith('content-length:'):\n" +
-		"            length = int(line.split(':', 1)[1].strip())\n" +
-		"    if length <= 0:\n" +
-		"        return None\n" +
-		"    return sys.stdin.read(length)\n" +
-		"def send(obj):\n" +
-		"    out = json.dumps(obj)\n" +
-		"    sys.stdout.write('Content-Length: %d\\n\\n%s' % (len(out), out))\n" +
-		"    sys.stdout.flush()\n" +
-		"while True:\n" +
-		"    raw = read_frame()\n" +
-		"    if raw is None:\n" +
-		"        break\n" +
-		"    try:\n" +
-		"        req = json.loads(raw)\n" +
-		"    except Exception:\n" +
-		"        continue\n" +
-		"    send({'jsonrpc': '2.0', 'id': req.get('id'), 'result': {}})\n"
-	path := filepath.Join(t.TempDir(), "eos-core")
-	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
-		t.Fatalf("write core: %v", err)
-	}
-	return path
-}
+	"github.com/eosaios/eos/internal/testexec"
+)
 
 func TestServerRunFullLifecycleWithSpeakingCore(t *testing.T) {
 	if _, err := os.Stat("../../go.mod"); err != nil {
@@ -67,21 +34,56 @@ func TestServerRunFullLifecycleWithSpeakingCore(t *testing.T) {
 	t.Setenv("EOS_CORE_BIN_DIR", "")
 
 	uiDir := t.TempDir()
-	os.WriteFile(filepath.Join(uiDir, "index.html"), []byte("<html><head></head><body>ok</body></html>"), 0o644)
+	if err := os.WriteFile(filepath.Join(uiDir, "index.html"), []byte("<html><head></head><body>ok</body></html>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 
+	core := testexec.RPCServer(t, nil)
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	address := listener.Addr().String()
+	if err := listener.Close(); err != nil {
+		t.Fatal(err)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	done := make(chan error, 1)
 	go func() {
 		done <- Run(ctx, ServerOptions{
 			UIDir:         uiDir,
-			ListenAddr:    "127.0.0.1:0",
+			ListenAddr:    address,
 			NoOpenBrowser: true,
-			CorePath:      newSpeakingCoreForServer(t),
+			CorePath:      core,
 		})
 	}()
 
-	// 给桥装配+HTTP 监听留时间，然后取消触发优雅关停。
-	time.Sleep(1200 * time.Millisecond)
+	client := &http.Client{Timeout: 200 * time.Millisecond}
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		select {
+		case err := <-done:
+			t.Fatalf("Run exited before HTTP readiness: %v", err)
+		default:
+		}
+		response, err := client.Get("http://" + address + "/")
+		if err == nil {
+			body, readErr := io.ReadAll(response.Body)
+			closeErr := response.Body.Close()
+			if readErr != nil || closeErr != nil {
+				t.Fatalf("read HTTP response: %v, %v", readErr, closeErr)
+			}
+			if response.StatusCode == http.StatusOK && strings.Contains(string(body), "<body>ok</body>") {
+				break
+			}
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("web server did not serve its index page")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
 	cancel()
 	select {
 	case err := <-done:
@@ -94,13 +96,7 @@ func TestServerRunFullLifecycleWithSpeakingCore(t *testing.T) {
 }
 
 func TestOpenBrowserIntercepted(t *testing.T) {
-	fakeBin := t.TempDir()
-	calls := filepath.Join(fakeBin, "open-calls")
-	script := "#!/bin/sh\nprintf '%s\\n' \"$*\" >> " + calls + "\nexit 0\n"
-	if err := os.WriteFile(filepath.Join(fakeBin, "open"), []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", fakeBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	_, calls := installOpenCommandFixtures(t)
 
 	openBrowser("http://127.0.0.1:1")
 	deadline := time.Now().Add(3 * time.Second)

@@ -12,22 +12,13 @@ package webbridge
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
-)
 
-func newFakeOpenBin(t *testing.T) (string, string) {
-	t.Helper()
-	fakeBin := t.TempDir()
-	calls := filepath.Join(fakeBin, "open-calls")
-	script := "#!/bin/sh\nprintf '%s\\n' \"$*\" >> " + calls + "\nexit 0\n"
-	if err := os.WriteFile(filepath.Join(fakeBin, "open"), []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", fakeBin+string(os.PathListSeparator)+os.Getenv("PATH"))
-	return fakeBin, calls
-}
+	"github.com/eosaios/eos/internal/testexec"
+)
 
 func waitFakeOpen(t *testing.T, calls, substr string) {
 	t.Helper()
@@ -55,13 +46,15 @@ func TestExternalAppProbeEdgeArms(t *testing.T) {
 	}
 	// UserCacheDir 失败臂：HOME 清空。
 	t.Setenv("HOME", "")
+	t.Setenv("LOCALAPPDATA", "")
+	t.Setenv("XDG_CACHE_HOME", "")
 	if got := windowsInstalledExe(externalAppSpecs[1]); got != "" {
 		t.Fatalf("无 HOME = %q", got)
 	}
 }
 
 func TestOpenInExternalAppValidationArms(t *testing.T) {
-	_, calls := newFakeOpenBin(t)
+	fakeBin, calls := installOpenCommandFixtures(t)
 	// 空参。
 	if err := OpenInExternalApp("", "/tmp"); err == nil {
 		t.Fatal("空 appID 应报错")
@@ -76,7 +69,9 @@ func TestOpenInExternalAppValidationArms(t *testing.T) {
 	}
 	// 文件路径 → 打开父目录（files 臂）。
 	marker := filepath.Join(dir, "file.txt")
-	os.WriteFile(marker, []byte("x"), 0o644)
+	if err := os.WriteFile(marker, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	if err := OpenInExternalApp("files", marker); err != nil {
 		t.Fatalf("files 臂: %v", err)
 	}
@@ -86,11 +81,31 @@ func TestOpenInExternalAppValidationArms(t *testing.T) {
 		!strings.Contains(err.Error(), "unknown external app") {
 		t.Fatalf("未知应用 = %v", err)
 	}
-	// 三方应用 darwin：open -a 应用名（去 .app 后缀）。
-	if err := OpenInExternalApp("cursor", dir); err != nil {
-		t.Fatalf("cursor 打开: %v", err)
+	cursorCall := "-a Cursor " + dir
+	if runtime.GOOS != "darwin" {
+		cursor := filepath.Join(fakeBin, "cursor")
+		if runtime.GOOS == "windows" {
+			t.Setenv("LOCALAPPDATA", t.TempDir())
+			cursor = filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs", externalAppSpecs[0].windowsExe)
+		}
+		data, err := os.ReadFile(filepath.Join(fakeBin, testexec.Name("open")))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.MkdirAll(filepath.Dir(cursor), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(cursor, data, 0700); err != nil {
+			t.Fatal(err)
+		}
+		cursorCall = externalAppSpecs[0].linuxExe + " " + dir
+		if runtime.GOOS == "windows" {
+			cursorCall = cursor + " " + dir
+		}
 	}
-	waitFakeOpen(t, calls, "-a Cursor")
-	// darwin 空 bundle 哨兵：iterm 有 bundle——直接构造 spec 走 openThirdPartyApp
-	// 的空 bundle 分支不可达（specs 全有 bundle）；未知 id 走 default 已覆盖。
+	if err := OpenInExternalApp("cursor", dir); err != nil {
+		t.Fatalf("cursor open: %v", err)
+	}
+	waitFakeOpen(t, calls, cursorCall)
+
 }

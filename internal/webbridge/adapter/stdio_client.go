@@ -175,6 +175,7 @@ func (sc *StdioClient) startProcessLocked(ctx context.Context) error {
 
 	// Capture eos-core stderr to the core log file instead of discarding it.
 	var coreLogPath string
+	var coreLogFile *os.File
 	if dir := strings.TrimSpace(sc.opts.CoreLogDir); dir != "" {
 		coreLogPath = filepath.Join(dir, "core", "eos-core.log")
 	}
@@ -188,17 +189,17 @@ func (sc *StdioClient) startProcessLocked(ctx context.Context) error {
 			sc.cmd.Stderr = nil
 		} else {
 			sc.cmd.Stderr = coreLog
-			logDone := sc.done
-			go func() {
-				// Keep the file handle alive until the process exits.
-				// done 同样闭包捕获：restart 会替换 sc.done（无锁读竞态）。
-				<-logDone
-				_ = coreLog.Close()
-			}()
+			coreLogFile = coreLog
 		}
 	}
 
 	if err := sc.cmd.Start(); err != nil {
+		closeProcessResource("stdin", stdin)
+		closeProcessResource("stdout", stdout)
+		if coreLogFile != nil {
+			closeProcessResource("core log", coreLogFile)
+		}
+		sc.cmd = nil
 		return fmt.Errorf("stdio client start: %w", err)
 	}
 
@@ -214,7 +215,17 @@ func (sc *StdioClient) startProcessLocked(ctx context.Context) error {
 	// The transport client must outlive the startup timeout; individual RPCs
 	// provide their own request-scoped contexts.
 	if err := sc.client.Start(context.Background()); err != nil {
-		_ = sc.cmd.Process.Kill()
+		if killErr := sc.cmd.Process.Kill(); killErr != nil {
+			slog.Debug("stdio_client.kill_failed", "error", killErr)
+		}
+		if waitErr := sc.cmd.Wait(); waitErr != nil {
+			slog.Debug("stdio_client.failed_start_wait", "error", waitErr)
+		}
+		closeProcessResource("stream", sa)
+		if coreLogFile != nil {
+			closeProcessResource("core log", coreLogFile)
+		}
+		sc.cmd, sc.stream, sc.client = nil, nil, nil
 		return fmt.Errorf("stdio client stream start: %w", err)
 	}
 
@@ -225,6 +236,9 @@ func (sc *StdioClient) startProcessLocked(ctx context.Context) error {
 	monitorDone := sc.done
 	go func() {
 		_ = monitorCmd.Wait()
+		if coreLogFile != nil {
+			closeProcessResource("core log", coreLogFile)
+		}
 		// ProcessState 经锁内快照传递：cmd.ProcessState 由 Wait 写（无锁），
 		// 外侧 ProcessState() 直读该字段构成数据竞争——快照后双锁同步。
 		sc.mu.Lock()
@@ -415,30 +429,43 @@ func (sc *StdioClient) ResolvedBinary() StdioResolvedBinary {
 // Close terminates the app-server process and cleans up resources.
 func (sc *StdioClient) Close() error {
 	sc.mu.Lock()
-	defer sc.mu.Unlock()
+	stream, client, cmd, done := sc.stream, sc.client, sc.cmd, sc.done
+	sc.stream, sc.client = nil, nil
+	sc.mu.Unlock()
 
-	if sc.stream != nil {
-		_ = sc.stream.Close()
-		sc.stream = nil
+	if stream != nil {
+		closeProcessResource("stream", stream)
 	}
-	if sc.client != nil {
-		sc.client.close()
-		sc.client = nil
+	if client != nil {
+		client.close()
 	}
-	if sc.cmd != nil && sc.cmd.Process != nil {
-		done := sc.done
+	if cmd == nil || cmd.Process == nil {
+		return nil
+	}
+	select {
+	case <-done:
+	case <-time.After(500 * time.Millisecond):
+		if err := cmd.Process.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
+			return fmt.Errorf("stop core process: %w", err)
+		}
 		select {
 		case <-done:
-		case <-time.After(500 * time.Millisecond):
-			_ = sc.cmd.Process.Kill()
-			select {
-			case <-done:
-			case <-time.After(3 * time.Second):
-			}
+		case <-time.After(3 * time.Second):
+			return errors.New("core process did not finish after kill")
 		}
+	}
+	sc.mu.Lock()
+	if sc.cmd == cmd {
 		sc.cmd = nil
 	}
+	sc.mu.Unlock()
 	return nil
+}
+
+func closeProcessResource(name string, resource io.Closer) {
+	if err := resource.Close(); err != nil && !errors.Is(err, os.ErrClosed) {
+		slog.Debug("stdio_client.resource_close_failed", "resource", name, "error", err)
+	}
 }
 
 // Done returns a channel that closes when the app-server process exits.

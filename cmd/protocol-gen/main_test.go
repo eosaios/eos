@@ -14,20 +14,24 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/eosaios/eos/internal/testexec"
 )
 
 // runGen 构建一次生成器二进制并带参运行，返回进程退出态（构建失败返回 nil）。
-func runGen(t *testing.T, schema, out string) *os.ProcessState {
+func runGen(t *testing.T, schema, out string) (*os.ProcessState, string) {
 	t.Helper()
-	bin := filepath.Join(t.TempDir(), "protocol-gen")
+	bin := filepath.Join(t.TempDir(), testexec.Name("protocol-gen"))
 	build := exec.Command("go", "build", "-o", bin, ".")
 	if out, err := build.CombinedOutput(); err != nil {
-		t.Logf("build: %v\n%s", err, out)
-		return nil
+		t.Fatalf("build: %v\n%s", err, out)
 	}
 	cmd := exec.Command(bin, "-schema", schema, "-out", out)
-	_ = cmd.Run()
-	return cmd.ProcessState
+	output, err := cmd.CombinedOutput()
+	if cmd.ProcessState == nil {
+		t.Fatalf("start generator: %v\n%s", err, output)
+	}
+	return cmd.ProcessState, string(output)
 }
 
 func TestSnakeToPascalMatrix(t *testing.T) {
@@ -213,9 +217,9 @@ func TestMainBinaryPaths(t *testing.T) {
 	out := t.TempDir()
 
 	// 坏 schema 路径：stderr + exit 1。
-	res := runGen(t, "/definitely/missing/schema.json", out)
-	if res == nil || res.Success() {
-		t.Fatal("坏 schema 应非零退出")
+	res, output := runGen(t, filepath.Join(t.TempDir(), "missing-schema.json"), out)
+	if res == nil || res.ExitCode() != 1 || !strings.Contains(output, "read schema:") {
+		t.Fatalf("missing schema must exit 1 and report read schema: %v, %s", res, output)
 	}
 
 	// 好 schema：三产物落盘 + 零退出。
@@ -228,9 +232,9 @@ func TestMainBinaryPaths(t *testing.T) {
 		t.Fatal(err)
 	}
 	genOut := filepath.Join(out, "generated")
-	res = runGen(t, schemaPath, genOut)
+	res, output = runGen(t, schemaPath, genOut)
 	if res == nil || !res.Success() {
-		t.Fatal("好 schema 应零退出")
+		t.Fatalf("valid schema should exit 0: %v, %s", res, output)
 	}
 	for _, f := range []string{"methods_gen.go", "types_gen.go", "schema_test.go"} {
 		if _, err := os.Stat(filepath.Join(genOut, f)); err != nil {
