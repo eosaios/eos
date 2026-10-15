@@ -662,7 +662,7 @@ func TestCreateSessionSuccessAndErrorArms(t *testing.T) {
 	t.Run("空 workspace 回退 activeWorkspace", func(t *testing.T) {
 		workspace := t.TempDir()
 		gateway := &chatSessionsGatewayStub{defaultWorkspace: workspace}
-		s, svc, _ := newChatSessionsTestBridge(t, gateway)
+		s, svc, rec := newChatSessionsTestBridge(t, gateway)
 		s.stateMu.Lock()
 		s.activeWorkspace = workspace
 		s.stateMu.Unlock()
@@ -673,6 +673,8 @@ func TestCreateSessionSuccessAndErrorArms(t *testing.T) {
 		if state.CurrentSessionID == "" {
 			t.Fatal("CurrentSessionID empty with activeWorkspace fallback")
 		}
+		// shellUpdated 的 bootstrap 写入必须在测试目录清理前结束。
+		eventually(t, "shellUpdated after create", func() bool { return rec.has(shellUpdatedEventName) })
 	})
 }
 

@@ -69,7 +69,9 @@ func TestOpenInExternalAppValidationArms(t *testing.T) {
 	}
 	// 文件路径 → 打开父目录（files 臂）。
 	marker := filepath.Join(dir, "file.txt")
-	os.WriteFile(marker, []byte("x"), 0o644)
+	if err := os.WriteFile(marker, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	if err := OpenInExternalApp("files", marker); err != nil {
 		t.Fatalf("files 臂: %v", err)
 	}
@@ -96,7 +98,10 @@ func TestOpenInExternalAppValidationArms(t *testing.T) {
 		if err := os.WriteFile(cursor, data, 0700); err != nil {
 			t.Fatal(err)
 		}
-		cursorCall = cursor + " " + dir
+		cursorCall = externalAppSpecs[0].linuxExe + " " + dir
+		if runtime.GOOS == "windows" {
+			cursorCall = cursor + " " + dir
+		}
 	}
 	if err := OpenInExternalApp("cursor", dir); err != nil {
 		t.Fatalf("cursor open: %v", err)
