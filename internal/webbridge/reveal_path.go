@@ -9,6 +9,8 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+
+	"github.com/eosaios/eos/pkg/executil"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -36,9 +38,9 @@ func RevealPath(path string) error {
 	}
 	switch runtime.GOOS {
 	case "windows":
-		return exec.Command("explorer.exe", "/select,"+abs).Start()
+		return executil.StartDetached(exec.Command("explorer.exe", "/select,"+abs))
 	case "darwin":
-		return exec.Command("open", "-R", abs).Start()
+		return executil.StartDetached(exec.Command("open", "-R", abs))
 	default:
 		// Linux 无跨发行版一致的「定位文件」命令，回退打开父目录。
 		return openDirectoryNoMkdir(filepath.Dir(abs))
@@ -50,10 +52,10 @@ func RevealPath(path string) error {
 func openDirectoryNoMkdir(path string) error {
 	switch runtime.GOOS {
 	case "windows":
-		return exec.Command("explorer.exe", path).Start()
+		return executil.StartDetached(exec.Command("explorer.exe", path))
 	case "darwin":
-		return exec.Command("open", path).Start()
+		return executil.StartDetached(exec.Command("open", path))
 	default:
-		return exec.Command("xdg-open", path).Start()
+		return executil.StartDetached(exec.Command("xdg-open", path))
 	}
 }

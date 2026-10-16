@@ -9,6 +9,8 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+
+	"github.com/eosaios/eos/pkg/executil"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -179,18 +181,18 @@ func OpenInExternalApp(appID, path string) error {
 func openTerminalApp(dir string) error {
 	switch runtime.GOOS {
 	case "darwin":
-		return exec.Command("open", "-a", "Terminal", dir).Start()
+		return executil.StartDetached(exec.Command("open", "-a", "Terminal", dir))
 	case "windows":
 		if _, err := exec.LookPath("wt.exe"); err != nil {
 			return errExternalAppUnavailable
 		}
-		return exec.Command("wt.exe", "-d", dir).Start()
+		return executil.StartDetached(exec.Command("wt.exe", "-d", dir))
 	default:
 		cmd := linuxTerminalCommand(dir)
 		if cmd == nil {
 			return errExternalAppUnavailable
 		}
-		return cmd.Start()
+		return executil.StartDetached(cmd)
 	}
 }
 
@@ -206,13 +208,13 @@ func openThirdPartyApp(appID, dir string) error {
 				return errExternalAppUnavailable
 			}
 			// open -a 接受不带 .app 后缀的应用名。
-			return exec.Command("open", "-a", strings.TrimSuffix(spec.darwinBundle, ".app"), dir).Start()
+			return executil.StartDetached(exec.Command("open", "-a", strings.TrimSuffix(spec.darwinBundle, ".app"), dir))
 		case "windows":
 			exe := windowsInstalledExe(spec)
 			if exe == "" {
 				return errExternalAppUnavailable
 			}
-			return exec.Command(exe, dir).Start()
+			return executil.StartDetached(exec.Command(exe, dir))
 		default:
 			if spec.linuxExe == "" {
 				return errExternalAppUnavailable
@@ -220,7 +222,7 @@ func openThirdPartyApp(appID, dir string) error {
 			if _, err := exec.LookPath(spec.linuxExe); err != nil {
 				return errExternalAppUnavailable
 			}
-			return exec.Command(spec.linuxExe, dir).Start()
+			return executil.StartDetached(exec.Command(spec.linuxExe, dir))
 		}
 	}
 	return errors.New("unknown external app: " + appID)
