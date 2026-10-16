@@ -87,6 +87,10 @@ const (
 	MethodBrowserHostRegister        = "browser/host_register"
 	MethodBrowserHostRespond         = "browser/host_respond"
 	MethodBrowserHostState           = "browser/host_state"
+	MethodDesktopHostStatus          = "desktop/host/status"
+	MethodDesktopHostRegister        = "desktop/host/register"
+	MethodDesktopHostUnregister      = "desktop/host/unregister"
+	MethodDesktopHostRespond         = "desktop/host/respond"
 	MethodContextPreview             = "context/preview"
 	MethodContextStats               = "context/stats"
 	MethodContextWindow              = "context/window"
@@ -296,6 +300,10 @@ func AllCoreMethods() []string {
 		MethodBrowserHostRegister,
 		MethodBrowserHostRespond,
 		MethodBrowserHostState,
+		MethodDesktopHostStatus,
+		MethodDesktopHostRegister,
+		MethodDesktopHostUnregister,
+		MethodDesktopHostRespond,
 		MethodContextPreview,
 		MethodContextStats,
 		MethodContextWindow,
