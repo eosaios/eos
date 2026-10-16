@@ -708,6 +708,17 @@ func (g *StdioGateway) CoreSaveSessionMessagesRPC(ctx context.Context, workspace
 		WorkspaceRoot: strings.TrimSpace(workspaceRoot),
 		Messages:      coreMsgs,
 	}
+	params, err := coreapi.PreserveProjectedToolReceipts(ctx, params, func(ctx context.Context, req coreapi.LoadSessionMessagesRequest) ([]coreapi.SessionMessage, error) {
+		var messages []coreapi.SessionMessage
+		if err := g.client.Call(ctx, protocoljsonrpc.MethodSessionMessagesLoad, req, &messages); err != nil {
+			return nil, err
+		}
+		return messages, nil
+	})
+	if err != nil {
+		return SessionMeta{}, err
+	}
+
 	var out coreapi.Session
 	if err := g.client.Call(ctx, protocoljsonrpc.MethodSessionMessagesSave, params, &out); err != nil {
 		return SessionMeta{}, err
