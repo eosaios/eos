@@ -8,6 +8,8 @@ package webbridge
 import (
 	"os"
 	"os/exec"
+
+	"github.com/eosaios/eos/pkg/executil"
 	"strings"
 
 	"github.com/eosaios/eos/internal/webbridge/i18n"
@@ -17,7 +19,7 @@ import (
 // 不等待其退出。启动失败返回错误，进程自身的退出码不关心。
 func runBackgroundCommand(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
-	return cmd.Start()
+	return executil.StartDetached(cmd)
 }
 
 // webLang 读启动语言：EOS_LANG（zh/en），缺省 zh（与 CLI 全局约定一致）。

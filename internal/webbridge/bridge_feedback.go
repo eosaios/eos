@@ -8,6 +8,8 @@ package webbridge
 import (
 	"fmt"
 	"os/exec"
+
+	"github.com/eosaios/eos/pkg/executil"
 	"runtime"
 	"strings"
 )
@@ -30,5 +32,5 @@ func (s *BridgeService) OpenExternalURL(url string) error {
 	default:
 		cmd = exec.Command("xdg-open", url)
 	}
-	return cmd.Start()
+	return executil.StartDetached(cmd)
 }
