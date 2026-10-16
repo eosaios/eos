@@ -1510,3 +1510,62 @@ type RoleRef struct {
 type SessionRef struct {
 	SessionID string `json:"session_id,omitempty"`
 }
+
+type DesktopHostRegisterRequest struct {
+	HostID           string   `json:"host_id"`
+	Epoch            string   `json:"epoch"`
+	ChatSessionID    string   `json:"chat_session_id"`
+	DesktopSessionID string   `json:"desktop_session_id"`
+	Mode             string   `json:"mode"`
+	Capabilities     []string `json:"capabilities"`
+}
+
+type DesktopHostUnregisterRequest struct {
+	HostID string `json:"host_id"`
+	Epoch  string `json:"epoch"`
+}
+
+type DesktopHostStatusRequest struct {
+	HostID           string `json:"host_id"`
+	Epoch            string `json:"epoch"`
+	ChatSessionID    string `json:"chat_session_id"`
+	DesktopSessionID string `json:"desktop_session_id"`
+}
+
+type DesktopHostStatus struct {
+	Enabled bool `json:"enabled"`
+}
+
+type DesktopHostCommand struct {
+	RequestID        string         `json:"request_id"`
+	HostID           string         `json:"host_id"`
+	Epoch            string         `json:"epoch"`
+	ChatSessionID    string         `json:"chat_session_id"`
+	TurnID           string         `json:"turn_id"`
+	DesktopSessionID string         `json:"desktop_session_id"`
+	Action           string         `json:"action"`
+	Args             map[string]any `json:"args"`
+	DeadlineUnixMs   uint64         `json:"deadline_unix_ms"`
+}
+
+type DesktopHostRespondRequest struct {
+	RequestID        string `json:"request_id"`
+	HostID           string `json:"host_id"`
+	Epoch            string `json:"epoch"`
+	ChatSessionID    string `json:"chat_session_id"`
+	TurnID           string `json:"turn_id"`
+	DesktopSessionID string `json:"desktop_session_id"`
+	Ok               bool   `json:"ok"`
+	Result           any    `json:"result"`
+	Error            string `json:"error"`
+}
+
+type DesktopHostCancel struct {
+	RequestID        string `json:"request_id"`
+	HostID           string `json:"host_id"`
+	Epoch            string `json:"epoch"`
+	ChatSessionID    string `json:"chat_session_id"`
+	TurnID           string `json:"turn_id"`
+	DesktopSessionID string `json:"desktop_session_id"`
+	Reason           string `json:"reason"`
+}

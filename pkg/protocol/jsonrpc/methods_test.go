@@ -35,8 +35,9 @@ func TestAllCoreMethodsFreezesMigrationSurface(t *testing.T) {
 	//     结果 / 广播标签页状态，AI 与人共用同一原生标签页）
 	//   + 3 captures（采集板：满意 AI 回复的常驻知识卡，桌面端右侧采集板
 	//     面板 + capture_* AI 工具共用的数据面）
-	if len(methods) != 193 {
-		t.Fatalf("AllCoreMethods() len=%d, want 193", len(methods))
+	//   + 4 desktop/host/*（Rust 冻结版已有的桌面宿主契约，补齐 Go 同步遗漏）
+	if len(methods) != 197 {
+		t.Fatalf("AllCoreMethods() len=%d, want 197", len(methods))
 	}
 
 	seen := make(map[string]bool, len(methods))
@@ -51,6 +52,10 @@ func TestAllCoreMethodsFreezesMigrationSurface(t *testing.T) {
 	}
 
 	required := []string{
+		MethodDesktopHostStatus,
+		MethodDesktopHostRegister,
+		MethodDesktopHostUnregister,
+		MethodDesktopHostRespond,
 		MethodWorkspaceWorktreeCreate,
 		MethodSessionDelete,
 		MethodMCPList,

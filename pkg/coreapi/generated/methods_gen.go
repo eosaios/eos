@@ -89,6 +89,10 @@ const (
 	MethodBrowserHostRegister           = "browser/host_register"
 	MethodBrowserHostRespond            = "browser/host_respond"
 	MethodBrowserHostState              = "browser/host_state"
+	MethodDesktopHostStatus             = "desktop/host/status"
+	MethodDesktopHostRegister           = "desktop/host/register"
+	MethodDesktopHostUnregister         = "desktop/host/unregister"
+	MethodDesktopHostRespond            = "desktop/host/respond"
 	MethodContextPreview                = "context/preview"
 	MethodContextStats                  = "context/stats"
 	MethodContextWindow                 = "context/window"
@@ -286,6 +290,10 @@ func CoreMethods() []string {
 		MethodBrowserHostRegister,
 		MethodBrowserHostRespond,
 		MethodBrowserHostState,
+		MethodDesktopHostStatus,
+		MethodDesktopHostRegister,
+		MethodDesktopHostUnregister,
+		MethodDesktopHostRespond,
 		MethodContextPreview,
 		MethodContextStats,
 		MethodContextWindow,
@@ -435,6 +443,12 @@ func MethodGroups() map[string][]string {
 			MethodContextCompact,
 			MethodContextClear,
 			MethodContextExport,
+		},
+		"desktop": {
+			MethodDesktopHostStatus,
+			MethodDesktopHostRegister,
+			MethodDesktopHostUnregister,
+			MethodDesktopHostRespond,
 		},
 		"diagnostics": {
 			MethodDiagnosticsStartup,
