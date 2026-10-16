@@ -208,7 +208,9 @@ func TestBridgeServiceDelegateSystemFilesDomain(t *testing.T) {
 	}
 	// exec.Start 异步起进程，轮询等假脚本落记录（Start 不等退出）。
 	var recorded string
-	for i := 0; i < 100; i++ {
+	// Keep the fake launcher alive while macOS validates its fresh script.
+	deadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(deadline) {
 		if data, err := os.ReadFile(openCalls); err == nil && strings.TrimSpace(string(data)) != "" {
 			recorded = string(data)
 			break

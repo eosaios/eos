@@ -31,7 +31,9 @@ func newFakeOpenBin(t *testing.T) (string, string) {
 
 func waitFakeOpen(t *testing.T, calls, substr string) {
 	t.Helper()
-	deadline := time.Now().Add(3 * time.Second)
+	// macOS may validate a fresh launcher script before executing it. Keep
+	// its TempDir alive through that startup; this is not a product timeout.
+	deadline := time.Now().Add(30 * time.Second)
 	for {
 		if data, err := os.ReadFile(calls); err == nil && strings.Contains(string(data), substr) {
 			return

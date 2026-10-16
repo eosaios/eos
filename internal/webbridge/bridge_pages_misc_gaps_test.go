@@ -414,7 +414,9 @@ func TestFakeOpenInterceptedCommands(t *testing.T) {
 	waitCalls := func(t *testing.T, args ...string) {
 		t.Helper()
 		want := strings.Join(args, "\n") + "\n__EOS_FIXTURE_COMPLETE__\n"
-		deadline := time.Now().Add(3 * time.Second)
+		// macOS may validate a fresh launcher script before executing it. Keep
+		// its TempDir alive through that startup; this is not a product timeout.
+		deadline := time.Now().Add(30 * time.Second)
 		for time.Now().Before(deadline) {
 			files, err := filepath.Glob(callsFile + ".*")
 			if err != nil {
@@ -675,7 +677,8 @@ func TestDarwinInstallChainWithFakeBins(t *testing.T) {
 	// relaunch 调度：1s 后经 PATH 命中假 open。
 	bundle := filepath.Join(t.TempDir(), "EOS.app")
 	scheduleMacOSRelaunch(bundle)
-	deadline := time.Now().Add(4 * time.Second)
+	// Include system validation of the fresh fake open after the 1s schedule.
+	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
 		if data, err := os.ReadFile(openCalls); err == nil && strings.Contains(string(data), bundle) {
 			return
