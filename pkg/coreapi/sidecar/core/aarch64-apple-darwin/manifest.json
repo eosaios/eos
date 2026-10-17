@@ -1,7 +1,12 @@
 {
-  "api_version": "v1",
-  "binary": "eos-core",
+  "schema_version": "1.0",
   "core_version": "0.1.0",
+  "api_version": "v1",
+  "target": "aarch64-apple-darwin",
+  "binary": "eos-core",
+  "sha256": "sha256:8ab4b0d7177ef8cf8aa48de989d0893f2802ffcfab8d1ca408b6b2a1e3c07095",
+  "signature": "ed25519:s58fR6VN7KOcQLc+TXJ616T60soscDGMVckOtew5j1qBfHuUMscvfYVOdeeGct3scRh/iV387Ca38qv6kNVGBA==",
+  "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "initialize",
     "shutdown",
@@ -89,6 +94,10 @@
     "browser/host_register",
     "browser/host_respond",
     "browser/host_state",
+    "desktop/host/status",
+    "desktop/host/register",
+    "desktop/host/unregister",
+    "desktop/host/respond",
     "context/preview",
     "context/stats",
     "context/window",
@@ -197,10 +206,5 @@
     "agent/control",
     "diagnostics/startup"
   ],
-  "min_cli_version": "v1.0.0-beta.1",
-  "schema_version": "1.0",
-  "sha256": "sha256:2954e57e54e767feb975b28c9e63562c35b2d6f69260920cc434005632dcb3cd",
-  "signature": "ed25519:Skw/Jh1NSPSMKcxKJ2VVYE+0D9xWhfPGwOBn5so9ea87mNaKH86yRhNBANrZhNCb49B4hpPfFH/W8CQUIWu2DA==",
-  "signature_algorithm": "ed25519",
-  "target": "aarch64-apple-darwin"
+  "signature_algorithm": "ed25519"
 }
