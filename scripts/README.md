@@ -7,6 +7,11 @@
 eos-cli / eos-app 各自 vendored 一份 eos-core sidecar 二进制，两个壳层独立。
 sidecar 构建分两条路径，职责严格分工：
 
+macOS/Linux 的 `go run ./scripts/dev_rebuild_core.go` 从本次构建所指向的
+`eos-core-rs/crates/eos-core-protocol/schema.json` 读取能力列表，不沿用旧 manifest
+的 features；导出缺失、空列表或重复方法时，在写入产物前报错。输出仍是开发占位签名，
+不能作为正式签名制品提交或分发。
+
 ### 本机开发迭代（仅 host target）
 
 **`dev-rebuild.ps1`** — 改 eos-core-rs 内核后，一键重编当前 host target
