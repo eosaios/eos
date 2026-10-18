@@ -17,6 +17,7 @@ jobs:
         with:
           # golangci-lint --new-from-rev=HEAD~1 需要至少两个提交的历史
           fetch-depth: 0
+          lfs: true
       - name: Install system dependencies
         # golang.design/x/clipboard 在 Linux 通过 cgo 绑定 X11 剪贴板，
         # 编译需要 X11 头文件；eos-cli 虽仅 Windows 分发，但 Linux job
@@ -50,6 +51,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          lfs: true
       - uses: actions/setup-go@v6
         with:
           go-version: "1.25"

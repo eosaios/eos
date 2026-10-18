@@ -216,6 +216,7 @@ jobs:
       - name: Checkout eos-cli
         uses: actions/checkout@v4
         with:
+          lfs: true
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
 

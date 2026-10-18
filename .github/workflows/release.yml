@@ -55,6 +55,8 @@ jobs:
     steps:
       - name: Checkout eos-cli
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Checkout eos-core-rs (private)
         uses: actions/checkout@v4
