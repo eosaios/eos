@@ -299,7 +299,7 @@ func sessionMessageContentFromChat(item ChatMessage) adapter.SessionMessage {
 	return adapter.SessionMessage{
 		Role:       strings.TrimSpace(item.Role),
 		Type:       "text",
-		Content:    item.Content,
+		Content:    fileReferenceSessionContent(item),
 		Time:       parseTime(item.CreatedAt),
 		ImagePaths: imagePathsFromAttachments(item.Attachments),
 		Metadata:   runtimeMetadataFromChatMessage(item),
@@ -515,6 +515,7 @@ func chatMessageTurnRollbackFromCoreAPI(rollback *coreapi.TurnRollback) *TurnRol
 
 func runtimeMetadataFromChatMessage(message ChatMessage) map[string]any {
 	gui := map[string]any{}
+	preserveFileReferenceMetadata(gui, message)
 	if value := strings.TrimSpace(message.ID); value != "" {
 		gui["id"] = value
 	}
@@ -597,6 +598,7 @@ func applyRuntimeMetadataToChatMessage(message *ChatMessage, metadata map[string
 	if !ok {
 		return
 	}
+	restoreFileReferenceMetadata(message, gui)
 	if value := metadataString(gui["id"]); value != "" {
 		message.ID = value
 	}

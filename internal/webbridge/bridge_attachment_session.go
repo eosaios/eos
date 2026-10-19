@@ -40,7 +40,10 @@ func (svc *AttachmentService) PrepareOneForSession(path string, workspace string
 	if !filepath.IsAbs(source) && strings.TrimSpace(workspace) != "" {
 		source = filepath.Join(workspace, source)
 	}
-	source = filepath.Clean(source)
+	source, err := filepath.Abs(source)
+	if err != nil {
+		return AttachmentRef{}, adapter.Attachment{}, err
+	}
 	info, err := os.Stat(source)
 	if err != nil {
 		return AttachmentRef{}, adapter.Attachment{}, err
@@ -48,13 +51,15 @@ func (svc *AttachmentService) PrepareOneForSession(path string, workspace string
 	if info.IsDir() {
 		return AttachmentRef{}, adapter.Attachment{}, errors.New("attachment path must be a file: " + source)
 	}
-	if info.Size() > maxGeneralAttachmentBytes {
+	mimeType := detectAttachmentMIME(source)
+	kind := attachmentKindFromPath(source, mimeType)
+	if kind == "image" && info.Size() > maxGeneralAttachmentBytes {
 		return AttachmentRef{}, adapter.Attachment{}, fmt.Errorf("attachment exceeds %dMB limit: %s", maxGeneralAttachmentBytes/(1024*1024), filepath.Base(source))
 	}
 
 	target := source
 	copied := false
-	if strings.TrimSpace(workspace) != "" && !pathInsideWorkspace(source, workspace) {
+	if kind == "image" && strings.TrimSpace(workspace) != "" && !pathInsideWorkspace(source, workspace) {
 		copiedPath, err := copyAttachmentIntoWorkspace(source, workspace)
 		if err != nil {
 			return AttachmentRef{}, adapter.Attachment{}, err
@@ -62,8 +67,6 @@ func (svc *AttachmentService) PrepareOneForSession(path string, workspace string
 		target = copiedPath
 		copied = true
 	}
-	mimeType := detectAttachmentMIME(target)
-	kind := attachmentKindFromPath(target, mimeType)
 	workspacePath := ""
 	if strings.TrimSpace(workspace) != "" {
 		if rel, err := filepath.Rel(filepath.Clean(workspace), filepath.Clean(target)); err == nil && !strings.HasPrefix(rel, "..") {

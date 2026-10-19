@@ -49,18 +49,9 @@ func (m *AppModel) queueAttachmentPaths(paths []string) {
 func (m *AppModel) prepareFileAttachments(text string) (string, []coreapi.Attachment, error) {
 	prompt, dropped := attachments.ExtractPaths(text)
 	paths := append(append([]string(nil), m.pendingAttachmentPaths...), dropped...)
-	encoded := make([]coreapi.Attachment, 0, len(paths))
-	seen := map[string]struct{}{}
+	files := make([]attachments.File, 0, len(paths))
 	for _, path := range paths {
-		if _, exists := seen[path]; exists {
-			continue
-		}
-		seen[path] = struct{}{}
-		file, err := attachments.Encode(attachments.File{Path: path})
-		if err != nil {
-			return text, nil, err
-		}
-		encoded = append(encoded, file)
+		files = append(files, attachments.File{Path: path})
 	}
-	return prompt, encoded, nil
+	return attachments.PrepareInput(prompt, files)
 }

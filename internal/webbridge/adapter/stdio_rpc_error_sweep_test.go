@@ -442,14 +442,14 @@ func TestStdioRpcPureHelpers(t *testing.T) {
 		{Name: " a ", Path: " " + path + " ", MIME: " image/png ", Kind: " image "},
 		{Name: "empty", Path: "   "},
 	}
-	out, err := CoreAPIAttachments(items)
+	_, out, err := CoreAPITurnInput("", items)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(out) != 1 || out[0].Name != "a" || out[0].Path != "aW1hZ2UtYnl0ZXM=" || out[0].MIME != "image/png" || out[0].Kind != "image" {
 		t.Fatalf("CoreAPIAttachments = %+v", out)
 	}
-	if got, err := CoreAPIAttachments(nil); err != nil || len(got) != 0 {
+	if _, got, err := CoreAPITurnInput("", nil); err != nil || len(got) != 0 {
 		t.Fatalf("空附件应返回空: %+v", got)
 	}
 	if !stdioIsTerminalCoreTurnEvent(Event{EventType: "request.completed"}) ||
