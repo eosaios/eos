@@ -1,11 +1,11 @@
 package ui
 
 import (
-	"encoding/base64"
 	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
@@ -28,12 +28,11 @@ func TestTerminalFilePasteQueuesAndPreservesDraft(t *testing.T) {
 		t.Fatalf("draft = %q, attachments = %v", app.shell.GetInputValue(), app.pendingAttachmentPaths)
 	}
 	prompt, files, err := app.prepareFileAttachments(app.shell.GetInputValue())
-	if err != nil || prompt != "检查这份文件" || len(files) != 1 {
+	if err != nil || !strings.HasPrefix(prompt, "检查这份文件\n\nReferenced local files") || len(files) != 0 {
 		t.Fatalf("prepare = %q, %+v, %v", prompt, files, err)
 	}
-	data, err := base64.StdEncoding.DecodeString(files[0].Path)
-	if err != nil || string(data) != "# 目标\n实现拖放" || files[0].Name != "需求 说明.md" || files[0].Kind != "file" {
-		t.Fatalf("payload = %+v, content = %q, %v", files[0], data, err)
+	if !strings.Contains(prompt, "需求 说明.md") || strings.Contains(prompt, "# 目标") {
+		t.Fatalf("document should be a path reference: %s", prompt)
 	}
 	app.handleGlobalKey(tea.KeyPressMsg{Code: tea.KeyEsc})
 	if len(app.pendingAttachmentPaths) != 0 || app.shell.GetInputValue() != "" {
