@@ -78,7 +78,7 @@ func Describe(path string, data []byte) File {
 
 // Encode reads a bounded file and encodes the model attachment payload.
 // coreapi.Attachment.Path carries base64 bytes, never a local filesystem path.
-func Encode(file File) (coreapi.Attachment, error) {
+func Encode(file File) (attachment coreapi.Attachment, err error) {
 	info, err := os.Stat(file.Path)
 	if err != nil {
 		return coreapi.Attachment{}, err
@@ -90,7 +90,12 @@ func Encode(file File) (coreapi.Attachment, error) {
 	if err != nil {
 		return coreapi.Attachment{}, err
 	}
-	defer src.Close()
+	defer func() {
+		if closeErr := src.Close(); closeErr != nil && err == nil {
+			attachment = coreapi.Attachment{}
+			err = closeErr
+		}
+	}()
 	info, err = src.Stat()
 	if err != nil {
 		return coreapi.Attachment{}, err
