@@ -320,9 +320,20 @@ func TestRemoteWorkspaceServiceArms(t *testing.T) {
 		if gateway.openRemoteCalls[0] != "repo-id" {
 			t.Fatalf("openRemoteCalls = %v", gateway.openRemoteCalls)
 		}
-		// SelectWorkspace/emit 的后台 loadBootstrap 会写 HOME 目录，
-		// 等事件落地防 tempdir 清理竞态。
-		eventually(t, "shellUpdated after remote open", func() bool { return rec.has(shellUpdatedEventName) })
+		// SelectWorkspace and OpenRemoteWorkspace each schedule a bootstrap.
+		// Both may write workspace state; waiting for only the first event
+		// races TempDir cleanup against the second writer on Linux CI.
+		eventually(t, "both shell updates after remote open", func() bool {
+			rec.mu.Lock()
+			defer rec.mu.Unlock()
+			count := 0
+			for _, name := range rec.events {
+				if name == shellUpdatedEventName {
+					count++
+				}
+			}
+			return count >= 2
+		})
 	})
 
 	t.Run("forget/clear 成功与失败", func(t *testing.T) {
