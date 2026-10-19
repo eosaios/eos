@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/eosaios/eos/pkg/attachments"
 )
 
 const maxWorkspaceFilePreviewBytes = 512 * 1024
@@ -55,13 +57,10 @@ func (svc *AttachmentService) ImportAttachment(name string, mime string, base64D
 		}
 		raw = body
 	}
-	normalizedMIME, ext, ok := normalizeImportedImageMIME(mime)
-	if !ok {
-		return AttachmentRef{}, errors.New("only png, jpeg, webp, gif, and bmp images are supported")
-	}
 	if len(raw) > maxImportedAttachmentBase64Len {
 		return AttachmentRef{}, errors.New("image exceeds 20MB limit")
 	}
+	raw = strings.Join(strings.Fields(raw), "")
 	data, err := base64.StdEncoding.DecodeString(raw)
 	if err != nil {
 		return AttachmentRef{}, errors.New("image data is not valid base64")
@@ -71,6 +70,21 @@ func (svc *AttachmentService) ImportAttachment(name string, mime string, base64D
 	}
 	if len(data) > maxImportedAttachmentBytes {
 		return AttachmentRef{}, errors.New("image exceeds 20MB limit")
+	}
+
+	normalizedMIME, ext, ok := normalizeImportedImageMIME(mime)
+	if sniffed, detected := detectAttachmentImageMIME(data); detected {
+		normalizedMIME, ext, ok = normalizeImportedImageMIME(sniffed)
+	}
+	if !ok {
+		if strings.HasPrefix(strings.ToLower(strings.TrimSpace(mime)), "image/") {
+			return AttachmentRef{}, errors.New("unsupported image format")
+		}
+		stored, err := attachments.Store(attachmentCacheDir(), name, data)
+		if err != nil {
+			return AttachmentRef{}, err
+		}
+		return AttachmentRef{Name: stored.Name, Path: stored.Path, MIME: stored.MIME, Kind: stored.Kind}, nil
 	}
 
 	safeName := safeAttachmentFilename(name, ext)

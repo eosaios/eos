@@ -417,6 +417,15 @@ func sessionMessageToolResult(ti ThreadItem, turnID, createdAt string) adapter.S
 	if ti.ToolResult != nil {
 		content = strings.TrimSpace(ti.ToolResult.Output)
 	}
+	if ti.ToolResult != nil {
+		meta[coreapi.ToolResultPresentationKey] = map[string]any{
+			"status":      ti.ToolResult.Status,
+			"display":     ti.ToolResult.Output,
+			"error":       ti.ToolResult.Error,
+			"duration_ms": float64(ti.ToolResult.DurationMS),
+		}
+	}
+
 	return adapter.SessionMessage{
 		Role:     "tool",
 		Type:     "tool",
@@ -653,6 +662,11 @@ func backfillToolResults(msgs []adapter.SessionMessage, items []ThreadItem) {
 		if !ok {
 			continue
 		}
+		if presentation, ok := msg.Metadata[coreapi.ToolResultPresentationKey].(map[string]any); ok {
+			items[idx].ToolResult = extractItemToolResult(presentation)
+			continue
+		}
+
 		items[idx].ToolResult = &ItemToolResult{
 			Status: "completed",
 			Output: strings.TrimSpace(msg.Content),

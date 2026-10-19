@@ -98,9 +98,10 @@ type AppModel struct {
 	selEnd    selectionCoord
 	selActive bool
 
-	pendingImagePaths    []string
-	pendingPlanDownload  *planDownloadRequest
-	pendingPluginConfirm string
+	pendingImagePaths      []string
+	pendingAttachmentPaths []string
+	pendingPlanDownload    *planDownloadRequest
+	pendingPluginConfirm   string
 
 	predictionText        string
 	predictionSeq         int
@@ -209,6 +210,8 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleWindowSizeMsg(msg)
 	case tea.MouseMsg:
 		return m.handleMouseMsg(msg, nil)
+	case tea.PasteMsg:
+		return m.handleFilePaste(msg)
 	case tea.KeyMsg:
 		return m.handleKeyMsg(msg)
 	case adapter.RuntimeEvent:

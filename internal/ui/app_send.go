@@ -26,10 +26,12 @@ import (
 	"github.com/eosaios/eos/internal/ai"
 	"github.com/eosaios/eos/internal/i18n"
 	"github.com/eosaios/eos/internal/pkg/clip"
+	"github.com/eosaios/eos/internal/ui/adapter"
 	"github.com/eosaios/eos/internal/ui/features/slash"
 	"github.com/eosaios/eos/internal/ui/panels"
 	"github.com/eosaios/eos/internal/ui/views/setup"
 	"github.com/eosaios/eos/internal/ui/views/shell"
+	"github.com/eosaios/eos/pkg/coreapi"
 
 	tea "charm.land/bubbletea/v2"
 )
@@ -121,7 +123,7 @@ func (m *AppModel) requestPrediction(draft string) tea.Cmd {
 func (m *AppModel) shouldSendMessage() (bool, tea.Cmd) {
 	value := m.shell.GetInputValue()
 	if value == "" {
-		if m.state.Mode == "ai" && !m.state.Processing && len(m.pendingImagePaths) > 0 {
+		if m.state.Mode == "ai" && !m.state.Processing && (len(m.pendingImagePaths) > 0 || len(m.pendingAttachmentPaths) > 0) {
 			return true, nil
 		}
 		return false, nil
@@ -172,10 +174,23 @@ func (m *AppModel) sendMessageText(text string, withPendingImages bool) tea.Cmd 
 	if m == nil || m.adapter == nil {
 		return nil
 	}
-	if strings.TrimSpace(text) == "" && (!withPendingImages || len(m.pendingImagePaths) == 0) {
+	if strings.TrimSpace(text) == "" && (!withPendingImages || (len(m.pendingImagePaths) == 0 && len(m.pendingAttachmentPaths) == 0)) {
 		return nil
 	}
-	expanded := text
+	var files []coreapi.Attachment
+	prompt := text
+	if withPendingImages {
+		var err error
+		prompt, files, err = m.prepareFileAttachments(text)
+		if err != nil {
+			m.appendSystem(fmt.Sprintf(i18n.T("attachment.failed", m.state.Language), err), "error")
+			return nil
+		}
+	}
+	expanded := prompt
+	if strings.TrimSpace(expanded) == "" && len(files) > 0 {
+		expanded = i18n.T("attachment.only", m.state.Language)
+	}
 	// 展开 LSP 诊断宏
 	if strings.Contains(strings.ToLower(expanded), "#problems_and_diagnostics") {
 		md := ""
@@ -212,6 +227,7 @@ func (m *AppModel) sendMessageText(text string, withPendingImages bool) tea.Cmd 
 	if withPendingImages {
 		imagePaths = m.pendingImagePaths
 		m.pendingImagePaths = nil
+		m.pendingAttachmentPaths = nil
 		if len(imagePaths) > 0 {
 			var names []string
 			for _, p := range imagePaths {
@@ -233,6 +249,9 @@ func (m *AppModel) sendMessageText(text string, withPendingImages bool) tea.Cmd 
 
 	// 显示用户消息
 	display := text
+	if strings.TrimSpace(display) == "" && len(files) > 0 {
+		display = i18n.T("attachment.only", m.state.Language)
+	}
 	if strings.TrimSpace(display) == "" && len(imagePaths) > 0 {
 		display = i18n.T("chat.image_only", m.state.Language)
 	}
@@ -241,7 +260,7 @@ func (m *AppModel) sendMessageText(text string, withPendingImages bool) tea.Cmd 
 	// 异步调用 AI 引擎
 	invoke := func() tea.Msg {
 		ctx := context.Background()
-		content, err := m.adapter.Invoke(ctx, expanded, m.state.ExecutionMode, imagePaths, m.memoryInjectionEnabled)
+		content, err := m.adapter.InvokeWithAttachments(ctx, adapter.TurnInput{Text: expanded, ExecutionMode: m.state.ExecutionMode, ImagePaths: imagePaths, Attachments: files, UseMemory: m.memoryInjectionEnabled})
 		if err != nil {
 			if strings.Contains(strings.ToLower(err.Error()), "context canceled") {
 				return nil

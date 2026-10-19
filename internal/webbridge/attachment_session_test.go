@@ -142,9 +142,14 @@ func TestImportAttachment(t *testing.T) {
 	if _, err := NewAttachmentService(nil).ImportAttachment("a.png", "image/png", "aGVsbG8="); err == nil {
 		t.Fatal("nil bridge")
 	}
-	// 不支持的 mime
-	if _, err := svc.ImportAttachment("a.txt", "text/plain", "aGVsbG8="); err == nil {
-		t.Fatal("bad mime")
+	// Ordinary documents use the same upload endpoint as images.
+	textRef, err := svc.ImportAttachment("a.txt", "text/plain", "aGVsbG8=")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(textRef.Path)
+	if err != nil || string(data) != "hello" || textRef.Name != "a.txt" || textRef.Kind != "file" {
+		t.Fatalf("document import = %+v, %q, %v", textRef, data, err)
 	}
 	// 坏 base64
 	if _, err := svc.ImportAttachment("a.png", "image/png", "!!!"); err == nil {

@@ -6,6 +6,9 @@ package i18n
 // 商业使用请联系版权人获得商业授权。
 
 var enText = map[string]string{
+	"attachment.added":                "File attached: %s (Esc to clear)",
+	"attachment.failed":               "Could not attach file: %v",
+	"attachment.only":                 "Please analyze the attached files.",
 	"cli.root.short":                  "An AI-powered command line interface powered by EOS",
 	"cli.root.long":                   "eos is a terminal-based AI assistant that helps you with coding tasks, file operations, and command execution through natural language conversation.",
 	"hint.mode":                       "Mode: AI (F2 toggle) · / for commands · /lang zh|en",

@@ -91,8 +91,7 @@ func main() {
 	}
 	binPath := filepath.Join(coreRepoPath, "target", profile, coreBinaryName())
 
-	// 2) 以 vendored core/<triple>/manifest.json 为模板（保留 core_version/
-	//    api_version/features 等），更新 sha256 并置 dev placeholder 签名。
+	// 2) 版本元数据沿用模板；能力来自本次构建的 Rust 导出，不能继承旧清单。
 	triples := sidecar.TargetTriples(runtime.GOOS, runtime.GOARCH)
 	if len(triples) == 0 {
 		fail("无法映射 host target %s/%s", runtime.GOOS, runtime.GOARCH)
@@ -106,6 +105,11 @@ func main() {
 	if err != nil {
 		fail("读取模板 manifest 失败: %v", err)
 	}
+	features, err := sidecar.ReadProtocolFeatures(filepath.Join(coreRepoPath, "crates", "eos-core-protocol", "schema.json"))
+	if err != nil {
+		fail("读取内核协议能力失败: %v", err)
+	}
+	manifest["features"] = features
 	binBytes, err := os.ReadFile(binPath)
 	if err != nil {
 		fail("读取新内核失败: %v", err)

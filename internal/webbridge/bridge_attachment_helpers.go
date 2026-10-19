@@ -16,8 +16,7 @@ func copyAttachmentIntoWorkspace(source string, workspace string) (string, error
 	if workspace == "" {
 		return source, nil
 	}
-	ext := filepath.Ext(source)
-	safeName := safeAttachmentFilename(filepath.Base(source), ext)
+	safeName := filepath.Base(source)
 	targetDir := filepath.Join(workspace, ".eos", "attachments")
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		return "", err
