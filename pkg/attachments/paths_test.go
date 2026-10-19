@@ -18,7 +18,11 @@ func TestExtractTerminalFilePaths(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	uri := (&url.URL{Scheme: "file", Path: filepath.ToSlash(path)}).String()
+	uriPath := filepath.ToSlash(path)
+	if filepath.VolumeName(path) != "" {
+		uriPath = "/" + uriPath
+	}
+	uri := (&url.URL{Scheme: "file", Path: uriPath}).String()
 	cases := []struct {
 		input, prompt string
 		paths         []string

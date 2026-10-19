@@ -89,7 +89,11 @@ func TestTerminalCopiedFileURLPasteQueuesMultipleFiles(t *testing.T) {
 		if err := os.WriteFile(path, []byte("copied content"), 0o600); err != nil {
 			t.Fatal(err)
 		}
-		clipboard += (&url.URL{Scheme: "file", Path: filepath.ToSlash(path)}).String() + "\n"
+		uriPath := filepath.ToSlash(path)
+		if filepath.VolumeName(path) != "" {
+			uriPath = "/" + uriPath
+		}
+		clipboard += (&url.URL{Scheme: "file", Path: uriPath}).String() + "\n"
 	}
 	app.Update(tea.PasteMsg{Content: clipboard})
 	if app.shell.GetInputValue() != "原有说明" || !reflect.DeepEqual(app.pendingAttachmentPaths, paths) {

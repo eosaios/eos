@@ -30,7 +30,13 @@ func ExtractPaths(text string) (string, []string) {
 			if err != nil || (u.Host != "" && u.Host != "localhost") || u.RawQuery != "" || u.Fragment != "" {
 				continue
 			}
-			path = filepath.FromSlash(u.Path)
+			uriPath := u.Path
+			// Standard Windows file URLs carry /C:/...; the leading slash is
+			// URL syntax, not part of the local drive path.
+			if len(uriPath) >= 3 && uriPath[0] == '/' && uriPath[2] == ':' {
+				uriPath = uriPath[1:]
+			}
+			path = filepath.FromSlash(uriPath)
 		}
 		if strings.HasPrefix(path, "~/") {
 			home, err := os.UserHomeDir()
