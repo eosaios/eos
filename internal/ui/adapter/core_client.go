@@ -208,10 +208,9 @@ func (a *CoreClientAdapter) ensurePumpStarted() {
 	}
 }
 
-// Invoke 启动一次 turn，订阅事件流直到 RequestDone / RequestFailed，返回 final 文本。
-// useMemory 是请求级记忆注入开关，透传给内核的 turn/start.use_memory
-// （注入裁决在内核）；source 固定为 cli，仅在日志中标识来源壳层。
-func (a *CoreClientAdapter) Invoke(ctx context.Context, query, executionMode string, imagePaths []string, useMemory bool) (string, error) {
+// InvokeWithAttachments starts a turn with explicit file payloads.
+func (a *CoreClientAdapter) InvokeWithAttachments(ctx context.Context, input TurnInput) (string, error) {
+	query, executionMode, imagePaths, useMemory := input.Text, input.ExecutionMode, input.ImagePaths, input.UseMemory
 	if a == nil || a.engine == nil {
 		return "", errors.New("core client is not available")
 	}
@@ -238,10 +237,11 @@ func (a *CoreClientAdapter) Invoke(ctx context.Context, query, executionMode str
 	}, 1)
 	go func() {
 		req := coreapi.StartTurnRequest{
-			SessionID:  sessionID,
-			TurnID:     turnID,
-			Input:      query,
-			ImagePaths: append([]string(nil), imagePaths...),
+			SessionID:   sessionID,
+			TurnID:      turnID,
+			Input:       query,
+			ImagePaths:  append([]string(nil), imagePaths...),
+			Attachments: append([]coreapi.Attachment(nil), input.Attachments...),
 			// 请求级记忆注入开关：壳层只透传，注入裁决在内核。
 			UseMemory: &useMemory,
 		}

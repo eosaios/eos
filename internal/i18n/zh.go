@@ -6,6 +6,9 @@ package i18n
 // 商业使用请联系版权人获得商业授权。
 
 var zhText = map[string]string{
+	"attachment.added":                "已添加附件：%s（Esc 清除）",
+	"attachment.failed":               "添加附件失败：%v",
+	"attachment.only":                 "请分析附件文件。",
 	"cli.root.short":                  "powered by EOS 的 AI 命令行界面",
 	"cli.root.long":                   "eos 是一个基于终端的 AI 助手，帮助你完成编码、文件操作和命令执行等任务，通过自然语言进行交互。",
 	"hint.mode":                       "模式: AI (F2 切换) · 输入 / 使用命令 · /lang zh|en",

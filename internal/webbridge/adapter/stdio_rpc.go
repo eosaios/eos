@@ -9,11 +9,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	attachmentfiles "github.com/eosaios/eos/pkg/attachments"
 	"github.com/eosaios/eos/pkg/coreapi"
 	coreapijsonrpc "github.com/eosaios/eos/pkg/coreapi/jsonrpc"
 	"github.com/eosaios/eos/pkg/protocol"
@@ -1933,21 +1935,20 @@ func (g *StdioGateway) StartupDiagnostics() StartupDiagnosticsResult {
 
 // CoreAPIAttachments 把壳层附件转换为 coreapi DTO（供桥接层组装
 // StartTurnRequest）。
-func CoreAPIAttachments(items []Attachment) []coreapi.Attachment {
+func CoreAPIAttachments(items []Attachment) ([]coreapi.Attachment, error) {
 	out := make([]coreapi.Attachment, 0, len(items))
 	for _, item := range items {
 		path := strings.TrimSpace(item.Path)
 		if path == "" {
 			continue
 		}
-		out = append(out, coreapi.Attachment{
-			Name: strings.TrimSpace(item.Name),
-			Path: path,
-			MIME: strings.TrimSpace(item.MIME),
-			Kind: strings.TrimSpace(item.Kind),
-		})
+		encoded, err := attachmentfiles.Encode(attachmentfiles.File{Name: strings.TrimSpace(item.Name), Path: path, MIME: strings.TrimSpace(item.MIME), Kind: strings.TrimSpace(item.Kind)})
+		if err != nil {
+			return nil, fmt.Errorf("read attachment %s: %w", path, err)
+		}
+		out = append(out, encoded)
 	}
-	return out
+	return out, nil
 }
 
 func stdioCompactCoreAPIAttachments(items []coreapi.Attachment) []coreapi.Attachment {
