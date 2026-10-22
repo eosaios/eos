@@ -37,6 +37,10 @@ on:
         description: "eos-core-rs 仓库（owner/name），默认用 secret EOS_CORE_REPO"
         required: false
         default: ""
+      core_ref:
+        description: "固定 eos-core-rs 提交或 ref（默认 main）"
+        required: false
+        default: "main"
       bypass_cache:
         description: "跳过 rust-cache 全量重编（诊断缓存污染交叉编译产物）"
         type: boolean
@@ -115,6 +119,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.repo.outputs.repo }}
+          ref: ${{ inputs.core_ref || 'main' }}
           token: ${{ secrets.EOS_CORE_PAT }}   # 私有仓需 PAT，公开仓留空即可
 
       - name: Install Rust target

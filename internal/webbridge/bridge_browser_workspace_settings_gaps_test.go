@@ -592,7 +592,10 @@ func TestWorkspaceServiceSelectWorkspaceArms(t *testing.T) {
 			defaultWorkspace: workspace,
 			sessions:         []coreapi.Session{{ID: "ws-sess-1", WorkspaceRoot: workspace}},
 		}
-		s, chatSvc, _ := newChatSessionsTestBridge(t, gateway)
+		s, chatSvc, rec := newChatSessionsTestBridge(t, gateway)
+		defer eventually(t, "select-workspace background state saved", func() bool {
+			return rec.has(shellUpdatedEventName)
+		})
 		svc := NewWorkspaceService(chatSvc.bridge)
 		state, err := svc.SelectWorkspace(workspace)
 		if err != nil {
@@ -612,7 +615,10 @@ func TestWorkspaceServiceSelectWorkspaceArms(t *testing.T) {
 	t.Run("无历史会话回落空 current", func(t *testing.T) {
 		workspace := t.TempDir()
 		gateway := &chatSessionsGatewayStub{defaultWorkspace: workspace}
-		_, chatSvc, _ := newChatSessionsTestBridge(t, gateway)
+		_, chatSvc, rec := newChatSessionsTestBridge(t, gateway)
+		defer eventually(t, "select-workspace background state saved", func() bool {
+			return rec.has(shellUpdatedEventName)
+		})
 		svc := NewWorkspaceService(chatSvc.bridge)
 		state, err := svc.SelectWorkspace(workspace)
 		if err != nil {

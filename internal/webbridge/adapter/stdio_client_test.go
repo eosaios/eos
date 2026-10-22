@@ -1556,7 +1556,7 @@ func TestStdioGatewayModelCatalogWithVendoredSidecar(t *testing.T) {
 		switch preset.ID {
 		case "qwen3.6-plus":
 			hasQwen = true
-		case "gpt-5-codex":
+		case "gpt-5.3-codex":
 			hasGPTCodex = true
 		}
 	}
@@ -1564,7 +1564,7 @@ func TestStdioGatewayModelCatalogWithVendoredSidecar(t *testing.T) {
 		t.Fatal("catalog presets missing qwen3.6-plus")
 	}
 	if !hasGPTCodex {
-		t.Fatal("catalog presets missing gpt-5-codex")
+		t.Fatal("catalog presets missing gpt-5.3-codex")
 	}
 }
 

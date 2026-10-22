@@ -105,7 +105,11 @@ func ResolveBinary(opts ResolveOptions) (ResolvedBinary, error) {
 	if root := firstNonEmpty(opts.RootDir, os.Getenv(EnvCoreBinDir)); strings.TrimSpace(root) != "" {
 		roots = append(roots, root)
 	}
-	roots = append(roots, defaultSearchRoots()...)
+	defaults, err := defaultSearchRoots()
+	if err != nil {
+		return ResolvedBinary{}, err
+	}
+	roots = append(roots, defaults...)
 	for _, root := range roots {
 		if strings.TrimSpace(root) == "" {
 			continue
@@ -215,15 +219,23 @@ func requireFile(path string) (string, error) {
 	return abs, nil
 }
 
-func defaultSearchRoots() []string {
-	var roots []string
-	if exe, err := os.Executable(); err == nil && strings.TrimSpace(exe) != "" {
-		roots = append(roots, filepath.Join(filepath.Dir(exe), "core"))
+func defaultSearchRoots() ([]string, error) {
+	exe, err := os.Executable()
+	if err != nil {
+		return nil, fmt.Errorf("locate CLI executable: %w", err)
 	}
+	// install.sh links ~/.local/bin/eos to the complete release in share/eos.
+	// On macOS os.Executable retains that link, so resolve it before looking
+	// for the release's core/. Otherwise we silently use a stale embedded core.
+	resolvedExe, err := filepath.EvalSymlinks(exe)
+	if err != nil {
+		return nil, fmt.Errorf("resolve CLI executable %q: %w", exe, err)
+	}
+	roots := []string{filepath.Join(filepath.Dir(resolvedExe), "core")}
 	if _, file, _, ok := runtime.Caller(0); ok {
 		roots = append(roots, filepath.Join(filepath.Dir(file), "core"))
 	}
-	return roots
+	return roots, nil
 }
 
 func firstNonEmpty(values ...string) string {

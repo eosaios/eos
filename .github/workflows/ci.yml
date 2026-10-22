@@ -44,8 +44,33 @@ jobs:
           args: --new-from-rev=HEAD~1
       - name: Test
         run: go test ./... -timeout 300s
+      - name: Verify packaged and embedded CLI runtime
+        shell: bash
+        run: |
+          go build -trimpath -o "$RUNNER_TEMP/eos-runtime-gate/eos" .
+          python3 scripts/verify_release_runtime.py \
+            --cli "$RUNNER_TEMP/eos-runtime-gate/eos" \
+            --core-dir pkg/coreapi/sidecar/core/x86_64-unknown-linux-gnu
 
-  # Windows：eos-cli 目前仅 Windows 分发，验证 Windows 编译。
+  # macOS keeps the install.sh symlink in os.Executable; validate the native
+  # installation path and provider contract before release packaging.
+  macos-runtime:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.25"
+      - name: Test native CLI contracts and runtime
+        run: go test ./pkg/coreapi/sidecar ./internal/headless ./internal/ui/adapter ./pkg/attachments -timeout 300s
+      - name: Verify packaged and embedded CLI runtime (macOS)
+        run: |
+          go build -trimpath -o "$RUNNER_TEMP/eos-runtime-gate/eos" .
+          python3 scripts/verify_release_runtime.py \
+            --cli "$RUNNER_TEMP/eos-runtime-gate/eos" \
+            --core-dir pkg/coreapi/sidecar/core/aarch64-apple-darwin
+
+  # Windows native build and embedded/archive runtime validation.
   windows-build:
     runs-on: windows-latest
     steps:
@@ -57,3 +82,12 @@ jobs:
         run: go build ./...
       - name: Test (Windows)
         run: go test ./... -timeout 300s
+      - name: Verify packaged and embedded CLI runtime (Windows)
+        shell: pwsh
+        run: |
+          go build -trimpath -o "$env:RUNNER_TEMP/eos-runtime-gate/eos.exe" .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/verify_release_runtime.py `
+            --cli "$env:RUNNER_TEMP/eos-runtime-gate/eos.exe" `
+            --core-dir pkg/coreapi/sidecar/core/x86_64-pc-windows-gnu
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
