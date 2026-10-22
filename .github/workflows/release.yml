@@ -56,6 +56,15 @@ jobs:
       - name: Checkout eos-cli
         uses: actions/checkout@v4
 
+      - name: Validate release notes before building
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]] || { echo "::error::invalid version"; exit 1; }
+          test -s ".github/release-notes/$RELEASE_VERSION.md"
+
       - name: Checkout eos-core-rs (private)
         uses: actions/checkout@v4
         with:
@@ -139,11 +148,25 @@ jobs:
           if [ "${{ matrix.goos }}/${{ matrix.goarch }}" = "darwin/amd64" ]; then
             export CC="clang -arch x86_64"
           fi
+          # The standalone/go:embed path must carry the same freshly built core
+          # as the archive. Copy BEFORE compiling Go, not only into dist/core/.
+          CORE_STAGE="eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}"
+          CORE_EMBED="pkg/coreapi/sidecar/core/${{ matrix.triple }}"
+          mkdir -p "$CORE_EMBED"
+          cp "$CORE_STAGE"/eos-core* "$CORE_EMBED/"
+          cp "$CORE_STAGE/manifest.json" "$CORE_EMBED/"
           go build -trimpath \
             -ldflags "-s -w -X github.com/eosaios/eos/internal/version.AppVersion=$VERSION -X github.com/eosaios/eos/internal/version.BuildCommit=$COMMIT -X github.com/eosaios/eos/internal/version.BuildDate=$DATE" \
             -o "dist/$STAGE/$BIN" .
-          cp "eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}"/eos-core* "dist/$STAGE/core/${{ matrix.triple }}/"
-          cp "eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}/manifest.json" "dist/$STAGE/core/${{ matrix.triple }}/"
+          cp "$CORE_EMBED"/eos-core* "dist/$STAGE/core/${{ matrix.triple }}/"
+          cp "$CORE_EMBED/manifest.json" "dist/$STAGE/core/${{ matrix.triple }}/"
+          # darwin/amd64 is cross-compiled on an arm64 runner; its native
+          # runtime acceptance needs an Intel machine.
+          if [ "${{ matrix.goos }}/${{ matrix.goarch }}" != "darwin/amd64" ]; then
+            python3 scripts/verify_release_runtime.py \
+              --cli "dist/$STAGE/$BIN" \
+              --core-dir "dist/$STAGE/core/${{ matrix.triple }}"
+          fi
           cd dist
           if [ "$GOOS_T" = "windows" ]; then
             # 不用 powershell Compress-Archive（反斜杠条目）也不用 GNU tar
@@ -190,15 +213,13 @@ jobs:
           VERSION="${{ inputs.version || github.ref_name }}"
           NOTES_FILE=".github/release-notes/$VERSION.md"
           [ -s "$NOTES_FILE" ] || { echo "::error::missing release notes: $NOTES_FILE"; exit 1; }
-          release_flags=()
-          case "$VERSION" in
-            *-*) release_flags+=(--prerelease --latest=false) ;;
-          esac
+          # The supported CLI beta channel is consumed through releases/latest
+          # by install.sh and eos update; do not strand it on beta.30.
           gh release create "$VERSION" dist/* \
             --target "$GITHUB_SHA" \
             --title "EOS CLI $VERSION" \
             --notes-file "$NOTES_FILE" \
-            "${release_flags[@]}" \
+            --prerelease=false --latest \
             --repo "$GITHUB_REPOSITORY"
 
   winget:
