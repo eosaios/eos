@@ -287,7 +287,7 @@ func TestRemoteEngineModelCatalogWithVendoredSidecar(t *testing.T) {
 		if p.ID == "qwen3.6-plus" {
 			hasQwen = true
 		}
-		if p.ID == "gpt-5-codex" {
+		if p.ID == "gpt-5.3-codex" {
 			hasGPTCodex = true
 		}
 	}
@@ -295,7 +295,7 @@ func TestRemoteEngineModelCatalogWithVendoredSidecar(t *testing.T) {
 		t.Errorf("catalog presets missing qwen3.6-plus")
 	}
 	if !hasGPTCodex {
-		t.Errorf("catalog presets missing gpt-5-codex")
+		t.Errorf("catalog presets missing gpt-5.3-codex")
 	}
 	if !catalog.AllowCustomProvider {
 		t.Errorf("catalog AllowCustomProvider = false, want true")
