@@ -1,6 +1,7 @@
 package sidecar
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -61,4 +62,20 @@ func countEnvKey(items []string, key string) int {
 
 func normalizeEnvKey(key string) string {
 	return strings.ToUpper(key)
+}
+
+func TestProcessEnvUsesNoninteractiveCredentialsOnMac(t *testing.T) {
+	env := processEnv([]string{"EOS_KEYRING=native"}, map[string]string{"EOS_KEYRING": "keychain"})
+	expected := "keychain"
+	if runtime.GOOS == "darwin" {
+		expected = "filevault-only"
+	}
+	if countEnvKey(env, "EOS_KEYRING") != 1 {
+		t.Fatal("duplicate credential environment")
+	}
+	for _, item := range env {
+		if key, value, ok := splitEnvKV(item); ok && normalizeEnvKey(key) == "EOS_KEYRING" && value != expected {
+			t.Fatalf("credential backend %q", value)
+		}
+	}
 }
