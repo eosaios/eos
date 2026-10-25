@@ -10,6 +10,9 @@ package credentials
 #include <CoreFoundation/CoreFoundation.h>
 #include <stdlib.h>
 static OSStatus eos_read_legacy(const char *service, const char *account, void **bytes, long *length) {
+ // Legacy login-keychain ACLs also require the process-level noninteractive policy.
+ OSStatus policyStatus = SecKeychainSetUserInteractionAllowed(false);
+ if(policyStatus != errSecSuccess) return policyStatus;
  CFStringRef svc = CFStringCreateWithCString(NULL,service,kCFStringEncodingUTF8);
  CFStringRef acc = CFStringCreateWithCString(NULL,account,kCFStringEncodingUTF8);
  LAContext *context = [[LAContext alloc] init];
