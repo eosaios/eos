@@ -59,6 +59,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # aarch64-apple-darwin/eos-core 走 Git LFS；默认 checkout 只留下
+          # pointer，go:embed / VerifyBinary 会对上错误的 sha256。
+          lfs: true
       - uses: actions/setup-go@v6
         with:
           go-version: "1.25"
