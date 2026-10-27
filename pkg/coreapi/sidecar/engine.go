@@ -64,7 +64,14 @@ func StartRemoteEngine(ctx context.Context, opts ProcessOptions) (*RemoteEngine,
 	engine.caller = client
 	engine.client = client
 	if _, err := engine.Initialize(ctx); err != nil {
-		initializeErr := fmt.Errorf("initialize eos-core %q: %w", client.cmd.Path, err)
+		// 诊断必须带上调用方传入的 BinaryPath（或解析结果），不能只依赖
+		// cmd.Path：Windows 上 LookPath/短路径会让 Path 与 os.Executable
+		// 字面量不一致，导致上层 Contains 断言假阴性。
+		diagPath := opts.BinaryPath
+		if diagPath == "" && client.cmd != nil {
+			diagPath = client.cmd.Path
+		}
+		initializeErr := fmt.Errorf("initialize eos-core %q: %w", diagPath, err)
 		if closeErr := client.Close(); closeErr != nil {
 			return nil, errors.Join(initializeErr, fmt.Errorf("eos-core exit/cleanup: %w", closeErr))
 		}

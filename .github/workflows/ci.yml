@@ -18,6 +18,51 @@ jobs:
           # golangci-lint --new-from-rev=HEAD~1 需要至少两个提交的历史
           fetch-depth: 0
           lfs: true
+      # contract 测试（CT-01）需要 eos-core-rs 的 schema.json。
+      # 私有仓经 EOS_CORE_PAT 检出到工作区子目录，并用 EOS_CORE_RS_DIR 告知测试。
+      - name: Resolve eos-core-rs repo
+        id: core_repo
+        env:
+          SECRET_REPO: ${{ secrets.EOS_CORE_REPO }}
+        run: |
+          repo="${SECRET_REPO}"
+          if [ -z "$repo" ]; then repo="eosaios/eos-core-rs"; fi
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+      - name: Checkout eos-core-rs (schema + sources)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.core_repo.outputs.repo }}
+          ref: main
+          token: ${{ secrets.EOS_CORE_PAT }}
+          path: eos-core-rs
+      - name: Pack core-rs sources for diagnostics
+        if: always()
+        run: |
+          set -euo pipefail
+          test -f eos-core-rs/crates/eos-core-protocol/schema.json
+          mkdir -p /tmp/core-pack/sources
+          cp eos-core-rs/crates/eos-core-protocol/schema.json /tmp/core-pack/schema.json
+          if command -v rg >/dev/null; then
+            rg -l -i 'symlink|canonical|writable_root|file_mkdir|landlock|approval' \
+              eos-core-rs/crates --glob '*.rs' > /tmp/core-pack/filelist.txt || true
+            while IFS= read -r f; do
+              [ -n "$f" ] || continue
+              rel="${f#eos-core-rs/}"
+              mkdir -p "/tmp/core-pack/sources/$(dirname "$rel")"
+              cp "$f" "/tmp/core-pack/sources/$rel"
+            done < /tmp/core-pack/filelist.txt
+          fi
+          if [ -d eos-core-rs/crates/eos-core-sandbox ]; then
+            mkdir -p /tmp/core-pack/sources/crates
+            cp -a eos-core-rs/crates/eos-core-sandbox /tmp/core-pack/sources/crates/
+          fi
+          tar -C /tmp/core-pack -czf "$RUNNER_TEMP/core-rs-sources.tgz" .
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: core-rs-sources
+          path: ${{ runner.temp }}/core-rs-sources.tgz
+          if-no-files-found: warn
       - name: Install system dependencies
         # golang.design/x/clipboard 在 Linux 通过 cgo 绑定 X11 剪贴板，
         # 编译需要 X11 头文件；eos-cli 虽仅 Windows 分发，但 Linux job
@@ -45,6 +90,8 @@ jobs:
           args: --new-from-rev=HEAD~1
       - name: Test
         run: go test ./... -timeout 300s
+        env:
+          EOS_CORE_RS_DIR: ${{ github.workspace }}/eos-core-rs
       - name: Verify packaged and embedded CLI runtime
         shell: bash
         run: |
@@ -82,13 +129,32 @@ jobs:
       - uses: actions/checkout@v5
         with:
           lfs: true
+      - name: Resolve eos-core-rs repo
+        id: core_repo
+        shell: bash
+        env:
+          SECRET_REPO: ${{ secrets.EOS_CORE_REPO }}
+        run: |
+          repo="${SECRET_REPO}"
+          if [ -z "$repo" ]; then repo="eosaios/eos-core-rs"; fi
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+      - name: Checkout eos-core-rs (schema)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.core_repo.outputs.repo }}
+          ref: main
+          token: ${{ secrets.EOS_CORE_PAT }}
+          path: eos-core-rs
       - uses: actions/setup-go@v6
         with:
           go-version: "1.25"
       - name: Build (Windows)
         run: go build ./...
       - name: Test (Windows)
+        shell: bash
         run: go test ./... -timeout 300s
+        env:
+          EOS_CORE_RS_DIR: ${{ github.workspace }}/eos-core-rs
       - name: Verify packaged and embedded CLI runtime (Windows)
         shell: pwsh
         run: |
