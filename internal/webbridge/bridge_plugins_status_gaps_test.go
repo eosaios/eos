@@ -158,18 +158,18 @@ func TestPluginOperationsViaCoreCallRPC(t *testing.T) {
 
 // ---- finishConversation 终态分支 ----
 
+// newFinishCtx 构造仅断言会话终态的 BridgeService。
+// 故意不注入 emitEvent：finishConversation 在 emitter 非 nil 时会 go
+// loadBootstrap 写 HOME；noop 发射器仍会启动该 goroutine，与 t.TempDir
+// 清理竞态——Windows 上表现为 TempDir RemoveAll “directory is not empty”
+//（见 CI windows-build / 用户取消分支）。本批不测 emit，故留空跳过。
 func newFinishCtx(t *testing.T) (*BridgeService, *sessionState) {
 	t.Helper()
-	gateway := &chatSessionsGatewayStub{}
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("USERPROFILE", home)
 	s := &BridgeService{
-		runtimeGateway:       gateway,
+		runtimeGateway:       &chatSessionsGatewayStub{},
 		sessions:             map[string]*sessionState{},
 		runningConversations: map[string]*runningConversationState{},
 		prompts:              map[string]*promptState{},
-		emitEvent:            func(string, any) {},
 	}
 	session := &sessionState{
 		ID:       "sess-f",
@@ -183,7 +183,8 @@ func newFinishCtx(t *testing.T) (*BridgeService, *sessionState) {
 }
 
 func TestFinishConversationTerminalBranches(t *testing.T) {
-	t.Run("正常完成（占位已被 text.final 归一）", func(t *testing.T) {
+	// 子测试名用 ASCII（与同文件更新下载批测约定一致）。
+	t.Run("completed_after_text_final", func(t *testing.T) {
 		s, session := newFinishCtx(t)
 		findSessionMessageByID(session, "a-f").State = "completed"
 		s.finishConversation("sess-f", "a-f", context.Background())
@@ -201,7 +202,7 @@ func TestFinishConversationTerminalBranches(t *testing.T) {
 		}
 	})
 
-	t.Run("用户取消分支", func(t *testing.T) {
+	t.Run("user_cancel", func(t *testing.T) {
 		s, session := newFinishCtx(t)
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
@@ -215,7 +216,7 @@ func TestFinishConversationTerminalBranches(t *testing.T) {
 		}
 	})
 
-	t.Run("超时分支", func(t *testing.T) {
+	t.Run("timeout", func(t *testing.T) {
 		s, session := newFinishCtx(t)
 		ctx, cancel := context.WithTimeout(context.Background(), -time.Second)
 		defer cancel()
@@ -230,7 +231,7 @@ func TestFinishConversationTerminalBranches(t *testing.T) {
 		}
 	})
 
-	t.Run("watchdog 静默分支", func(t *testing.T) {
+	t.Run("watchdog_silence", func(t *testing.T) {
 		s, session := newFinishCtx(t)
 		ctx, cancel := context.WithCancelCause(context.Background())
 		cancel(errTurnWatchdogTripped)
@@ -250,7 +251,7 @@ func TestFinishConversationTerminalBranches(t *testing.T) {
 		}
 	})
 
-	t.Run("流异常结束分支收起挂起审批", func(t *testing.T) {
+	t.Run("stream_failure_dismisses_pending_prompts", func(t *testing.T) {
 		s, session := newFinishCtx(t)
 		s.prompts["apr-x"] = &promptState{PromptCard: PromptCard{ID: "apr-x", SessionID: "sess-f"}, AssistantMessageID: "a-f"}
 		s.finishConversation("sess-f", "a-f", context.Background()) // ctx 无错 → default 流异常分支
@@ -262,7 +263,7 @@ func TestFinishConversationTerminalBranches(t *testing.T) {
 		}
 	})
 
-	t.Run("会话未跑时的终态幂等", func(t *testing.T) {
+	t.Run("idempotent_when_session_not_running", func(t *testing.T) {
 		s, session := newFinishCtx(t)
 		session.Running = false
 		findSessionMessageByID(session, "a-f").State = "completed"
@@ -274,7 +275,7 @@ func TestFinishConversationTerminalBranches(t *testing.T) {
 		}
 	})
 
-	t.Run("不存在会话不 panic", func(t *testing.T) {
+	t.Run("missing_session_no_panic", func(t *testing.T) {
 		s, _ := newFinishCtx(t)
 		s.finishConversation("missing", "nope", context.Background())
 	})
