@@ -26,14 +26,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/pkg/filedialog"
-	"github.com/dreamSailing/eos/internal/ui/adapter"
-	"github.com/dreamSailing/eos/internal/ui/panels"
-	"github.com/dreamSailing/eos/internal/ui/views/confirm"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/pkg/filedialog"
+	"github.com/eosaios/eos/internal/ui/adapter"
+	"github.com/eosaios/eos/internal/ui/panels"
+	"github.com/eosaios/eos/internal/ui/views/confirm"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/atotto/clipboard"
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 // bubbleActionHit 记录一条可点击消息文本在内容区中的行范围，
@@ -153,7 +153,7 @@ func (m *AppModel) handleInlinePermissionKey(msg tea.KeyMsg) (bool, tea.Cmd) {
 		return true, func() tea.Msg { return result }
 	case "esc":
 		// Esc 决策不硬编码 "decline"（旧注释明写 "Esc passes decline explicitly"，
-		// 是壳层凭 permission 类型推断）。改为基于 options 推断，对齐 codex/eos-app。
+		// 是壳层凭 permission 类型推断）。改为基于 options 推断，与 eos-app 一致。
 		// 直接用 EscDecision 的 decision + idx 构造 ResultMsg，确保 Decision / Option /
 		// OptionIndex 三者一致（不走 buildInlinePermissionResult 的光标逻辑，光标位置
 		// 在 esc 时不代表用户选择）。
@@ -480,8 +480,8 @@ func (m *AppModel) handleConfirmResultMsg(msg confirm.ResultMsg) (tea.Model, tea
 		}
 		// Re-arm the status animation tick: the prior turn's tick loop may
 		// have stopped while waiting for approval, so without this the
-		// spinner stays frozen even though processing resumed. Mirrors
-		// codex's "busy ⇒ keep animating" self-scheduling spinner.
+		// spinner stays frozen even though processing resumed. The tick
+		// loop self-reschedules only while busy.
 		return m, m.shell.StatusTick()
 	}
 	if strings.HasPrefix(msg.Kind, "bg_kill:") {
@@ -506,6 +506,9 @@ func (m *AppModel) handleConfirmResultMsg(msg confirm.ResultMsg) (tea.Model, tea
 	}
 	if msg.Kind == browserTakeoverKind {
 		return m.handleConfirmResultBrowserTakeover(msg)
+	}
+	if msg.Kind == browserTakeoverConfirmKind {
+		return m.handleConfirmResultBrowserTakeoverConfirm(msg)
 	}
 	if msg.Kind == "workspace_trust" {
 		return m.handleConfirmResultWorkspaceTrust(msg)

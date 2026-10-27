@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dreamSailing/eos/pkg/coreapi/generated"
+	"github.com/eosaios/eos/pkg/coreapi/generated"
 )
 
 func isReleaseArtifactCheck() bool {

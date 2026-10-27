@@ -9,9 +9,9 @@ package ui
 // 代码原位于 app.go，仅做物理拆分，不改行为。
 
 import (
-	"github.com/dreamSailing/eos/internal/ui/adapter"
+	"github.com/eosaios/eos/internal/ui/adapter"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // listenEvents 监听运行时事件

@@ -1,6 +1,6 @@
 package ai
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -36,12 +36,8 @@ func ContextWindowTokens(model string) int {
 		return 1000000
 	case strings.HasPrefix(m, "qwen3.6-max-preview"), strings.HasPrefix(m, "qwen3-max"):
 		return 262144
-	case strings.HasPrefix(m, "mimo-v2.5-pro"), strings.HasPrefix(m, "mimo-v2.5"):
+	case strings.HasPrefix(m, "mimo-v2.6"):
 		return 1000000
-	case strings.HasPrefix(m, "mimo-v2-pro"):
-		return 1000000
-	case strings.HasPrefix(m, "mimo-v2-omni"):
-		return 256000
 	case strings.HasPrefix(m, "gemini-3.1-pro-preview"), strings.HasPrefix(m, "gemini-3-flash-preview"), strings.HasPrefix(m, "gemini-3.1-flash-lite-preview"):
 		return 1048576
 	case strings.Contains(m, "claude-opus-4-7"), strings.Contains(m, "claude-opus-4-6"), strings.Contains(m, "claude-sonnet-4-6"):

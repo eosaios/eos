@@ -1,6 +1,6 @@
 package panels
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dreamSailing/eos/internal/pkg/settings"
-	"github.com/dreamSailing/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/pkg/settings"
+	"github.com/eosaios/eos/internal/ui/styles"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 func TestSettingsPanelAlwaysShowsDefaultPlanPromptStyle(t *testing.T) {
@@ -76,8 +76,8 @@ func TestSettingsPanelHidesDevelopmentOnlyRows(t *testing.T) {
 	}
 }
 
-func keyRunes(s string) tea.KeyMsg {
-	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
+func keyRunes(s string) tea.KeyPressMsg {
+	return tea.KeyPressMsg{Code: rune(s[0]), Text: s}
 }
 
 // selectRow 把表格光标移到稳定字段 ID 对应的行
@@ -108,11 +108,11 @@ func TestSettingsPanelLanguageEditUsesChoiceMode(t *testing.T) {
 		t.Fatalf("当前值 zh 应选中第 0 项，got %d", panel.editChoiceIndex)
 	}
 
-	panel.Update(tea.KeyMsg{Type: tea.KeyRight})
+	panel.Update(tea.KeyPressMsg{Code: tea.KeyRight})
 	if panel.editChoiceIndex != 1 {
 		t.Fatalf("right 应切到第 1 项，got %d", panel.editChoiceIndex)
 	}
-	panel.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	panel.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if panel.editMode {
 		t.Fatal("enter 后应退出编辑模式")
 	}
@@ -128,11 +128,11 @@ func TestSettingsPanelLanguageChoiceWrapsAround(t *testing.T) {
 	selectRow(t, panel, "Language")
 
 	panel.Update(keyRunes("e"))
-	panel.Update(tea.KeyMsg{Type: tea.KeyLeft}) // zh → 回绕到 en
+	panel.Update(tea.KeyPressMsg{Code: tea.KeyLeft}) // zh → 回绕到 en
 	if panel.editChoiceIndex != 1 {
 		t.Fatalf("left 应从 zh 回绕到 en（第 1 项），got %d", panel.editChoiceIndex)
 	}
-	panel.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	panel.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if panel.settings.Language != "en" {
 		t.Fatalf("Language=%q, want en", panel.settings.Language)
 	}
@@ -148,9 +148,9 @@ func TestSettingsPanelThemeEditUsesChoiceMode(t *testing.T) {
 	if panel.editChoices == nil || len(panel.editChoices) != 3 {
 		t.Fatalf("主题应有 3 个候选，got %v", panel.editChoices)
 	}
-	panel.Update(tea.KeyMsg{Type: tea.KeyRight}) // dark → light
-	panel.Update(tea.KeyMsg{Type: tea.KeyRight}) // light → high-contrast
-	panel.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	panel.Update(tea.KeyPressMsg{Code: tea.KeyRight}) // dark → light
+	panel.Update(tea.KeyPressMsg{Code: tea.KeyRight}) // light → high-contrast
+	panel.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if panel.settings.Theme != "high-contrast" {
 		t.Fatalf("Theme=%q, want high-contrast", panel.settings.Theme)
 	}
@@ -166,9 +166,9 @@ func TestSettingsPanelFreeTextFieldStillUsesInput(t *testing.T) {
 	if panel.editChoices != nil {
 		t.Fatal("数值字段应走文本输入，不该有候选集")
 	}
-	panel.Update(tea.KeyMsg{Type: tea.KeyCtrlU}) // 清空原值
+	panel.Update(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl}) // 清空原值
 	panel.Update(keyRunes("9"))
-	panel.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	panel.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if panel.settings.MaxInjectKB != 9 {
 		t.Fatalf("MaxInjectKB=%d, want 9", panel.settings.MaxInjectKB)
 	}

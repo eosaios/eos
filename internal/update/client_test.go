@@ -45,7 +45,7 @@ func TestNewHTTPClientWiresProxy(t *testing.T) {
 	if !ok {
 		t.Fatalf("Transport 类型 %T，应为 *http.Transport", client.Transport)
 	}
-	req, err := http.NewRequest(http.MethodGet, "https://github.com/dreamSailing/eos/releases/download/v1.0.0/eos-cli.zip", nil)
+	req, err := http.NewRequest(http.MethodGet, "https://github.com/eosaios/eos/releases/download/v1.0.0/eos-cli.zip", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

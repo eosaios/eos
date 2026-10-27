@@ -1,6 +1,6 @@
 package shell
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -12,13 +12,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/ui/styles"
-	"github.com/dreamSailing/eos/internal/update"
-	"github.com/dreamSailing/eos/internal/version"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/update"
+	"github.com/eosaios/eos/internal/version"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // WelcomeCard 欢迎卡片组件
@@ -177,11 +177,6 @@ func (w *WelcomeCard) View() string {
 	}
 
 	// 计算布局
-	logoWidth := len(logoLines[0])
-	logoStartX := (contentWidth - logoWidth) / 2
-	if logoStartX < 0 {
-		logoStartX = 0
-	}
 	logoStartY := (contentHeight - 12) / 2
 	if logoStartY < 1 {
 		logoStartY = 1
@@ -196,9 +191,7 @@ func (w *WelcomeCard) View() string {
 	}
 
 	// Logo 行
-	for _, line := range logoLines {
-		lines = append(lines, line)
-	}
+	lines = append(lines, logoLines...)
 
 	// 副标题行
 	lines = append(lines, "")
@@ -235,7 +228,7 @@ func (w *WelcomeCard) View() string {
 			padded := padCenter(line, contentWidth)
 			logoStr := w.renderLogoLine(padded, logoIdx)
 			builder.WriteString(logoStr)
-		} else if strings.Contains(line, "DreamSailing") || strings.Contains(line, "EOS") {
+		} else if strings.Contains(line, "EOSAIOS") || strings.Contains(line, "EOS") {
 			// 副标题
 			padded := padCenter(line, contentWidth)
 			builder.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("#94a3b8")).Render(padded))
@@ -290,14 +283,15 @@ func (w *WelcomeCard) renderLogoLine(line string, lineIdx int) string {
 func (w *WelcomeCard) renderTipLine(line string) string {
 	var builder strings.Builder
 	for _, ch := range line {
-		if ch == '●' {
+		switch ch {
+		case '●':
 			builder.WriteString(lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#6366f1")).
 				Bold(true).
 				Render(string(ch)))
-		} else if ch == ' ' {
+		case ' ':
 			builder.WriteString(" ")
-		} else {
+		default:
 			builder.WriteString(lipgloss.NewStyle().
 				Foreground(lipgloss.Color("#64748b")).
 				Render(string(ch)))

@@ -2,27 +2,39 @@ package panels
 
 // 记忆面板：只读查看 ~/.eos/memories 的两个核心文件（memory_summary.md +
 // MEMORY.md，数据来自内核 memory/snapshot），并提供「添加记忆笔记」入口
-//（走内核 memory/save，语义 = 写一条 ad_hoc note）。交互对齐 Codex /memories
-// 的只读设计：面板不编辑记忆文件本身，生成/合并由内核写管线负责。
+//（走内核 memory/save，语义 = 写一条 ad_hoc note）。交互为只读设计：
+// 面板不编辑记忆文件本身，生成/合并由内核写管线负责。
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/ui/components/input"
-	"github.com/dreamSailing/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/ui/components/input"
+	"github.com/eosaios/eos/internal/ui/styles"
 
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
 )
 
 // MemoryRefreshMsg 请求刷新记忆快照。
 type MemoryRefreshMsg struct{}
 
-// MemorySaveMsg 携带一条 ad_hoc 记忆笔记内容（内核 memory/save 落盘）。
+// MemorySaveMsg 携带一条 ad_hoc 记忆笔记内容与作用域（内核 memory/save 落盘；
+// Scope 为 "project" 时落当前项目分区，默认落全局分区）。
 type MemorySaveMsg struct {
 	Content string
+	Scope   string
+}
+
+// MemoryProject 是当前活动项目分区记忆的投影（内核 snapshot.projects[0]）。
+// 为 nil 表示当前没有项目工作区，面板只展示全局分区。
+type MemoryProject struct {
+	Key  string
+	Root string
+	Name string
+	Docs [2]MemoryDoc
 }
 
 // MemoryDoc 是面板侧的记忆文档投影；Scope 固定为 memory_summary.md / MEMORY.md。
@@ -44,13 +56,17 @@ type MemoryPanel struct {
 	docs [2]MemoryDoc
 	tab  int
 
+	// project 为当前项目分区（可空）；scope: 0=全局 1=项目。
+	project *MemoryProject
+	scope   int
+
 	view      viewport.Model
 	composing bool
 	editor    input.Model
 }
 
 func NewMemoryPanel(styles *styles.Styles, lang string) *MemoryPanel {
-	vp := viewport.New(0, 0)
+	vp := viewport.New()
 	vp.MouseWheelEnabled = true
 	vp.MouseWheelDelta = 3
 	ed := input.New()
@@ -79,9 +95,10 @@ func (p *MemoryPanel) CancelEdit() {
 	p.updateViewContent()
 }
 
-// SetData 注入快照数据；docs 顺序固定为 [memory_summary.md, MEMORY.md]，
-// 缺失的文档以 Exists=false 呈现空态。
-func (p *MemoryPanel) SetData(docs []MemoryDoc) {
+// SetData 注入快照数据；docs 为全局分区（顺序固定 [memory_summary.md,
+// MEMORY.md]，缺失文档以 Exists=false 呈现空态），project 为当前项目分区
+// （可空）。
+func (p *MemoryPanel) SetData(docs []MemoryDoc, project *MemoryProject) {
 	for i := range p.docs {
 		p.docs[i] = MemoryDoc{Scope: memoryDocScopes[i]}
 	}
@@ -90,14 +107,39 @@ func (p *MemoryPanel) SetData(docs []MemoryDoc) {
 			p.docs[i] = doc
 		}
 	}
+	p.project = project
+	if p.scope > 1 || (p.scope == 1 && project == nil) {
+		p.scope = 0
+	}
 	p.updateViewContent()
 }
 
-func (p *MemoryPanel) currentDoc() MemoryDoc {
-	if p.tab < 0 || p.tab >= len(p.docs) {
-		return p.docs[0]
+// SelectProjectScope 切到项目作用域（无项目分区时为 no-op）。供 /memory project 直达。
+func (p *MemoryPanel) SelectProjectScope() {
+	if p == nil || p.project == nil {
+		return
 	}
-	return p.docs[p.tab]
+	if p.scope != 1 {
+		p.scope = 1
+		p.tab = 0
+		p.updateViewContent()
+	}
+}
+
+// currentDocs 返回当前作用域下的文档。
+func (p *MemoryPanel) currentDocs() *[2]MemoryDoc {
+	if p.scope == 1 && p.project != nil {
+		return &p.project.Docs
+	}
+	return &p.docs
+}
+
+func (p *MemoryPanel) currentDoc() MemoryDoc {
+	docs := p.currentDocs()
+	if p.tab < 0 || p.tab >= len(docs) {
+		return docs[0]
+	}
+	return docs[p.tab]
 }
 
 func (p *MemoryPanel) updateViewContent() {
@@ -143,7 +185,11 @@ func (p *MemoryPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 				p.composing = false
 				p.editor.Blur()
 				p.updateViewContent()
-				return p, func() tea.Msg { return MemorySaveMsg{Content: text} }
+				scope := "global"
+				if p.scope == 1 && p.project != nil {
+					scope = "project"
+				}
+				return p, func() tea.Msg { return MemorySaveMsg{Content: text, Scope: scope} }
 			}
 			var cmd tea.Cmd
 			p.editor, cmd = p.editor.Update(msg)
@@ -152,15 +198,30 @@ func (p *MemoryPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 
 		switch msg.String() {
 		case "tab", "right", "l":
-			p.tab = (p.tab + 1) % len(p.docs)
+			// currentDocs 返回 *[2]MemoryDoc，len 需解引用取实际数组长度
+			p.tab = (p.tab + 1) % len(*p.currentDocs())
 			p.updateViewContent()
 			return p, nil
 		case "shift+tab", "left", "h":
 			p.tab--
 			if p.tab < 0 {
-				p.tab = len(p.docs) - 1
+				p.tab = len(*p.currentDocs()) - 1
 			}
 			p.updateViewContent()
+			return p, nil
+		case "1":
+			if p.scope != 0 {
+				p.scope = 0
+				p.tab = 0
+				p.updateViewContent()
+			}
+			return p, nil
+		case "2":
+			if p.project != nil && p.scope != 1 {
+				p.scope = 1
+				p.tab = 0
+				p.updateViewContent()
+			}
 			return p, nil
 		case "a":
 			p.enterCompose()
@@ -187,6 +248,25 @@ func (p *MemoryPanel) Update(msg tea.Msg) (Panel, tea.Cmd) {
 func (p *MemoryPanel) View() string {
 	var b strings.Builder
 	b.WriteString(p.styles.PanelTitle.Render("Memory"))
+	b.WriteString("\n\n")
+
+	// 作用域行：全局 / 项目（项目仅在有活动工作区时出现）。
+	var scopes []string
+	globalLabel := i18n.T("memory.scope.global", p.language)
+	if p.scope == 0 {
+		scopes = append(scopes, p.styles.TextSuccess.Render("[1 "+globalLabel+"]"))
+	} else {
+		scopes = append(scopes, p.styles.TextMuted.Render("1 "+globalLabel))
+	}
+	if p.project != nil {
+		projectLabel := fmt.Sprintf("%s: %s", i18n.T("memory.scope.project", p.language), p.project.Name)
+		if p.scope == 1 {
+			scopes = append(scopes, p.styles.TextSuccess.Render("[2 "+projectLabel+"]"))
+		} else {
+			scopes = append(scopes, p.styles.TextMuted.Render("2 "+projectLabel))
+		}
+	}
+	b.WriteString(strings.Join(scopes, "  "))
 	b.WriteString("\n\n")
 
 	var tabs []string
@@ -230,8 +310,8 @@ func (p *MemoryPanel) SetSize(width, height int) {
 	if h < 0 {
 		h = 0
 	}
-	p.view.Width = w
-	p.view.Height = h
+	p.view.SetWidth(w)
+	p.view.SetHeight(h)
 	p.editor.SetSize(w, h)
 	p.updateViewContent()
 }

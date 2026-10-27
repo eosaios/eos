@@ -1,6 +1,6 @@
 package ai
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dreamSailing/eos/pkg/coreapi"
+	"github.com/eosaios/eos/pkg/coreapi"
 )
 
 // ModelResolution 描述用户输入解析到的目标。
@@ -33,10 +33,10 @@ func newResolution(e *coreapi.ModelConfig, planModelID string) *ModelResolution 
 		return nil
 	}
 	return &ModelResolution{
-		EntryName:    e.Name,
-		ProviderID:   strings.TrimSpace(e.ProviderID),
-		PresetID:     strings.TrimSpace(e.PresetID),
-		PlanModelID:  strings.TrimSpace(planModelID),
+		EntryName:   e.Name,
+		ProviderID:  strings.TrimSpace(e.ProviderID),
+		PresetID:    strings.TrimSpace(e.PresetID),
+		PlanModelID: strings.TrimSpace(planModelID),
 	}
 }
 
@@ -253,7 +253,7 @@ func AvailableModelsHint(entries []coreapi.ModelConfig) string {
 // 会话 model_name，而内核按条目 name 精确匹配，导致该会话每次对话都
 // NotFound。本函数在会话加载时自愈：覆盖有效→不动；能归一化解析→改写为
 // 条目名；彻底无法解析→清除覆盖回落默认模型。返回给用户看的提示文本
-//（空串表示无需处理），所有失败均不阻断对话。
+// （空串表示无需处理），所有失败均不阻断对话。
 func HealSessionModelOverride(ctx context.Context, models coreapi.ModelService, session coreapi.Session) string {
 	if models == nil || strings.TrimSpace(session.ID) == "" {
 		return ""

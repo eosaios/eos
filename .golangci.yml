@@ -1,16 +1,21 @@
-run:
-  timeout: 3m
-issues:
-  exclude-use-default: false
-  exclude-rules:
-    - path: internal/i18n/.*\.go
-      linters:
-        - dupl
+version: "2"
 linters:
   enable:
-    - govet
-    - staticcheck
-    - gosimple
-    - ineffassign
-    - errcheck
     - dupl
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - dupl
+        path: internal/i18n/.*\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

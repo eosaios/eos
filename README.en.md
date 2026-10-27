@@ -2,13 +2,13 @@
 
 [中文](./README.md) | [English](./README.en.md)
 
-EOS is an open-source terminal AI coding assistant with Rust Core as its core runtime, while the Go side provides the CLI entry point, TUI, bridge layer, and distribution integration. It is designed for day-to-day coding, code review, document workflows, local automation, and IDE / platform integration, with an interactive TUI, tool calling, safety controls, workspace-aware context, and extensible MCP support.
+EOS is a terminal AI coding assistant with Rust Core as its core runtime, while the Go side provides the CLI entry point, TUI, bridge layer, and distribution integration. It is designed for day-to-day coding, code review, document workflows, local automation, and IDE / platform integration, with an interactive TUI, tool calling, safety controls, workspace-aware context, and extensible MCP support.
 
-Since `v1.0.0-beta.3`, releases ship production packages for three platforms (Windows / macOS / Linux, amd64 + arm64) with SHA256SUMS verification. Windows offers both a setup installer and a portable archive, version-aligned with the EOS App desktop distribution.
+Versioning and artifacts are always available from [Releases](https://github.com/eosaios/eos/releases) (currently in 1.0.0 beta). Releases ship production packages for three platforms (Windows / macOS / Linux, amd64 + arm64) with SHA256SUMS verification. The [EOS App](https://github.com/eosaios/eos-app) desktop distribution is built on the same Rust core; version numbers advance independently.
 
-- Repository: https://github.com/dreamSailing/eos
-- Issues: https://github.com/dreamSailing/eos/issues
-- Releases: https://github.com/dreamSailing/eos/releases
+- Repository: https://github.com/eosaios/eos
+- Issues: https://github.com/eosaios/eos/issues
+- Releases: https://github.com/eosaios/eos/releases
 
 ## What EOS Is
 
@@ -66,7 +66,6 @@ Compared with heavier or more closed terminal assistants, EOS currently focuses 
 - Code indexing, file watching, context assembly, and context compaction
 - Persistent sessions with restore support
 - Optional LSP support with auto-detection for Go, Python, TypeScript, and JavaScript
-- Default external LSP discovery plus `with_gopls` embedded builds
 
 ## Requirements
 
@@ -85,13 +84,13 @@ One-line install (recommended; detects your platform, verifies SHA256, sets up P
 macOS / Linux:
 
 ```bash
-curl -fsSL https://cdn.jsdelivr.net/gh/dreamSailing/eos@main/scripts/install.sh | bash
+curl -fsSL https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.sh | bash
 ```
 
 Windows (PowerShell):
 
 ```powershell
-irm https://raw.githubusercontent.com/dreamSailing/eos/main/scripts/install.ps1 | iex
+irm https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.ps1 | iex
 ```
 
 Then run `eos`. Use `eos version` to check the version and `eos update` to self-upgrade (the Rust core sidecar is updated together with the binary).
@@ -99,15 +98,15 @@ Then run `eos`. Use `eos version` to check the version and `eos update` to self-
 If you already have the Go toolchain (the Rust core is embedded and self-extracts on first run):
 
 ```bash
-go install github.com/dreamSailing/eos@latest
+go install github.com/eosaios/eos@latest
 ```
 
-Packages (tar.gz / zip plus the Windows installer) remain available at https://github.com/dreamSailing/eos/releases
+Packages (tar.gz / zip) remain available at https://github.com/eosaios/eos/releases
 
 ### 2) Build from Source
 
 ```bash
-git clone https://github.com/dreamSailing/eos.git
+git clone https://github.com/eosaios/eos.git
 cd eos
 go mod tidy
 go build -o eos
@@ -125,7 +124,7 @@ macOS / Linux:
 ./eos
 ```
 
-### 2) Configure a Model
+### 3) Configure a Model
 
 Option A: environment variables
 
@@ -151,7 +150,7 @@ Option B: `~/.eos.json`
 }
 ```
 
-### 3) Start Using EOS
+### 4) Start Using EOS
 
 ```bash
 eos
@@ -219,23 +218,9 @@ These are common entry points, not the full list:
 - Tasks and planning: `/tasks`, `/plan`, `/permissions`
 - Config panels: `/model`, `/config`, `/mcp`, `/lsp`, `/rules`, `/cost`
 
-## Build Variants (LSP)
-
-- Minimal build, no LSP:
-  `go build -tags without_lsp -o eos`
-- Default build, LSP framework enabled with external server discovery:
-  `go build -o eos`
-- Go-enhanced build with embedded `gopls`:
-  `go build -tags with_gopls -o eos`
-
-Related scripts:
-
-- `scripts/embed_gopls.sh`
-- `scripts/embed_gopls.bat`
-
 ## Developer Integration
 
-Most users only need `eos`, `eos --print`, `eos doc`, and `eos update`. If you are integrating EOS into an IDE, automation platform, or another agent host, there are three primary paths:
+Most users only need `eos`, `eos --print`, `eos doc`, and `eos update`. If you are integrating EOS into an IDE, automation platform, or another agent host, there are four primary paths:
 
 ### 1) `eos serve`
 
@@ -252,7 +237,7 @@ Docs: [internal/docs/serve/API.md](./internal/docs/serve/API.md)
 Generates a bridge manifest containing launch command, protocol version, session defaults, supported methods, and capability metadata for host-side auto-discovery.
 
 ```bash
-eos bridge manifest --workspace "/abs/workspace"
+eos bridge manifest --workspace "/abs/workspace" --access-mode workspace-write --approval-mode on-request
 ```
 
 Docs: [internal/docs/serve/IDE_BRIDGE.md](./internal/docs/serve/IDE_BRIDGE.md)
@@ -262,11 +247,28 @@ Docs: [internal/docs/serve/IDE_BRIDGE.md](./internal/docs/serve/IDE_BRIDGE.md)
 Runs EOS as a standard MCP server with `stdio` or `sse` transport.
 
 ```bash
-eos mcp serve --transport stdio --workspace "/abs/workspace"
-eos mcp serve --transport sse --listen 127.0.0.1:8765 --workspace "/abs/workspace"
+eos mcp serve --transport stdio --workspace "/abs/workspace" --access-mode workspace-write --approval-mode on-request
+eos mcp serve --transport sse --listen 127.0.0.1:8765 --workspace "/abs/workspace" --access-mode workspace-write --approval-mode on-request
 ```
 
 Docs: [internal/docs/mcp/SERVER.md](./internal/docs/mcp/SERVER.md)
+
+### 4) `eos web`
+
+Runs the EOS desktop workbench UI in the browser: a local HTTP server hosts the
+static frontend and bridges `BridgeService` RPC and the event stream to the
+eos-core sidecar over WebSocket. It listens on 127.0.0.1 only.
+
+```bash
+eos web                                   # default 127.0.0.1:8788, opens the browser
+eos web --listen 127.0.0.1:9000 --workspace "/abs/workspace" --no-open
+```
+
+Frontend asset directory resolution: `--ui-dir` → `EOS_WEB_UI_DIR` → built-in
+candidate locations (frontend build output adjacent to the working or executable
+directory). Frontend assets are not shipped with CLI release packages; when
+running from source, provide a frontend build explicitly via `--ui-dir`
+(or `EOS_WEB_UI_DIR`).
 
 ## MCP and Browser Automation
 
@@ -321,5 +323,5 @@ This project is released under the EOS Non-Commercial License v1.1. See [LICENSE
 
 ## Contact
 
-- Issues: https://github.com/dreamSailing/eos/issues
-- Commercial licensing: smart-os@qq.com
+- Issues: https://github.com/eosaios/eos/issues
+- Commercial licensing: legal@eosaios.com

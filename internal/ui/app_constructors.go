@@ -18,17 +18,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreamSailing/eos/internal/ai"
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/ui/adapter"
-	"github.com/dreamSailing/eos/internal/ui/components/messages"
-	"github.com/dreamSailing/eos/internal/ui/panels"
-	"github.com/dreamSailing/eos/internal/ui/styles"
-	"github.com/dreamSailing/eos/internal/ui/views/help"
-	"github.com/dreamSailing/eos/internal/ui/views/setup"
-	"github.com/dreamSailing/eos/internal/ui/views/shell"
-	"github.com/dreamSailing/eos/pkg/coreapi"
-	sidecarclient "github.com/dreamSailing/eos/pkg/coreapi/sidecar/client"
+	"github.com/eosaios/eos/internal/ai"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/ui/adapter"
+	"github.com/eosaios/eos/internal/ui/components/messages"
+	"github.com/eosaios/eos/internal/ui/panels"
+	"github.com/eosaios/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/ui/views/help"
+	"github.com/eosaios/eos/internal/ui/views/setup"
+	"github.com/eosaios/eos/internal/ui/views/shell"
+	"github.com/eosaios/eos/pkg/coreapi"
+	sidecarclient "github.com/eosaios/eos/pkg/coreapi/sidecar/client"
 )
 
 // NewAppModelFromCoreClient 用已 handshake 的 sidecar Client 构造 AppModel。
@@ -156,8 +156,8 @@ func newAppModel(adapter *adapter.CoreClientAdapter, resumeSessionID string) *Ap
 		memoryInjectionEnabled: memoryInjectionEnabled,
 		diffTheme:              diffTheme,
 		pendingResumeSession:   pendingResume,
-		gitHintedDirty:         -1,
-		gitHintedAhead:         -1,
+		gitBaselineDirty:       -1,
+		gitBaselineAhead:       -1,
 	}
 
 	model.msgRenderer.SetChromaTheme(diffTheme)

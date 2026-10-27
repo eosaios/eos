@@ -10,10 +10,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/serve"
-	"github.com/dreamSailing/eos/pkg/coreapi/engineprovider"
-	"github.com/dreamSailing/eos/pkg/coreapi/sidecar"
-	"github.com/dreamSailing/eos/pkg/protocol/jsonrpc"
+	"github.com/eosaios/eos/internal/serve"
+	"github.com/eosaios/eos/pkg/coreapi/engineprovider"
+	"github.com/eosaios/eos/pkg/coreapi/sidecar"
+	"github.com/eosaios/eos/pkg/protocol/jsonrpc"
 
 	"github.com/spf13/cobra"
 )
@@ -39,10 +39,10 @@ func newServeCmd() *cobra.Command {
 			access, approval := mergeConfigPermissions(cmd.Flags(), "sandbox-mode", accessMode, approvalMode)
 			modes := resolveModeConfig(access, approval, sandboxMode, skipPermission)
 			return runServe(cmd.Context(), serveOptions{
-				Workspace:   strings.TrimSpace(workspace),
+				Workspace:    strings.TrimSpace(workspace),
 				AccessMode:   modes.AccessMode,
 				ApprovalMode: modes.ApprovalMode,
-				SandboxMode:   modes.SandboxMode,
+				SandboxMode:  modes.SandboxMode,
 				SkipAll:      modes.SkipAllChecks,
 				Transport:    strings.TrimSpace(transport),
 			})

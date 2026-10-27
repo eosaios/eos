@@ -6,10 +6,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
-	"github.com/dreamSailing/eos/pkg/coreapi"
+	"github.com/eosaios/eos/pkg/coreapi"
 )
 
 func TestRemoteEngineWithRealSidecar(t *testing.T) {
@@ -70,9 +71,18 @@ func TestRemoteEngineWithRealSidecar(t *testing.T) {
 		t.Fatalf("Sandbox().BackendStatus()=%+v, want visible degraded status", status)
 	}
 
-	_, err = engine.Tools().Execute(ctx, coreapi.ToolRequest{Name: "shell"})
-	if !errors.Is(err, coreapi.ErrUnsupported) {
-		t.Fatalf("Tools().Execute() error = %v, want ErrUnsupported", err)
+	// The frozen Rust core supports tool/execute. An unregistered tool is a
+	// structured denial, rather than a missing-method transport error.
+	tool, err := engine.Tools().Execute(ctx, coreapi.ToolRequest{Name: "shell"})
+	if err != nil {
+		t.Fatalf("Tools().Execute() error = %v", err)
+	}
+	wantTool := coreapi.ToolResult{
+		Name: "shell", Status: "denied", Display: "tool 'shell' is not registered",
+		Output: json.RawMessage("null"), Error: "tool 'shell' is not registered",
+	}
+	if !reflect.DeepEqual(tool, wantTool) {
+		t.Fatalf("Tools().Execute() = %#v, want %#v", tool, wantTool)
 	}
 
 	// Use a dedicated context for Shutdown so it is not racing
@@ -287,7 +297,7 @@ func TestRemoteEngineModelCatalogWithVendoredSidecar(t *testing.T) {
 		if p.ID == "qwen3.6-plus" {
 			hasQwen = true
 		}
-		if p.ID == "gpt-5-codex" {
+		if p.ID == "gpt-5.3-codex" {
 			hasGPTCodex = true
 		}
 	}
@@ -295,7 +305,7 @@ func TestRemoteEngineModelCatalogWithVendoredSidecar(t *testing.T) {
 		t.Errorf("catalog presets missing qwen3.6-plus")
 	}
 	if !hasGPTCodex {
-		t.Errorf("catalog presets missing gpt-5-codex")
+		t.Errorf("catalog presets missing gpt-5.3-codex")
 	}
 	if !catalog.AllowCustomProvider {
 		t.Errorf("catalog AllowCustomProvider = false, want true")

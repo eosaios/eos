@@ -3,7 +3,7 @@ package ai
 import (
 	"strings"
 
-	"github.com/dreamSailing/eos/pkg/coreapi"
+	"github.com/eosaios/eos/pkg/coreapi"
 )
 
 var (

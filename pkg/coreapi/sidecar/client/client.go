@@ -19,10 +19,10 @@ import (
 	"io"
 	"sync"
 
-	"github.com/dreamSailing/eos/pkg/coreapi"
-	coreapijsonrpc "github.com/dreamSailing/eos/pkg/coreapi/jsonrpc"
-	"github.com/dreamSailing/eos/pkg/coreapi/sidecar"
-	protocoljsonrpc "github.com/dreamSailing/eos/pkg/protocol/jsonrpc"
+	"github.com/eosaios/eos/pkg/coreapi"
+	coreapijsonrpc "github.com/eosaios/eos/pkg/coreapi/jsonrpc"
+	"github.com/eosaios/eos/pkg/coreapi/sidecar"
+	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
 
 // RequiredMethods 是 TUI 启动时要求 eos-core 必须实现的方法集。
@@ -179,8 +179,9 @@ func Attach(engine *sidecar.RemoteEngine) *Client {
 }
 
 // Engine 返回底层 coreapi.Engine，供 adapter 做 RPC 调用。
+// c.engine 为 nil 指针时返回真正的 nil 接口，避免 typed-nil 陷阱。
 func (c *Client) Engine() coreapi.Engine {
-	if c == nil {
+	if c == nil || c.engine == nil {
 		return nil
 	}
 	return c.engine

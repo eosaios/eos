@@ -1,6 +1,6 @@
 package update
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -32,17 +32,14 @@ type ApplyOutcome struct {
 	CoreUpdated bool   // 是否同步替换了 exe 同级的 core/ 目录
 }
 
-// Apply 下载 CheckResult 选中的平台归档，校验 SHA256，解压并原地替换：
+// ApplyWithClient 下载 CheckResult 选中的平台归档，校验 SHA256，解压并原地替换：
 //   - 二进制：Windows 下先把旧文件改名 .bak 再换新（运行中的 exe 不可删除、
 //     可改名），其余平台直接原子 rename；
 //   - core/：Release 归档自带 sidecar（eos + core/<triple>/）。无论当前是
 //     Release 布局（exe 旁有 core/）还是 go install 布局（无 core/），都把
 //     新 core/ 落到 exe 同级——resolver 优先读 exe 同级，内核随之升级。
-func Apply(ctx context.Context, res *CheckResult, progress ProgressFn) (*ApplyOutcome, error) {
-	return ApplyWithClient(ctx, res, progress, nil)
-}
-
-// ApplyWithClient 与 Apply 同流程，允许注入显式代理客户端（nil = 默认）。
+//
+// 允许注入显式代理客户端（nil = 默认）。
 func ApplyWithClient(ctx context.Context, res *CheckResult, progress ProgressFn, client *http.Client) (*ApplyOutcome, error) {
 	if res == nil || res.DownloadURL == "" || res.AssetName == "" {
 		return nil, errors.New("no downloadable asset for this platform")
@@ -134,8 +131,8 @@ func currentExecutable() (string, error) {
 // 几 KB 的 SHA256SUMS.txt 被 RST 的情况实测常见。下载统一带重试 + 断点
 // 续传（Range），重试从已落盘字节继续，不做整包重来。
 var (
-	downloadAttempts      = 4
-	downloadRetryBackoff  = 1 * time.Second
+	downloadAttempts     = 4
+	downloadRetryBackoff = 1 * time.Second
 )
 
 func downloadTo(ctx context.Context, url, dst string, progress ProgressFn, client *http.Client) error {

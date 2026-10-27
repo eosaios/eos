@@ -11,11 +11,11 @@ package ui
 import (
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/state"
-	"github.com/dreamSailing/eos/internal/ui/views/shell"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/state"
+	"github.com/eosaios/eos/internal/ui/views/shell"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // handleGlobalKey 处理全局快捷键，这些快捷键在所有视图中都有效

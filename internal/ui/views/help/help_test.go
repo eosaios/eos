@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dreamSailing/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/ui/styles"
 )
 
 var ansiPatternHelpTest = regexp.MustCompile(`\x1b\[[0-9;]*m`)

@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	doccap "github.com/dreamSailing/eos/internal/document"
+	doccap "github.com/eosaios/eos/internal/document"
 	"github.com/spf13/cobra"
 )
 

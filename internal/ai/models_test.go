@@ -1,6 +1,6 @@
 package ai
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -30,30 +30,6 @@ func TestThinkingCapabilityString(t *testing.T) {
 			got := tt.capability.String()
 			if got != tt.want {
 				t.Errorf("ThinkingCapability(%d).String() = %q, want %q", tt.capability, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestParseThinkingCapability(t *testing.T) {
-	tests := []struct {
-		input string
-		want  ThinkingCapability
-	}{
-		{"low", ThinkingLow},
-		{"medium", ThinkingMedium},
-		{"high", ThinkingHigh},
-		{"none", ThinkingNone},
-		{"", ThinkingNone},
-		{"bogus", ThinkingNone},
-		{"HIGH", ThinkingHigh}, // 大小写不敏感
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			got := ParseThinkingCapability(tt.input)
-			if got != tt.want {
-				t.Errorf("ParseThinkingCapability(%q) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
 	}

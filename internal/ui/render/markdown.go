@@ -1,6 +1,6 @@
 package render
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -10,12 +10,12 @@ import (
 	"strings"
 	"sync"
 
-	uistyles "github.com/dreamSailing/eos/internal/ui/styles"
+	uistyles "github.com/eosaios/eos/internal/ui/styles"
 
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/glamour"
 	gansi "github.com/charmbracelet/glamour/ansi"
 	glstyles "github.com/charmbracelet/glamour/styles"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 )
 
@@ -166,7 +166,7 @@ func (r *MarkdownRenderer) SetStyles(styles *RenderStyles) {
 }
 
 // SetChromaTheme 设置代码块 chroma 主题并强制重建 TermRenderer
-//（rebuild 只按宽度缓存，主题变更必须显式失效）。
+// （rebuild 只按宽度缓存，主题变更必须显式失效）。
 func (r *MarkdownRenderer) SetChromaTheme(theme string) {
 	r.chromaTheme = NormalizeChromaTheme(theme)
 	r.mu.Lock()

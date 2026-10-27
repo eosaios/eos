@@ -1,6 +1,6 @@
 package ui
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -8,7 +8,7 @@ package ui
 import (
 	"log/slog"
 
-	"github.com/dreamSailing/eos/internal/config"
+	"github.com/eosaios/eos/internal/config"
 )
 
 // saveWorkspaceConfig 持久化工作区记忆。保存失败（磁盘满/权限）不阻断

@@ -1,6 +1,6 @@
 package i18n
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -200,9 +200,6 @@ var enText = map[string]string{
 	"shortcut.plan_mode":              "Agent auto execution by default",
 	"shortcut.verbose":                "Verbose output",
 	"shortcut.newline":                "Newline",
-	"todos.header":                    "Todos",
-	"todos.footer":                    "R refresh · Esc back",
-	"todos.empty":                     "No todos",
 	"welcome.title":                   "Let's Get Started",
 	"welcome.model":                   "Model",
 	"welcome.api":                     "API",
@@ -317,6 +314,12 @@ var enText = map[string]string{
 	"mcp.editor.placeholder":                 "Enter JSON here ...",
 	"mcp.browser.ready":                      "Built-in browser running: %s",
 	"mcp.browser.error":                      "Built-in browser error: %s",
+	"browser.takeover.confirm_title":         "AI requests browser takeover",
+	"browser.takeover.confirm_question":      "AI asks you to take over (reason %s) - confirm to operate the page",
+	"browser.takeover.confirm_started":       "AI is waiting for you to confirm browser takeover",
+	"browser.takeover.confirm_go":            "Take over",
+	"browser.takeover.confirm_ignore":        "Ignore (auto-return to AI on timeout)",
+	"browser.takeover.confirm_failed":        "Confirm takeover failed: %s",
 	"browser.takeover.title":                 "Browser takeover",
 	"browser.takeover.question":              "Reason: %s",
 	"browser.takeover.started":               "Browser handed to you (human control)",
@@ -709,8 +712,10 @@ var enText = map[string]string{
 	// Panel footer hints
 	"rules.footer.editing":  "Ctrl+S save · Esc cancel edit · Tab switch scope",
 	"rules.footer.browse":   "Tab switch scope · E edit · R refresh · Esc back",
+	"memory.scope.global":   "Global",
+	"memory.scope.project":  "Project",
 	"memory.footer.editing": "Ctrl+S save note · Esc cancel",
-	"memory.footer.browse":  "Tab switch file · A add note · R refresh · Esc back",
+	"memory.footer.browse":  "Tab switch file · 1/2 global/project · A add note · R refresh · Esc back",
 	"lsp.footer.detail":     "Esc back · R refresh",
 	"lsp.footer.list":       "Enter details · R refresh · Esc back",
 }

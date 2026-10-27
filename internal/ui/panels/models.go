@@ -1,6 +1,6 @@
 package panels
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -9,14 +9,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/ui/styles"
-	"github.com/dreamSailing/eos/pkg/coreapi"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/ui/styles"
+	"github.com/eosaios/eos/pkg/coreapi"
 
-	"github.com/charmbracelet/bubbles/table"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/table"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // ModelsPanel 模型管理面板
@@ -430,9 +430,9 @@ func (p *ModelsPanel) View() string {
 	content.WriteString("\n\n")
 
 	if p.currentModel != "" {
-		content.WriteString(fmt.Sprintf("%s %s\n\n",
+		fmt.Fprintf(&content, "%s %s\n\n",
 			i18n.T("models.current", p.language),
-			p.styles.TextSuccess.Render(p.currentModel)))
+			p.styles.TextSuccess.Render(p.currentModel))
 	}
 
 	content.WriteString(p.table.View())
@@ -478,9 +478,9 @@ func (p *ModelsPanel) View() string {
 			opStrs = append(opStrs, p.styles.TextMuted.Render(text))
 		}
 	}
-	content.WriteString(fmt.Sprintf("%s %s\n\n",
+	fmt.Fprintf(&content, "%s %s\n\n",
 		i18n.T("models.action", p.language),
-		strings.Join(opStrs, "  ")))
+		strings.Join(opStrs, "  "))
 
 	content.WriteString(p.styles.TextMuted.Render(i18n.T("models.help", p.language)))
 
@@ -492,6 +492,9 @@ func (p *ModelsPanel) SetSize(width, height int) {
 	p.BasePanel.SetSize(width, height)
 	p.table.SetWidth(width - 4)
 	p.table.SetHeight(height - 12)
+	// 套餐选择子表格与主表同宽高，否则 planTable 宽度为 0 时不渲染数据行
+	p.planTable.SetWidth(width - 4)
+	p.planTable.SetHeight(height - 12)
 }
 
 // ModelSelectMsg 选择模型消息

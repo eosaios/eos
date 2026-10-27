@@ -2,10 +2,10 @@
 AppId={{EOS-2026-UNIQUE-ID}
 AppName=EOS
 AppVersion=1.0.0-beta.3
-AppPublisher=DreamSailing
-AppPublisherURL=https://github.com/dreamSailing/eos
-AppSupportURL=https://github.com/dreamSailing/eos/issues
-AppUpdatesURL=https://github.com/dreamSailing/eos/releases/latest
+AppPublisher=EOSAIOS
+AppPublisherURL=https://github.com/eosaios/eos
+AppSupportURL=https://github.com/eosaios/eos/issues
+AppUpdatesURL=https://github.com/eosaios/eos/releases/latest
 DefaultDirName={autopf}\EOS
 DefaultGroupName=EOS
 UsePreviousAppDir=yes

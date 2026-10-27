@@ -1,6 +1,6 @@
 package panels
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -9,12 +9,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/ui/styles"
 
-	"github.com/charmbracelet/bubbles/table"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/table"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // CostPanel 成本面板
@@ -215,18 +215,18 @@ func (p *CostPanel) View() string {
 	// 总计信息
 	content.WriteString(p.styles.TextInfo.Render(i18n.T("cost.summary.title", p.language) + ":"))
 	content.WriteString("\n")
-	content.WriteString(fmt.Sprintf("  %s: %d\n",
-		i18n.T("cost.summary.rounds", p.language), p.totalStats.TotalRounds))
-	content.WriteString(fmt.Sprintf("  %s: %s\n",
-		i18n.T("cost.summary.input", p.language), p.totalStats.TotalInput))
-	content.WriteString(fmt.Sprintf("  %s: %s\n",
-		i18n.T("cost.summary.reply", p.language), p.totalStats.TotalReply))
-	content.WriteString(fmt.Sprintf("  %s: %s",
-		i18n.T("cost.summary.total", p.language), p.totalStats.TotalTokens))
+	fmt.Fprintf(&content, "  %s: %d\n",
+		i18n.T("cost.summary.rounds", p.language), p.totalStats.TotalRounds)
+	fmt.Fprintf(&content, "  %s: %s\n",
+		i18n.T("cost.summary.input", p.language), p.totalStats.TotalInput)
+	fmt.Fprintf(&content, "  %s: %s\n",
+		i18n.T("cost.summary.reply", p.language), p.totalStats.TotalReply)
+	fmt.Fprintf(&content, "  %s: %s",
+		i18n.T("cost.summary.total", p.language), p.totalStats.TotalTokens)
 	if p.totalStats.TotalDuration > 0 && p.totalStats.TotalRounds > 0 {
-		content.WriteString(fmt.Sprintf("\n  %s: %dms",
+		fmt.Fprintf(&content, "\n  %s: %dms",
 			i18n.T("cost.summary.avg_duration", p.language),
-			p.totalStats.TotalDuration/p.totalStats.TotalRounds))
+			p.totalStats.TotalDuration/p.totalStats.TotalRounds)
 	}
 	content.WriteString("\n\n")
 
@@ -255,9 +255,9 @@ func (p *CostPanel) View() string {
 			opStrs = append(opStrs, p.styles.TextMuted.Render(text))
 		}
 	}
-	content.WriteString(fmt.Sprintf("%s %s\n\n",
+	fmt.Fprintf(&content, "%s %s\n\n",
 		i18n.T("models.action", p.language),
-		strings.Join(opStrs, "  ")))
+		strings.Join(opStrs, "  "))
 
 	content.WriteString(p.styles.TextMuted.Render(i18n.T("cost.help", p.language)))
 

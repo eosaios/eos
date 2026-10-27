@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dreamSailing/eos/pkg/protocol"
-	"github.com/dreamSailing/eos/pkg/sandbox"
+	"github.com/eosaios/eos/pkg/protocol"
+	"github.com/eosaios/eos/pkg/sandbox"
 )
 
 type compileTimeEngine struct{}
@@ -154,6 +154,9 @@ func (compileTimeLSP) Detect(context.Context, LSPLanguageRequest) (string, error
 func (compileTimeLSP) Start(context.Context, LSPLanguageRequest) (string, error) {
 	return "", nil
 }
+func (compileTimeLSP) Install(context.Context, LSPLanguageRequest) (string, error) {
+	return "", nil
+}
 func (compileTimeLSP) Diagnostics(context.Context) ([]string, error) { return nil, nil }
 func (compileTimeLSP) DiagnosticsSummary(context.Context) (LSPDiagnosticsSummary, error) {
 	return LSPDiagnosticsSummary{}, nil
@@ -216,6 +219,10 @@ func (compileTimeExtensions) BrowserClose(ctx context.Context, req BrowserCloseR
 }
 
 func (compileTimeExtensions) BrowserControlTakeover(ctx context.Context, req BrowserControlTakeoverRequest) error {
+	return nil
+}
+
+func (compileTimeExtensions) BrowserControlConfirm(ctx context.Context) error {
 	return nil
 }
 
@@ -351,6 +358,9 @@ func (compileTimeGit) Show(context.Context, GitShowRequest) (GitShowResult, erro
 type compileTimeInsights struct{}
 
 func (compileTimeInsights) PredictNextUserMessage(context.Context, PredictNextUserMessageRequest) (string, error) {
+	return "", nil
+}
+func (compileTimeInsights) RefineInput(context.Context, RefineInputRequest) (string, error) {
 	return "", nil
 }
 func (compileTimeInsights) PlanSnapshot(context.Context) (PlanSnapshot, error) {

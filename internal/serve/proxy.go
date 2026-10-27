@@ -14,8 +14,8 @@ import (
 	"errors"
 	"fmt"
 
-	coreapijsonrpc "github.com/dreamSailing/eos/pkg/coreapi/jsonrpc"
-	"github.com/dreamSailing/eos/pkg/protocol/jsonrpc"
+	coreapijsonrpc "github.com/eosaios/eos/pkg/coreapi/jsonrpc"
+	"github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
 
 // Caller 抽象到内核 sidecar 的 JSON-RPC 调用能力。

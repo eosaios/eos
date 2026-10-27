@@ -1,6 +1,6 @@
 package cli
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -11,13 +11,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/ui"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/ui"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
-
-var cfgFile string
 
 var (
 	printQuery         string
@@ -32,7 +30,10 @@ var (
 	cliApprovalMode    string
 	cliSandboxMode     string
 	cliSkipPermissions bool
-	cliShowVersion    bool
+	cliShowVersion     bool
+	// cliDefaultWorkspace --default：工作区取默认工作区（~/.eos/workspace）
+	// 而非当前执行 shell 所在目录。
+	cliDefaultWorkspace bool
 )
 
 // rootLang 根据环境变量 EOS_LANG 返回界面语言。
@@ -63,19 +64,22 @@ var rootCmd = &cobra.Command{
 	Use:   "eos",
 	Short: rootShort(),
 	Long:  rootLong(),
-	Run: func(cmd *cobra.Command, args []string) {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		return applyDefaultWorkspaceFlag(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		slog.Info("cli.start", "lang", rootLang())
 
 		if cliShowVersion {
 			printVersion()
-			return
+			return nil
 		}
 
 		// Handle --print mode
 		if printQuery != "" {
 			access, approval := mergeConfigPermissions(cmd.Flags(), "sandbox-mode", cliAccessMode, cliApprovalMode)
 			modes := resolveModeConfig(access, approval, cliSandboxMode, cliSkipPermissions)
-			if err := RunPrintMode(PrintOptions{
+			return RunPrintMode(PrintOptions{
 				Query:           printQuery,
 				OutputFormat:    outputFormat,
 				AccessMode:      modes.AccessMode,
@@ -83,10 +87,7 @@ var rootCmd = &cobra.Command{
 				SandboxMode:     modes.SandboxMode,
 				SkipPermissions: modes.SkipAllChecks,
 				ModelOverride:   cliModel,
-			}); err != nil {
-				os.Exit(1)
-			}
-			return
+			})
 		}
 
 		// Build TUI options from CLI flags. 权限模式先经 resolveModeConfig 归一
@@ -129,6 +130,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		ui.StartInteractiveTUIWithOptions(opts)
+		return nil
 	},
 }
 
@@ -138,11 +140,34 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
-func init() {
-	cobra.OnInitialize(initConfig)
+// applyDefaultWorkspaceFlag 是 --default 的统一落点：把进程工作目录切换到
+// 默认工作区（~/.eos/workspace，与内核 conversation_default_workspace 同一
+// 事实源）。所有以 cwd 为工作区来源的路径——TUI 启动（rememberKnownWorkspace /
+// 工作区信任 / SetForeground）、print / exec / serve / mcp 的
+// EOS_WORKSPACE_ROOT env 注入与会话根解析——因此一致落到默认工作区，
+// 效果等同用户 cd 到默认工作区后再启动 eos。
+//
+// --default 与显式 --workspace 同时给出是自相矛盾的配置，fail-fast 拒绝
+// （AGENTS.md 原则 1），不做静默优先级兜底。
+func applyDefaultWorkspaceFlag(cmd *cobra.Command) error {
+	if !cliDefaultWorkspace {
+		return nil
+	}
+	if f := cmd.Flags().Lookup("workspace"); f != nil && strings.TrimSpace(f.Value.String()) != "" {
+		return fmt.Errorf("--default cannot be combined with --workspace")
+	}
+	if err := config.EnsureDefaultWorkspaceDir(); err != nil {
+		return fmt.Errorf("--default: create default workspace: %w", err)
+	}
+	if err := os.Chdir(config.DefaultWorkspacePath()); err != nil {
+		return fmt.Errorf("--default: switch to default workspace: %w", err)
+	}
+	return nil
+}
 
-	// 全局 flags
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.eos.yaml)")
+func init() {
+	// 全局 flags（配置读写统一走 internal/config 的 ~/.eos.json，
+	// 不设 cobra/viper 配置线——历史上 viper 读的 ~/.eos.yaml 无任何消费方）。
 	rootCmd.PersistentFlags().StringVarP(&printQuery, "print", "p", "", "Run a single query in headless mode and print the result")
 	rootCmd.PersistentFlags().StringVar(&outputFormat, "output-format", "text", "Output format for print mode: text, json, stream-json")
 	rootCmd.PersistentFlags().BoolVarP(&continueChat, "continue", "c", false, "Continue the most recent conversation")
@@ -155,6 +180,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cliApprovalMode, "approval-mode", "", "Approval mode: untrusted, on-request, or never (on-failure is accepted as an alias of on-request)")
 	rootCmd.PersistentFlags().StringVar(&cliSandboxMode, "sandbox-mode", "workspace", "Alias of --access-mode (workspace=workspace-write, full_access=danger-full-access)")
 	rootCmd.PersistentFlags().BoolVar(&cliSkipPermissions, "dangerously-skip-permissions", false, "Full-access preset: --access-mode danger-full-access --approval-mode never")
+	rootCmd.PersistentFlags().BoolVar(&cliDefaultWorkspace, "default", false, "Use the default workspace (~/.eos/workspace) instead of the current directory")
 	rootCmd.Flags().BoolVar(&cliShowVersion, "version", false, "Print the EOS version and exit")
 
 	rootCmd.AddCommand(newDocumentCmd())
@@ -162,32 +188,10 @@ func init() {
 	rootCmd.AddCommand(newUpdateCmd())
 	rootCmd.AddCommand(newConfigCmd())
 	rootCmd.AddCommand(newVersionCmd())
+	rootCmd.AddCommand(newDoctorCmd())
 	rootCmd.AddCommand(newServeCmd())
 	rootCmd.AddCommand(newBridgeCmd())
 	rootCmd.AddCommand(newMcpCmd())
+	rootCmd.AddCommand(newWebCmd())
 	rootCmd.AddCommand(newHiddenLegalCmd())
-}
-
-// initConfig 读取配置文件与环境变量。
-func initConfig() {
-	if cfgFile != "" {
-		slog.Info("cli.config.file_set", "path", cfgFile)
-		viper.SetConfigFile(cfgFile)
-	} else {
-		home, err := os.UserHomeDir()
-		cobra.CheckErr(err)
-		slog.Debug("cli.config.search", "home", home)
-		viper.AddConfigPath(home)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName(".eos")
-	}
-
-	viper.AutomaticEnv()
-
-	if err := viper.ReadInConfig(); err == nil {
-		slog.Info("cli.config.loaded", "path", viper.ConfigFileUsed())
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-	} else {
-		slog.Debug("cli.config.not_loaded", "error", err.Error())
-	}
 }

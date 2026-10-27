@@ -1,6 +1,6 @@
 package panels
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/ui/styles"
 )
 
 func newTestModelsPanel() *ModelsPanel {
@@ -22,7 +22,7 @@ func newTestModelsPanel() *ModelsPanel {
 // runKey 向面板发单个 KeyMsg，返回 cmd 执行出的消息与面板（用于断言）。
 func runKey(t *testing.T, p *ModelsPanel, key string) (Panel, tea.Msg) {
 	t.Helper()
-	p2, cmd := p.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)})
+	p2, cmd := p.Update(tea.KeyPressMsg{Code: rune(key[0]), Text: key})
 	p = p2.(*ModelsPanel)
 	if cmd == nil {
 		return p, nil
@@ -107,7 +107,7 @@ func TestModelsPanelActionBarNoEmptyOption(t *testing.T) {
 
 	// → 从最后一项（Refresh）再按一次应直接回到第一项（Use），中间不能有空项。
 	for range len(panel.actionOps) {
-		if _, cmd := panel.Update(tea.KeyMsg{Type: tea.KeyRight}); cmd != nil {
+		if _, cmd := panel.Update(tea.KeyPressMsg{Code: tea.KeyRight}); cmd != nil {
 			cmd()
 		}
 	}

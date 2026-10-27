@@ -2,13 +2,13 @@
 
 [中文](./README.md) | [English](./README.en.md)
 
-EOS 是一个开源的终端 AI 编码助手，当前以 Rust Core 作为核心运行时，Go 侧负责 CLI 入口、TUI、桥接与分发集成。它面向日常编码、代码审查、文档处理、本地自动化，以及 IDE / 平台集成场景，提供交互式 TUI、工具调用、安全门禁、工作区上下文和可扩展的 MCP 能力。
+EOS 是一个终端 AI 编码助手，当前以 Rust Core 作为核心运行时，Go 侧负责 CLI 入口、TUI、桥接与分发集成。它面向日常编码、代码审查、文档处理、本地自动化，以及 IDE / 平台集成场景，提供交互式 TUI、工具调用、安全门禁、工作区上下文和可扩展的 MCP 能力。
 
-当前 `v1.0.0-beta.3` 起提供三端（Windows / macOS / Linux × amd64+arm64）生产包与 SHA256SUMS 校验，Windows 提供安装器与便携压缩包双通道，并与 EOS App 的桌面分发版本保持同版号。
+版本与产物始终以 [Releases](https://github.com/eosaios/eos/releases) 为准（当前为 1.0.0 beta 阶段），提供三端（Windows / macOS / Linux × amd64+arm64）生产包与 SHA256SUMS 校验；[EOS App](https://github.com/eosaios/eos-app) 桌面端基于同一 Rust 内核构建，两者版本号独立递进。
 
-- 项目仓库：https://github.com/dreamSailing/eos
-- 问题反馈：https://github.com/dreamSailing/eos/issues
-- 版本发布：https://github.com/dreamSailing/eos/releases
+- 项目仓库：https://github.com/eosaios/eos
+- 问题反馈：https://github.com/eosaios/eos/issues
+- 版本发布：https://github.com/eosaios/eos/releases
 
 ## 项目定位
 
@@ -66,7 +66,6 @@ EOS 不是单一的“问答 CLI”，而是一个完整的本地 AI 工作台�
 - 代码索引、文件监听、上下文构建与压缩
 - 会话持久化与恢复
 - 可选 LSP 能力，支持 Go、Python、TypeScript、JavaScript 自动检测
-- 支持默认外部 LSP 探测，以及 `with_gopls` 嵌入构建
 
 ## 环境要求
 
@@ -85,13 +84,13 @@ EOS 不是单一的“问答 CLI”，而是一个完整的本地 AI 工作台�
 macOS / Linux：
 
 ```bash
-curl -fsSL https://cdn.jsdelivr.net/gh/dreamSailing/eos@main/scripts/install.sh | bash
+curl -fsSL https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.sh | bash
 ```
 
 Windows（PowerShell）：
 
 ```powershell
-irm https://raw.githubusercontent.com/dreamSailing/eos/main/scripts/install.ps1 | iex
+irm https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.ps1 | iex
 ```
 
 安装后运行 `eos` 即可；`eos version` 查看版本，`eos update` 一键自升级（含 Rust 内核 core/ 同步更新）。
@@ -99,15 +98,15 @@ irm https://raw.githubusercontent.com/dreamSailing/eos/main/scripts/install.ps1 
 已安装 Go 工具链的用户也可以（内核内嵌，首次运行自动释放）：
 
 ```bash
-go install github.com/dreamSailing/eos@latest
+go install github.com/eosaios/eos@latest
 ```
 
-安装包（tar.gz / zip 与 Windows 安装器）仍从 Releases 获取：https://github.com/dreamSailing/eos/releases
+安装包（tar.gz / zip）仍从 Releases 获取：https://github.com/eosaios/eos/releases
 
 从源码编译：
 
 ```bash
-git clone https://github.com/dreamSailing/eos.git
+git clone https://github.com/eosaios/eos.git
 cd eos
 go mod tidy
 go build -o eos
@@ -219,23 +218,9 @@ eos update
 - 任务与计划：`/tasks`、`/plan`、`/permissions`
 - 配置面板：`/model`、`/config`、`/mcp`、`/lsp`、`/rules`、`/cost`
 
-## 构建变体（LSP）
-
-- 最小版，无 LSP：
-  `go build -tags without_lsp -o eos`
-- 默认版，启用 LSP 框架并自动检测外部语言服务器：
-  `go build -o eos`
-- Go 增强版，嵌入 `gopls`：
-  `go build -tags with_gopls -o eos`
-
-相关脚本：
-
-- `scripts/embed_gopls.sh`
-- `scripts/embed_gopls.bat`
-
 ## 开发者集成
 
-普通用户通常只需要 `eos`、`eos --print`、`eos doc` 和 `eos update`。如果你要把 EOS 接入 IDE、自动化平台或其他 agent 宿主，当前有三条主线：
+普通用户通常只需要 `eos`、`eos --print`、`eos doc` 和 `eos update`。如果你要把 EOS 接入 IDE、自动化平台或其他 agent 宿主，当前有四条主线：
 
 ### 1) `eos serve`
 
@@ -267,6 +252,21 @@ eos mcp serve --transport sse --listen 127.0.0.1:8765 --workspace "/abs/workspac
 ```
 
 文档见：[internal/docs/mcp/SERVER.md](./internal/docs/mcp/SERVER.md)
+
+### 4) `eos web`
+
+在浏览器里运行 EOS 桌面端工作台 UI：本地 HTTP 服务静态前端，通过 WebSocket 把
+`BridgeService` RPC 与事件流桥接到 eos-core sidecar。仅监听 127.0.0.1。
+
+```bash
+eos web                                   # 默认 127.0.0.1:8788，自动打开浏览器
+eos web --listen 127.0.0.1:9000 --workspace "/abs/workspace" --no-open
+```
+
+前端产物目录解析顺序：`--ui-dir` → `EOS_WEB_UI_DIR` → 内置候选位置（工作目录 /
+可执行文件目录相邻的前端产物目录）。前端产物不随 CLI 发行包分发；从源码使用
+`eos web` 时，请自备前端构建产物并通过 `--ui-dir`（或 `EOS_WEB_UI_DIR`）显式指定。
+
 
 ## MCP 与浏览器自动化
 
@@ -302,7 +302,7 @@ EOS 当前不内置浏览器驱动，推荐通过 Playwright MCP 接入真实浏
 - 浏览器 MCP 适合真实页面交互、行为验证和截图
 - 可通过 `/status`、MCP 面板或运行态信息检查连接状态
 
-## 开源使用与发布建议
+## 使用与发布建议
 
 - 运行时会在工作目录生成 `.eos/` 数据，例如会话、检查点和版本快照
 - 建议将 `.eos/`、`.eos.json`、`.env`、日志和本地配置加入忽略列表
@@ -321,5 +321,5 @@ EOS 当前不内置浏览器驱动，推荐通过 Playwright MCP 接入真实浏
 
 ## 联系方式
 
-- 问题反馈：https://github.com/dreamSailing/eos/issues
-- 商业合作 / 授权咨询：smart-os@qq.com
+- 问题反馈：https://github.com/eosaios/eos/issues
+- 商业合作 / 授权咨询：legal@eosaios.com

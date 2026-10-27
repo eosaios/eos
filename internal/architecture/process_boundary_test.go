@@ -34,12 +34,9 @@ import (
 // 新调用点必须通过 sandbox.GuardedRunner 或在此显式分类。
 var allowedProcessExecCalls = map[string]int{
 	"internal/document/convert.go:convertWithSoffice:utils.Command":              1,
-	"internal/lsp/client.go:Start:utils.CommandContext":                          1,
-	"internal/lsp/detector.go:findPythonServer:utils.CommandContext":             1,
 	"internal/pkg/filedialog/filedialog_darwin.go:ChooseDirectory:exec.Command":  1,
 	"internal/pkg/filedialog/filedialog_linux.go:ChooseDirectory:exec.Command":   1,
 	"internal/pkg/filedialog/filedialog_windows.go:ChooseDirectory:exec.Command": 1,
-	"internal/pkg/plugins/external.go:Execute:utils.CommandContext":              1,
 	"internal/pkg/utils/command.go:Command:exec.Command":                         1,
 	"internal/pkg/utils/command.go:CommandContext:exec.CommandContext":           1,
 	"internal/ui/slash_runtime.go:copyToClipboard:exec.Command":                  3,
@@ -47,6 +44,33 @@ var allowedProcessExecCalls = map[string]int{
 	// 系统动作，与剪贴板同类，非工具/代理执行路径，不走 GuardedRunner。
 	"internal/ui/app_slash_feedback.go:openInBrowser:exec.Command":    3,
 	"pkg/coreapi/sidecar/process_client.go:StartProcess:exec.Command": 1,
+	// webbridge（eos web / GUI 桥）的系统动作调用点：全部是用户可见的系统
+	// 集成（开终端/开目录/开浏览器/打开第三方应用/PortableGit 安装引导/
+	// 更新安装与重启/拉起 eos-core 子进程），与 filedialog、openInBrowser
+	// 同类——非模型驱动的工具/代理执行路径，不经 GuardedRunner。
+	// stdio 网关原型（stdio_client.go）后续接入沙箱执行时再迁移并移除条目。
+	"internal/webbridge/adapter/stdio_client.go:startProcessLocked:exec.Command":          1,
+	"internal/webbridge/bridge_feedback.go:OpenExternalURL:exec.Command":                  3,
+	"internal/webbridge/bridge_terminal_other.go:startBridgeTerminalBackend:exec.Command": 1,
+	"internal/webbridge/bridge_terminal_shell_install.go:extractPortableGit:exec.Command": 1,
+	"internal/webbridge/external_apps.go:linuxTerminalCommand:exec.Command":               1,
+	"internal/webbridge/external_apps.go:openTerminalApp:exec.Command":                    2,
+	"internal/webbridge/external_apps.go:openThirdPartyApp:exec.Command":                  3,
+	"internal/webbridge/open_directory.go:OpenDirectory:exec.Command":                     3,
+	"internal/webbridge/reveal_path.go:RevealPath:exec.Command":                           2,
+	"internal/webbridge/reveal_path.go:openDirectoryNoMkdir:exec.Command":                 3,
+	"internal/webbridge/server_helpers.go:runBackgroundCommand:exec.Command":              1,
+	"internal/webbridge/update_install_darwin.go:detachMacOSDmg:exec.Command":             1,
+	"internal/webbridge/update_install_darwin.go:fallbackMacOSOpenDmg:exec.Command":       1,
+	"internal/webbridge/update_install_darwin.go:mountMacOSDmg:exec.Command":              1,
+	"internal/webbridge/update_install_darwin.go:replaceMacOSBundle:exec.Command":         1,
+	"internal/webbridge/update_install_darwin.go:scheduleMacOSRelaunch:exec.Command":      1,
+	"internal/webbridge/update_launch_other.go:launchUpdateInstaller:exec.Command":        1,
+	// 测试底座（internal/testsupport）：唯一调用点是启动**被测对象自身**的
+	// eos-core 子进程。命令路径来自 sidecar.ResolveBinary 的解析结果，参数固定为
+	// `--stdio`，不拼接任何模型或工具产生的输入，因此不是工具/代理执行路径，
+	// 不经 GuardedRunner。与 process_client.go:StartProcess 同类。
+	"internal/testsupport/rpc.go:StartCore:exec.Command": 1,
 }
 
 func TestProcessExecutionCallSitesAreClassified(t *testing.T) {

@@ -1,6 +1,6 @@
 package shell
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -13,18 +13,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/modes"
-	"github.com/dreamSailing/eos/internal/state"
-	"github.com/dreamSailing/eos/internal/ui/components/content"
-	"github.com/dreamSailing/eos/internal/ui/components/hints"
-	"github.com/dreamSailing/eos/internal/ui/components/input"
-	"github.com/dreamSailing/eos/internal/ui/features/slash"
-	"github.com/dreamSailing/eos/internal/ui/styles"
-	"github.com/dreamSailing/eos/internal/update"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/modes"
+	"github.com/eosaios/eos/internal/state"
+	"github.com/eosaios/eos/internal/ui/components/content"
+	"github.com/eosaios/eos/internal/ui/components/hints"
+	"github.com/eosaios/eos/internal/ui/components/input"
+	"github.com/eosaios/eos/internal/ui/features/slash"
+	"github.com/eosaios/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/update"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // Mode 是Shell模式
@@ -929,7 +929,7 @@ func (m Model) renderStatusBar() string {
 		rightParts = append(rightParts, m.styles.TextMuted.Render(i18n.T("status.tasks", m.language)+fmt.Sprintf("%d", m.bgTaskCount)))
 	}
 	if m.mode == ModeAI {
-		// 当前工作区所在 git 仓库分支（对齐 Codex 状态栏 git-branch 项：非 git
+		// 当前工作区所在 git 仓库分支（非 git
 		// 工作区 / 查询失败时省略，不显示错误）。
 		if m.gitBranch != "" {
 			gitItem := "⎇ " + m.gitBranch
@@ -980,8 +980,7 @@ func (m Model) renderStatusBar() string {
 			leftParts = append(leftParts, m.styles.TextInfo.Render(i18n.T("status.thinking_active", m.language)+animatedDots(m.statusAnim)))
 		} else {
 			// Idle: show a distinct "ready" badge so the user can tell the
-			// turn finished (mirrors codex flipping to "Ready" on turn
-			// complete), followed by the thinking-toggle state.
+			// turn finished, followed by the thinking-toggle state.
 			leftParts = append(leftParts, m.styles.TextSuccess.Render(i18n.T("status.ready", m.language)))
 			thinkingLabel := i18n.T("status.thinking", m.language)
 			if !state.Thinking() {

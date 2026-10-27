@@ -1,6 +1,6 @@
 package config
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -46,7 +46,7 @@ func SnapshotPlaintextAPIKeys() map[string]string {
 }
 
 // RestorePlaintextAPIKeys 把快照中的明文 key 回补进 eos.json 对应条目
-//（仅覆盖条目当前值为 masked/空的情况，明文值不动）。内核修复「加载路径
+// （仅覆盖条目当前值为 masked/空的情况，明文值不动）。内核修复「加载路径
 // 跳过 masked」后本函数依然前向兼容：明文 api_key 是文档化的手填回退路径。
 func RestorePlaintextAPIKeys(keys map[string]string) {
 	if len(keys) == 0 {

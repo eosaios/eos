@@ -1,6 +1,6 @@
 package render
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -89,13 +89,8 @@ func highlightANSI(code string, lang string, theme string) string {
 	return strings.TrimRight(buf.String(), "\n")
 }
 
-// HighlightCodeANSI 用默认主题渲染代码块 ANSI 高亮。
-func HighlightCodeANSI(code string, lang string) string {
-	return highlightANSI(code, lang, DefaultChromaTheme)
-}
-
 // HighlightDiffANSI 用 chroma 的 diff lexer 渲染统一 diff 的 ANSI 高亮
-//（+/-/@@ 标记行着色）。theme 会被 NormalizeChromaTheme 校验回退。
+// （+/-/@@ 标记行着色）。theme 会被 NormalizeChromaTheme 校验回退。
 // 注意：输入必须是原始 diff 文本；截断应在调用前完成，避免截断 ANSI 序列。
 func HighlightDiffANSI(diff string, theme string) string {
 	return highlightANSI(diff, "diff", theme)

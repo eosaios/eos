@@ -3,180 +3,203 @@
 package generated
 
 const (
-	MethodInitialize = "initialize"
-	MethodShutdown = "shutdown"
-	MethodWorkspaceList = "workspace/list"
-	MethodWorkspaceDefault = "workspace/default"
-	MethodWorkspaceLast = "workspace/last"
-	MethodWorkspaceResolveForeground = "workspace/resolve_foreground"
-	MethodWorkspaceRemember = "workspace/remember"
-	MethodWorkspaceForget = "workspace/forget"
-	MethodWorkspaceAdd = "workspace/add"
-	MethodWorkspaceRemove = "workspace/remove"
-	MethodWorkspaceUse = "workspace/use"
-	MethodWorkspaceSetForeground = "workspace/set_foreground"
-	MethodWorkspaceTrust = "workspace/trust"
-	MethodWorkspaceWorktreeList = "workspace/worktree/list"
-	MethodWorkspaceWorktreeCreate = "workspace/worktree/create"
-	MethodWorkspaceWorktreeRemove = "workspace/worktree/remove"
-	MethodWorkspaceChanges = "workspace/changes"
-	MethodWorkspaceRollbackBuild = "workspace/rollback/build"
-	MethodWorkspaceRollbackApply = "workspace/rollback/apply"
-	MethodSessionCreate = "session/create"
-	MethodSessionResume = "session/resume"
-	MethodSessionList = "session/list"
-	MethodSessionCurrent = "session/current"
-	MethodSessionSetCurrent = "session/set_current"
-	MethodSessionDelete = "session/delete"
-	MethodSessionRename = "session/rename"
-	MethodSessionSetMeta = "session/set_meta"
-	MethodSessionMessagesLoad = "session/messages/load"
-	MethodSessionMessagesSave = "session/messages/save"
-	MethodSessionSearch = "session/search"
-	MethodMCPList = "mcp/list"
-	MethodMCPUpsert = "mcp/upsert"
-	MethodMCPImportJSON = "mcp/import_json"
-	MethodMCPDelete = "mcp/delete"
-	MethodMCPSetEnabled = "mcp/set_enabled"
-	MethodLSPList = "lsp/list"
-	MethodLSPDetect = "lsp/detect"
-	MethodLSPStart = "lsp/start"
-	MethodLSPDiagnostics = "lsp/diagnostics"
-	MethodLSPDiagnosticsSummary = "lsp/diagnostics/summary"
-	MethodConfigRulesGet = "config/rules/get"
-	MethodConfigRulesSnapshot = "config/rules/snapshot"
-	MethodConfigRulesSave = "config/rules/save"
-	MethodConfigRulesReset = "config/rules/reset"
-	MethodConfigSettingsGet = "config/settings/get"
-	MethodConfigSettingsSave = "config/settings/save"
-	MethodPermissionSnapshot = "permission/snapshot"
-	MethodPermissionPendingReview = "permission/pending_review"
-	MethodPermissionClearPendingReview = "permission/clear_pending_review"
-	MethodPermissionAccessModeSet = "permission/access_mode/set"
-	MethodPermissionApprovalModeSet = "permission/approval_mode/set"
-	MethodPermissionEnterFullAccess = "permission/enter_full_access"
-	MethodExtensionsSkillsList = "extensions/skills/list"
-	MethodExtensionsSkillsReload = "extensions/skills/reload"
-	MethodExtensionsSkillSetEnabled = "extensions/skill/set_enabled"
-	MethodExtensionsSkillInvoke = "extensions/skill/invoke"
-	MethodExtensionsPluginsList = "extensions/plugins/list"
-	MethodExtensionsPluginSetEnabled = "extensions/plugin/set_enabled"
-	MethodBrowserStatus = "browser/status"
-	MethodBrowserLaunch = "browser/launch"
-	MethodBrowserClose = "browser/close"
-	MethodBrowserTabs = "browser/tabs"
-	MethodBrowserProfiles = "browser/profiles"
-	MethodBrowserControlTakeover = "browser/control_takeover"
-	MethodBrowserControlResume = "browser/control_resume"
-	MethodBrowserPickStart = "browser/pick_start"
-	MethodBrowserPickStop = "browser/pick_stop"
-	MethodBrowserUploadProvide = "browser/upload_provide"
-	MethodBrowserFocus = "browser/focus"
-	MethodBrowserSetDefaultProfile = "browser/set_default_profile"
-	MethodBrowserNavigate = "browser/navigate"
-	MethodBrowserTabNew = "browser/tab_new"
-	MethodBrowserTabSwitch = "browser/tab_switch"
-	MethodBrowserTabClose = "browser/tab_close"
-	MethodBrowserLiveStart = "browser/live_start"
-	MethodBrowserLiveStop = "browser/live_stop"
-	MethodBrowserInput = "browser/input"
-	MethodBrowserHistory = "browser/history"
-	MethodContextPreview = "context/preview"
-	MethodContextStats = "context/stats"
-	MethodContextWindow = "context/window"
-	MethodContextPin = "context/pin"
-	MethodContextCompact = "context/compact"
-	MethodContextClear = "context/clear"
-	MethodContextExport = "context/export"
-	MethodUsageSummary = "usage/summary"
-	MethodUsageCostSummary = "usage/cost_summary"
-	MethodUsageCostItems = "usage/cost_items"
-	MethodPluginInstall = "plugin/install"
-	MethodPluginList = "plugin/list"
-	MethodPluginRemove = "plugin/remove"
-	MethodPluginSearch = "plugin/search"
-	MethodNetworkList = "network/list"
-	MethodNetworkGet = "network/get"
-	MethodNetworkClear = "network/clear"
-	MethodVersionsList = "versions/list"
-	MethodVersionsRollback = "versions/rollback"
-	MethodVersionsDelete = "versions/delete"
-	MethodVersionsDeleteFile = "versions/delete_file"
-	MethodVersionsClear = "versions/clear"
-	MethodTaskList = "task/list"
-	MethodTaskTodos = "task/todos"
-	MethodTaskTail = "task/tail"
-	MethodTaskKill = "task/kill"
-	MethodTaskCleanup = "task/cleanup"
-	MethodGoalSet = "goal/set"
-	MethodGoalGet = "goal/get"
-	MethodGoalPause = "goal/pause"
-	MethodGoalResume = "goal/resume"
-	MethodGoalClear = "goal/clear"
-	MethodRuntimeModesGet = "runtime/modes/get"
-	MethodRuntimeExecutionModeSet = "runtime/execution_mode/set"
-	MethodRuntimeSandboxModeSet = "runtime/sandbox_mode/set"
-	MethodRuntimeReasoningLevelSet = "runtime/reasoning_level/set"
-	MethodModelList = "model/list"
-	MethodModelCatalog = "model/catalog"
-	MethodModelBundledMCP = "model/bundled_mcp"
-	MethodModelUpsert = "model/upsert"
-	MethodModelSave = "model/save"
-	MethodModelVerify = "model/verify"
-	MethodModelDelete = "model/delete"
-	MethodModelActivate = "model/activate"
-	MethodModelSyncEnv = "model/sync_env"
-	MethodModelReload = "model/reload"
-	MethodModelContext = "model/context"
-	MethodModelWorkspaceSet = "model/workspace/set"
-	MethodModelWorkspaceClear = "model/workspace/clear"
-	MethodModelSessionSet = "model/session/set"
-	MethodModelSessionClear = "model/session/clear"
-	MethodRemoteWorkspaceList = "remote_workspace/list"
-	MethodRemoteWorkspaceOpen = "remote_workspace/open"
-	MethodRemoteWorkspaceForget = "remote_workspace/forget"
-	MethodRemoteWorkspaceClearCache = "remote_workspace/clear_cache"
-	MethodRemoteRepoCurrent = "remote_repo/current"
-	MethodGitStatus = "git/status"
-	MethodGitSummary = "git/summary"
-	MethodGitDiff = "git/diff"
-	MethodGitBranches = "git/branches"
-	MethodGitLog = "git/log"
-	MethodGitShow = "git/show"
+	MethodInitialize                    = "initialize"
+	MethodShutdown                      = "shutdown"
+	MethodWorkspaceList                 = "workspace/list"
+	MethodWorkspaceDefault              = "workspace/default"
+	MethodWorkspaceLast                 = "workspace/last"
+	MethodWorkspaceResolveForeground    = "workspace/resolve_foreground"
+	MethodWorkspaceRemember             = "workspace/remember"
+	MethodWorkspaceForget               = "workspace/forget"
+	MethodWorkspaceAdd                  = "workspace/add"
+	MethodWorkspaceRemove               = "workspace/remove"
+	MethodWorkspaceUse                  = "workspace/use"
+	MethodWorkspaceSetForeground        = "workspace/set_foreground"
+	MethodWorkspaceTrust                = "workspace/trust"
+	MethodWorkspaceWorktreeList         = "workspace/worktree/list"
+	MethodWorkspaceWorktreeCreate       = "workspace/worktree/create"
+	MethodWorkspaceWorktreeRemove       = "workspace/worktree/remove"
+	MethodWorkspaceChanges              = "workspace/changes"
+	MethodWorkspaceRollbackBuild        = "workspace/rollback/build"
+	MethodWorkspaceRollbackApply        = "workspace/rollback/apply"
+	MethodSessionCreate                 = "session/create"
+	MethodSessionResume                 = "session/resume"
+	MethodSessionList                   = "session/list"
+	MethodSessionCurrent                = "session/current"
+	MethodSessionSetCurrent             = "session/set_current"
+	MethodSessionDelete                 = "session/delete"
+	MethodSessionRename                 = "session/rename"
+	MethodSessionSetMeta                = "session/set_meta"
+	MethodSessionMessagesLoad           = "session/messages/load"
+	MethodSessionMessagesSave           = "session/messages/save"
+	MethodSessionSearch                 = "session/search"
+	MethodMCPList                       = "mcp/list"
+	MethodMCPUpsert                     = "mcp/upsert"
+	MethodMCPImportJSON                 = "mcp/import_json"
+	MethodMCPDelete                     = "mcp/delete"
+	MethodMCPSetEnabled                 = "mcp/set_enabled"
+	MethodLSPList                       = "lsp/list"
+	MethodLSPDetect                     = "lsp/detect"
+	MethodLSPStart                      = "lsp/start"
+	MethodLSPInstall                    = "lsp/install"
+	MethodLSPDiagnostics                = "lsp/diagnostics"
+	MethodLSPDiagnosticsSummary         = "lsp/diagnostics/summary"
+	MethodConfigRulesGet                = "config/rules/get"
+	MethodConfigRulesSnapshot           = "config/rules/snapshot"
+	MethodConfigRulesSave               = "config/rules/save"
+	MethodConfigRulesReset              = "config/rules/reset"
+	MethodConfigSettingsGet             = "config/settings/get"
+	MethodConfigSettingsSave            = "config/settings/save"
+	MethodPermissionSnapshot            = "permission/snapshot"
+	MethodPermissionPendingReview       = "permission/pending_review"
+	MethodPermissionClearPendingReview  = "permission/clear_pending_review"
+	MethodPermissionAccessModeSet       = "permission/access_mode/set"
+	MethodPermissionApprovalModeSet     = "permission/approval_mode/set"
+	MethodPermissionEnterFullAccess     = "permission/enter_full_access"
+	MethodExtensionsSkillsList          = "extensions/skills/list"
+	MethodExtensionsSkillsReload        = "extensions/skills/reload"
+	MethodExtensionsSkillSetEnabled     = "extensions/skill/set_enabled"
+	MethodExtensionsSkillInvoke         = "extensions/skill/invoke"
+	MethodExtensionsPluginsList         = "extensions/plugins/list"
+	MethodExtensionsPluginSetEnabled    = "extensions/plugin/set_enabled"
+	MethodBrowserStatus                 = "browser/status"
+	MethodBrowserLaunch                 = "browser/launch"
+	MethodBrowserClose                  = "browser/close"
+	MethodBrowserTabs                   = "browser/tabs"
+	MethodBrowserProfiles               = "browser/profiles"
+	MethodBrowserProfileUpsert          = "browser/profile_upsert"
+	MethodBrowserCredentialsImport      = "browser/credentials_import"
+	MethodBrowserControlTakeover        = "browser/control_takeover"
+	MethodBrowserControlConfirm         = "browser/control_confirm"
+	MethodBrowserControlResume          = "browser/control_resume"
+	MethodBrowserPickStart              = "browser/pick_start"
+	MethodBrowserPickStop               = "browser/pick_stop"
+	MethodBrowserUploadProvide          = "browser/upload_provide"
+	MethodBrowserFocus                  = "browser/focus"
+	MethodBrowserSetDefaultProfile      = "browser/set_default_profile"
+	MethodBrowserNavigate               = "browser/navigate"
+	MethodBrowserTabNew                 = "browser/tab_new"
+	MethodBrowserTabSwitch              = "browser/tab_switch"
+	MethodBrowserTabClose               = "browser/tab_close"
+	MethodBrowserLiveStart              = "browser/live_start"
+	MethodBrowserLiveStop               = "browser/live_stop"
+	MethodBrowserInput                  = "browser/input"
+	MethodBrowserHistory                = "browser/history"
+	MethodBrowserCopySelection          = "browser/copy_selection"
+	MethodBrowserHostRegister           = "browser/host_register"
+	MethodBrowserHostRespond            = "browser/host_respond"
+	MethodBrowserHostState              = "browser/host_state"
+	MethodDesktopHostStatus             = "desktop/host/status"
+	MethodDesktopHostRegister           = "desktop/host/register"
+	MethodDesktopHostUnregister         = "desktop/host/unregister"
+	MethodDesktopHostRespond            = "desktop/host/respond"
+	MethodContextPreview                = "context/preview"
+	MethodContextStats                  = "context/stats"
+	MethodContextWindow                 = "context/window"
+	MethodContextPin                    = "context/pin"
+	MethodContextCompact                = "context/compact"
+	MethodContextClear                  = "context/clear"
+	MethodContextExport                 = "context/export"
+	MethodUsageSummary                  = "usage/summary"
+	MethodUsageCostSummary              = "usage/cost_summary"
+	MethodUsageCostItems                = "usage/cost_items"
+	MethodPluginInstall                 = "plugin/install"
+	MethodPluginList                    = "plugin/list"
+	MethodPluginRemove                  = "plugin/remove"
+	MethodPluginSearch                  = "plugin/search"
+	MethodNetworkList                   = "network/list"
+	MethodNetworkGet                    = "network/get"
+	MethodNetworkClear                  = "network/clear"
+	MethodVersionsList                  = "versions/list"
+	MethodVersionsRollback              = "versions/rollback"
+	MethodVersionsDelete                = "versions/delete"
+	MethodVersionsDeleteFile            = "versions/delete_file"
+	MethodVersionsClear                 = "versions/clear"
+	MethodTaskList                      = "task/list"
+	MethodTaskTodos                     = "task/todos"
+	MethodTaskTail                      = "task/tail"
+	MethodTaskKill                      = "task/kill"
+	MethodTaskCleanup                   = "task/cleanup"
+	MethodGoalSet                       = "goal/set"
+	MethodGoalGet                       = "goal/get"
+	MethodGoalPause                     = "goal/pause"
+	MethodGoalResume                    = "goal/resume"
+	MethodGoalClear                     = "goal/clear"
+	MethodRuntimeModesGet               = "runtime/modes/get"
+	MethodRuntimeExecutionModeSet       = "runtime/execution_mode/set"
+	MethodRuntimeSandboxModeSet         = "runtime/sandbox_mode/set"
+	MethodRuntimeReasoningLevelSet      = "runtime/reasoning_level/set"
+	MethodModelList                     = "model/list"
+	MethodModelCatalog                  = "model/catalog"
+	MethodModelBundledMCP               = "model/bundled_mcp"
+	MethodModelUpsert                   = "model/upsert"
+	MethodModelSave                     = "model/save"
+	MethodModelVerify                   = "model/verify"
+	MethodModelDelete                   = "model/delete"
+	MethodModelActivate                 = "model/activate"
+	MethodModelSyncEnv                  = "model/sync_env"
+	MethodModelReload                   = "model/reload"
+	MethodModelContext                  = "model/context"
+	MethodModelWorkspaceSet             = "model/workspace/set"
+	MethodModelWorkspaceClear           = "model/workspace/clear"
+	MethodModelSessionSet               = "model/session/set"
+	MethodModelSessionClear             = "model/session/clear"
+	MethodRemoteWorkspaceList           = "remote_workspace/list"
+	MethodRemoteWorkspaceOpen           = "remote_workspace/open"
+	MethodRemoteWorkspaceForget         = "remote_workspace/forget"
+	MethodRemoteWorkspaceClearCache     = "remote_workspace/clear_cache"
+	MethodRemoteRepoCurrent             = "remote_repo/current"
+	MethodGitStatus                     = "git/status"
+	MethodGitSummary                    = "git/summary"
+	MethodGitDiff                       = "git/diff"
+	MethodGitBranches                   = "git/branches"
+	MethodGitLog                        = "git/log"
+	MethodGitShow                       = "git/show"
+	MethodGitRepos                      = "git/repos"
+	MethodGitStage                      = "git/stage"
+	MethodGitCommit                     = "git/commit"
+	MethodGitPush                       = "git/push"
+	MethodGitMergeAbort                 = "git/merge_abort"
+	MethodGitSuggestMessage             = "git/suggest_message"
 	MethodInsightPredictNextUserMessage = "insight/predict_next_user_message"
-	MethodInsightPlanSnapshot = "insight/plan_snapshot"
-	MethodMemorySnapshot = "memory/snapshot"
-	MethodMemorySave = "memory/save"
-	MethodMemoryRebuildIndex = "memory/rebuild_index"
-	MethodRoleList = "role/list"
-	MethodRoleResolve = "role/resolve"
-	MethodAgentSpawn = "agent/spawn"
-	MethodAgentInput = "agent/input"
-	MethodAgentWait = "agent/wait"
-	MethodAgentRun = "agent/run"
-	MethodAgentToolExecute = "agent/tool/execute"
-	MethodAgentList = "agent/list"
-	MethodAgentClose = "agent/close"
-	MethodEventSubscribe = "event/subscribe"
-	MethodEventUnsubscribe = "event/unsubscribe"
-	MethodTurnStart = "turn/start"
-	MethodTurnInterrupt = "turn/interrupt"
-	MethodToolCatalog = "tool/catalog"
-	MethodToolExecute = "tool/execute"
-	MethodToolTraces = "tool/traces"
-	MethodToolStats = "tool/stats"
-	MethodApprovalList = "approval/list"
-	MethodApprovalRespond = "approval/respond"
-	MethodApprovalPreview = "approval/preview"
-	MethodInquiryRespond = "inquiry/respond"
-	MethodStateSnapshot = "state/snapshot"
-	MethodSandboxPolicy = "sandbox/policy"
-	MethodSandboxSetPolicy = "sandbox/set_policy"
-	MethodSandboxDerivePolicy = "sandbox/derive_policy"
-	MethodSandboxBackendStatus = "sandbox/backend_status"
-	MethodConfigReload = "config/reload"
-	MethodAgentControl = "agent/control"
-	MethodDiagnosticsStartup = "diagnostics/startup"
+	MethodInsightRefineInput            = "insight/refine_input"
+	MethodInsightPlanSnapshot           = "insight/plan_snapshot"
+	MethodMemorySnapshot                = "memory/snapshot"
+	MethodMemorySave                    = "memory/save"
+	MethodMemoryRebuildIndex            = "memory/rebuild_index"
+	MethodCapturesList                  = "captures/list"
+	MethodCapturesSave                  = "captures/save"
+	MethodCapturesDelete                = "captures/delete"
+	MethodRoleList                      = "role/list"
+	MethodRoleResolve                   = "role/resolve"
+	MethodAgentSpawn                    = "agent/spawn"
+	MethodAgentInput                    = "agent/input"
+	MethodAgentWait                     = "agent/wait"
+	MethodAgentRun                      = "agent/run"
+	MethodAgentToolExecute              = "agent/tool/execute"
+	MethodAgentList                     = "agent/list"
+	MethodAgentClose                    = "agent/close"
+	MethodEventSubscribe                = "event/subscribe"
+	MethodEventUnsubscribe              = "event/unsubscribe"
+	MethodTurnStart                     = "turn/start"
+	MethodTurnInterrupt                 = "turn/interrupt"
+	MethodTurnResume                    = "turn/resume"
+	MethodToolCatalog                   = "tool/catalog"
+	MethodToolExecute                   = "tool/execute"
+	MethodToolTraces                    = "tool/traces"
+	MethodToolStats                     = "tool/stats"
+	MethodApprovalList                  = "approval/list"
+	MethodApprovalRespond               = "approval/respond"
+	MethodApprovalPreview               = "approval/preview"
+	MethodInquiryRespond                = "inquiry/respond"
+	MethodStateSnapshot                 = "state/snapshot"
+	MethodSandboxPolicy                 = "sandbox/policy"
+	MethodSandboxSetPolicy              = "sandbox/set_policy"
+	MethodSandboxDerivePolicy           = "sandbox/derive_policy"
+	MethodSandboxBackendStatus          = "sandbox/backend_status"
+	MethodConfigReload                  = "config/reload"
+	MethodAgentControl                  = "agent/control"
+	MethodDiagnosticsStartup            = "diagnostics/startup"
 )
 
 func CoreMethods() []string {
@@ -219,6 +242,7 @@ func CoreMethods() []string {
 		MethodLSPList,
 		MethodLSPDetect,
 		MethodLSPStart,
+		MethodLSPInstall,
 		MethodLSPDiagnostics,
 		MethodLSPDiagnosticsSummary,
 		MethodConfigRulesGet,
@@ -244,7 +268,10 @@ func CoreMethods() []string {
 		MethodBrowserClose,
 		MethodBrowserTabs,
 		MethodBrowserProfiles,
+		MethodBrowserProfileUpsert,
+		MethodBrowserCredentialsImport,
 		MethodBrowserControlTakeover,
+		MethodBrowserControlConfirm,
 		MethodBrowserControlResume,
 		MethodBrowserPickStart,
 		MethodBrowserPickStop,
@@ -259,6 +286,14 @@ func CoreMethods() []string {
 		MethodBrowserLiveStop,
 		MethodBrowserInput,
 		MethodBrowserHistory,
+		MethodBrowserCopySelection,
+		MethodBrowserHostRegister,
+		MethodBrowserHostRespond,
+		MethodBrowserHostState,
+		MethodDesktopHostStatus,
+		MethodDesktopHostRegister,
+		MethodDesktopHostUnregister,
+		MethodDesktopHostRespond,
 		MethodContextPreview,
 		MethodContextStats,
 		MethodContextWindow,
@@ -321,11 +356,21 @@ func CoreMethods() []string {
 		MethodGitBranches,
 		MethodGitLog,
 		MethodGitShow,
+		MethodGitRepos,
+		MethodGitStage,
+		MethodGitCommit,
+		MethodGitPush,
+		MethodGitMergeAbort,
+		MethodGitSuggestMessage,
 		MethodInsightPredictNextUserMessage,
+		MethodInsightRefineInput,
 		MethodInsightPlanSnapshot,
 		MethodMemorySnapshot,
 		MethodMemorySave,
 		MethodMemoryRebuildIndex,
+		MethodCapturesList,
+		MethodCapturesSave,
+		MethodCapturesDelete,
 		MethodRoleList,
 		MethodRoleResolve,
 		MethodAgentSpawn,
@@ -339,6 +384,7 @@ func CoreMethods() []string {
 		MethodEventUnsubscribe,
 		MethodTurnStart,
 		MethodTurnInterrupt,
+		MethodTurnResume,
 		MethodToolCatalog,
 		MethodToolExecute,
 		MethodToolTraces,
@@ -375,6 +421,11 @@ func MethodGroups() map[string][]string {
 			MethodApprovalRespond,
 			MethodApprovalPreview,
 		},
+		"captures": {
+			MethodCapturesList,
+			MethodCapturesSave,
+			MethodCapturesDelete,
+		},
 		"config": {
 			MethodConfigRulesGet,
 			MethodConfigRulesSnapshot,
@@ -392,6 +443,12 @@ func MethodGroups() map[string][]string {
 			MethodContextCompact,
 			MethodContextClear,
 			MethodContextExport,
+		},
+		"desktop": {
+			MethodDesktopHostStatus,
+			MethodDesktopHostRegister,
+			MethodDesktopHostUnregister,
+			MethodDesktopHostRespond,
 		},
 		"diagnostics": {
 			MethodDiagnosticsStartup,
@@ -412,7 +469,10 @@ func MethodGroups() map[string][]string {
 			MethodBrowserClose,
 			MethodBrowserTabs,
 			MethodBrowserProfiles,
+			MethodBrowserProfileUpsert,
+			MethodBrowserCredentialsImport,
 			MethodBrowserControlTakeover,
+			MethodBrowserControlConfirm,
 			MethodBrowserControlResume,
 			MethodBrowserPickStart,
 			MethodBrowserPickStop,
@@ -427,6 +487,10 @@ func MethodGroups() map[string][]string {
 			MethodBrowserLiveStop,
 			MethodBrowserInput,
 			MethodBrowserHistory,
+			MethodBrowserCopySelection,
+			MethodBrowserHostRegister,
+			MethodBrowserHostRespond,
+			MethodBrowserHostState,
 			MethodPluginInstall,
 			MethodPluginList,
 			MethodPluginRemove,
@@ -439,6 +503,12 @@ func MethodGroups() map[string][]string {
 			MethodGitBranches,
 			MethodGitLog,
 			MethodGitShow,
+			MethodGitRepos,
+			MethodGitStage,
+			MethodGitCommit,
+			MethodGitPush,
+			MethodGitMergeAbort,
+			MethodGitSuggestMessage,
 		},
 		"goal": {
 			MethodGoalSet,
@@ -452,12 +522,14 @@ func MethodGroups() map[string][]string {
 		},
 		"insight": {
 			MethodInsightPredictNextUserMessage,
+			MethodInsightRefineInput,
 			MethodInsightPlanSnapshot,
 		},
 		"lsp": {
 			MethodLSPList,
 			MethodLSPDetect,
 			MethodLSPStart,
+			MethodLSPInstall,
 			MethodLSPDiagnostics,
 			MethodLSPDiagnosticsSummary,
 		},
@@ -562,6 +634,7 @@ func MethodGroups() map[string][]string {
 		"turn": {
 			MethodTurnStart,
 			MethodTurnInterrupt,
+			MethodTurnResume,
 		},
 		"usage": {
 			MethodUsageSummary,

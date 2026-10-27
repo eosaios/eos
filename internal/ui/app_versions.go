@@ -13,9 +13,9 @@ package ui
 import (
 	"context"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/update"
+	tea "charm.land/bubbletea/v2"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/update"
 )
 
 // checkForUpdates checks for updates in the background

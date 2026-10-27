@@ -26,12 +26,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dreamSailing/eos/pkg/coreapi"
-	"github.com/dreamSailing/eos/pkg/coreapi/engineprovider"
-	coreapijsonrpc "github.com/dreamSailing/eos/pkg/coreapi/jsonrpc"
-	"github.com/dreamSailing/eos/pkg/coreapi/sidecar"
-	sidecarclient "github.com/dreamSailing/eos/pkg/coreapi/sidecar/client"
-	protocoljsonrpc "github.com/dreamSailing/eos/pkg/protocol/jsonrpc"
+	"github.com/eosaios/eos/pkg/coreapi"
+	"github.com/eosaios/eos/pkg/coreapi/engineprovider"
+	coreapijsonrpc "github.com/eosaios/eos/pkg/coreapi/jsonrpc"
+	"github.com/eosaios/eos/pkg/coreapi/sidecar"
+	sidecarclient "github.com/eosaios/eos/pkg/coreapi/sidecar/client"
+	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
 
 func requiredMethodsForCutover() []string {

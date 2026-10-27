@@ -6,7 +6,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/dreamSailing/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/ui/styles"
 )
 
 var ansiPattern = regexp.MustCompile(`\x1b\[[0-9;]*[A-Za-z]`)

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// 内嵌内核分发通道：`go install github.com/dreamSailing/eos@vX.Y.Z` 只把
+// 内嵌内核分发通道：`go install github.com/eosaios/eos@vX.Y.Z` 只把
 // eos.exe 装进 GOBIN——旁边既没有 release 布局的 core/ 目录，也没有源码树，
 // 原有两个解析根必然落空。本通道把当前平台的 vendored 内核（go:embed 进
 // 二进制，随仓库一起分发）释放到用户缓存目录，作为第三条解析来源：

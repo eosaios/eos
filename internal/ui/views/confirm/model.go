@@ -1,6 +1,6 @@
 package confirm
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -8,13 +8,13 @@ package confirm
 import (
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/ui/render"
-	"github.com/dreamSailing/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/ui/render"
+	"github.com/eosaios/eos/internal/ui/styles"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 type Request struct {
@@ -60,7 +60,7 @@ type Model struct {
 
 func New(styles *styles.Styles, lang, diffTheme string, req Request) *Model {
 	in := textinput.New()
-	in.Width = 60
+	in.SetWidth(60)
 	in.Placeholder = req.TextHint
 	in.Prompt = "> "
 	in.Focus()
@@ -89,12 +89,12 @@ func New(styles *styles.Styles, lang, diffTheme string, req Request) *Model {
 func (m *Model) SetSize(w, h int) {
 	m.width, m.height = w, h
 	if w > 10 {
-		m.input.Width = w - 10
-		if m.input.Width > 80 {
-			m.input.Width = 80
+		m.input.SetWidth(w - 10)
+		if m.input.Width() > 80 {
+			m.input.SetWidth(80)
 		}
-		if m.input.Width < 30 {
-			m.input.Width = 30
+		if m.input.Width() < 30 {
+			m.input.SetWidth(30)
 		}
 	}
 }
@@ -108,7 +108,7 @@ func (m *Model) Update(msg tea.Msg) (*Model, tea.Cmd) {
 		case "esc":
 			// Esc 决策不按 Kind 硬编码（旧逻辑 permission→decline/其它→cancel 是
 			// 壳层裁决）。改为基于 options 内容推断，对齐 eos-app decisionForEsc
-			// 与 codex 不变量 P3（esc 必须发 decision，不能只关 UI）。
+			// 的硬性不变量（esc 必须发 decision，不能只关 UI）。
 			decision, idx := EscDecision(m.req.Options)
 			option := ""
 			if idx >= 0 && idx < len(m.req.Options) {

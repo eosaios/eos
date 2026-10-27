@@ -1,6 +1,6 @@
 package ai
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -8,7 +8,7 @@ package ai
 import (
 	"strings"
 
-	"github.com/dreamSailing/eos/pkg/coreapi"
+	"github.com/eosaios/eos/pkg/coreapi"
 )
 
 // ProviderType 服务商类型
@@ -41,23 +41,23 @@ const (
 
 // ProviderConfig 服务商配置
 type ProviderConfig struct {
-	ID                     string                      // 唯一标识
-	Name                   string                      // 显示名称
-	Type                   ProviderType                // 服务商类型
-	DefaultAPIBase         string                      // 默认 Base URL（标准 API）
-	CodePlanAPIBase        string                      // Code/Plan API Base URL (OpenAI 兼容)
-	ClaudeAPIBase          string                      // Claude 兼容 API Base URL (Anthropic 协议)
-	AgentPlanAPIBase       string                      // Agent Plan API Base URL (OpenAI 兼容)
-	AgentPlanClaudeAPIBase string                      // Agent Plan Claude 兼容 API Base URL
-	APIKeyEnv              string                      // API Key 环境变量名
-	Website                string                      // 官方网站
-	HasCodePlan            bool                        // 是否支持 Code/Plan 套餐
-	HasClaudeCode          bool                        // 是否支持 Claude 兼容 API 模式
-	HasAgentPlan           bool                        // 是否支持 Agent Plan
-	HasTokenPlan           bool                        // 是否支持 Token Plan
-	TokenPlanAPIBase       string                      // Token Plan API Base URL (OpenAI 兼容)
-	TokenPlanClaudeAPIBase string                      // Token Plan Claude 兼容 API Base URL
-	DefaultModels          []string                    // 默认/推荐模型列表
+	ID                     string                     // 唯一标识
+	Name                   string                     // 显示名称
+	Type                   ProviderType               // 服务商类型
+	DefaultAPIBase         string                     // 默认 Base URL（标准 API）
+	CodePlanAPIBase        string                     // Code/Plan API Base URL (OpenAI 兼容)
+	ClaudeAPIBase          string                     // Claude 兼容 API Base URL (Anthropic 协议)
+	AgentPlanAPIBase       string                     // Agent Plan API Base URL (OpenAI 兼容)
+	AgentPlanClaudeAPIBase string                     // Agent Plan Claude 兼容 API Base URL
+	APIKeyEnv              string                     // API Key 环境变量名
+	Website                string                     // 官方网站
+	HasCodePlan            bool                       // 是否支持 Code/Plan 套餐
+	HasClaudeCode          bool                       // 是否支持 Claude 兼容 API 模式
+	HasAgentPlan           bool                       // 是否支持 Agent Plan
+	HasTokenPlan           bool                       // 是否支持 Token Plan
+	TokenPlanAPIBase       string                     // Token Plan API Base URL (OpenAI 兼容)
+	TokenPlanClaudeAPIBase string                     // Token Plan Claude 兼容 API Base URL
+	DefaultModels          []string                   // 默认/推荐模型列表
 	Endpoints              []coreapi.ProviderEndpoint // 内核原始端点向量，(plan, format) 查 base 的真相源
 }
 
@@ -131,55 +131,6 @@ func (pr *ProviderRegistry) replaceAll(providers []*ProviderConfig) {
 	}
 }
 
-// DetectProvider 根据 API Base URL 自动检测服务商
-func (pr *ProviderRegistry) DetectProvider(baseURL string) *ProviderConfig {
-	if baseURL == "" {
-		return nil
-	}
-	b := strings.ToLower(strings.TrimSpace(baseURL))
-
-	// 按当前运行时目录快照匹配
-	for _, p := range pr.ordered {
-		if p == nil || p.Type == ProviderCustom {
-			continue
-		}
-		if p.Type == ProviderMiniMax && (strings.Contains(b, "api.minimaxi.com") || strings.Contains(b, "api.minimax.io")) {
-			return p
-		}
-		if p.Type == ProviderMiMo && strings.Contains(b, "xiaomimimo.com") {
-			return p
-		}
-		defaultBase := strings.ToLower(p.DefaultAPIBase)
-		if defaultBase != "" && strings.Contains(b, extractDomain(defaultBase)) {
-			return p
-		}
-		if p.CodePlanAPIBase != "" {
-			codePlanBase := strings.ToLower(p.CodePlanAPIBase)
-			if strings.Contains(b, extractDomain(codePlanBase)) {
-				return p
-			}
-		}
-	}
-
-	return nil
-}
-
-// extractDomain 从 URL 中提取域名（用于匹配）
-func extractDomain(url string) string {
-	url = strings.TrimSpace(strings.ToLower(url))
-	url = strings.TrimPrefix(url, "https://")
-	url = strings.TrimPrefix(url, "http://")
-	url = strings.TrimPrefix(url, "ws://")
-	url = strings.TrimPrefix(url, "wss://")
-	if idx := strings.Index(url, "/"); idx >= 0 {
-		url = url[:idx]
-	}
-	if idx := strings.Index(url, ":"); idx >= 0 {
-		url = url[:idx]
-	}
-	return url
-}
-
 // globalRegistry 全局服务商注册表
 var globalRegistry = NewProviderRegistry()
 
@@ -196,11 +147,6 @@ func GetProviderByID(id string) *ProviderConfig {
 // GetAllProviders 获取所有服务商配置（使用全局注册表）
 func GetAllProviders() []*ProviderConfig {
 	return globalRegistry.GetAll()
-}
-
-// DetectProviderByBase 根据 API Base URL 自动检测服务商（使用全局注册表）
-func DetectProviderByBase(baseURL string) *ProviderConfig {
-	return globalRegistry.DetectProvider(baseURL)
 }
 
 // GetAPIBase 根据服务商和 API 类型返回正确的 Base URL
@@ -244,63 +190,5 @@ func GetAPIBase(provider ProviderType, apiType APIType, customBase string) strin
 		return cfg.DefaultAPIBase
 	default:
 		return cfg.DefaultAPIBase
-	}
-}
-
-// GetCodePlanModelNames 返回当前目录快照中需要使用 Code Plan API 的模型列表。
-func GetCodePlanModelNames() []string {
-	result := make([]string, 0)
-	seen := make(map[string]struct{})
-	for _, entry := range globalCatalog.GetAll() {
-		if entry == nil || (entry.APIType != APITypeCodePlan && entry.APIType != APITypeTokenPlan && entry.APIType != APITypeTokenPlanClaude) {
-			continue
-		}
-		for _, key := range []string{entry.ID, entry.ModelName} {
-			key = strings.TrimSpace(key)
-			if key == "" {
-				continue
-			}
-			normalized := strings.ToLower(key)
-			if _, ok := seen[normalized]; ok {
-				continue
-			}
-			seen[normalized] = struct{}{}
-			result = append(result, key)
-		}
-	}
-	return result
-}
-
-// IsCodePlanModel 检查模型是否需要使用 Code Plan API。
-func IsCodePlanModel(modelName string) bool {
-	entry := findCatalogEntryByKey(strings.ToLower(strings.TrimSpace(modelName)))
-	return entry != nil && (entry.APIType == APITypeCodePlan || entry.APIType == APITypeTokenPlan || entry.APIType == APITypeTokenPlanClaude)
-}
-
-// ParseProviderType 从字符串解析服务商类型
-func ParseProviderType(s string) ProviderType {
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "deepseek":
-		return ProviderDeepSeek
-	case "dashscope", "qwen", "aliyun", "alibaba":
-		return ProviderDashScope
-	case "bytedance", "volcengine", "volces", "doubao":
-		return ProviderByteDance
-	case "zhipu", "zhipuai", "glm", "chatglm":
-		return ProviderZhipu
-	case "moonshot", "kimi":
-		return ProviderMoonshot
-	case "minimax":
-		return ProviderMiniMax
-	case "mimo", "xiaomi", "xiaomimimo":
-		return ProviderMiMo
-	case "gemini", "google":
-		return ProviderGemini
-	case "openai":
-		return ProviderOpenAI
-	case "anthropic", "claude":
-		return ProviderAnthropic
-	default:
-		return ProviderCustom
 	}
 }

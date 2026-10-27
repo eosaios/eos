@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/dreamSailing/eos/pkg/protocol"
-	"github.com/dreamSailing/eos/pkg/sandbox"
+	"github.com/eosaios/eos/pkg/protocol"
+	"github.com/eosaios/eos/pkg/sandbox"
 )
 
 var ErrUnsupported = errors.New("coreapi unsupported operation")
@@ -93,6 +93,7 @@ type LSPService interface {
 	List(context.Context) ([]LSPServer, error)
 	Detect(context.Context, LSPLanguageRequest) (string, error)
 	Start(context.Context, LSPLanguageRequest) (string, error)
+	Install(context.Context, LSPLanguageRequest) (string, error)
 	Diagnostics(context.Context) ([]string, error)
 	DiagnosticsSummary(context.Context) (LSPDiagnosticsSummary, error)
 }
@@ -128,6 +129,7 @@ type ExtensionService interface {
 	BrowserLaunch(ctx context.Context, req BrowserLaunchRequest) error
 	BrowserClose(ctx context.Context, req BrowserCloseRequest) error
 	BrowserControlTakeover(ctx context.Context, req BrowserControlTakeoverRequest) error
+	BrowserControlConfirm(ctx context.Context) error
 	BrowserControlResume(ctx context.Context) error
 	BrowserTabs(ctx context.Context) ([]BrowserTabInfo, error)
 	BrowserProfiles(ctx context.Context) ([]BrowserProfileRecord, error)
@@ -251,6 +253,7 @@ type GitService interface {
 
 type InsightService interface {
 	PredictNextUserMessage(context.Context, PredictNextUserMessageRequest) (string, error)
+	RefineInput(context.Context, RefineInputRequest) (string, error)
 	PlanSnapshot(context.Context) (PlanSnapshot, error)
 }
 
@@ -272,6 +275,10 @@ type RoleService interface {
 type TurnService interface {
 	Start(context.Context, StartTurnRequest) (Turn, error)
 	Interrupt(context.Context, TurnRef) error
+	// Resume 续跑失败 turn（turn/resume）：不追加用户消息，内核按已提交
+	// 历史重建请求续写。ref.TurnID 生成规则同 Start（可由调用方预生成，
+	// 供事件订阅过滤）。
+	Resume(context.Context, TurnRef) (Turn, error)
 }
 
 type ApprovalService interface {
@@ -512,9 +519,43 @@ type PredictNextUserMessageRequest struct {
 	Draft string `json:"draft,omitempty"`
 }
 
+type RefineInputRequest struct {
+	Draft string `json:"draft,omitempty"`
+}
+
 type SaveMemoryRequest struct {
 	Scope   string `json:"scope,omitempty"`
 	Content string `json:"content"`
+}
+
+// CaptureEntry 采集板条目：满意 AI 回复的自包含知识卡快照。
+// 字段与内核 eos-core-protocol::CaptureEntry 的 serde 序列化同名对齐。
+type CaptureEntry struct {
+	ID                 string `json:"id,omitempty"`
+	Title              string `json:"title,omitempty"`
+	Content            string `json:"content,omitempty"`
+	SourceSessionID    string `json:"source_session_id,omitempty"`
+	SourceMessageID    string `json:"source_message_id,omitempty"`
+	SourceSessionTitle string `json:"source_session_title,omitempty"`
+	WorkspacePath      string `json:"workspace_path,omitempty"`
+	CreatedAt          string `json:"created_at,omitempty"`
+	UpdatedAt          string `json:"updated_at,omitempty"`
+}
+
+// CaptureSaveRequest captures/save 请求：ID 为空 = 新建，非空 = 整条替换。
+type CaptureSaveRequest struct {
+	ID                 string `json:"id,omitempty"`
+	Title              string `json:"title"`
+	Content            string `json:"content"`
+	SourceSessionID    string `json:"source_session_id,omitempty"`
+	SourceMessageID    string `json:"source_message_id,omitempty"`
+	SourceSessionTitle string `json:"source_session_title,omitempty"`
+	WorkspacePath      string `json:"workspace_path,omitempty"`
+}
+
+// CaptureDeleteRequest captures/delete 请求。
+type CaptureDeleteRequest struct {
+	ID string `json:"id"`
 }
 
 type MemoryRecord struct {
@@ -706,7 +747,7 @@ type SaveSessionMessagesRequest struct {
 
 // ModeKind is the per-turn collaboration mode, mirroring eos-core's
 // ModeKind (snake_case on the wire). Only "plan" and "default" are
-// user-visible — the same set Codex exposes.
+// user-visible.
 type ModeKind string
 
 const (
@@ -727,8 +768,8 @@ type CollaborationModeSettings struct {
 }
 
 // CollaborationMode is a complete per-turn mode selection, sent by the
-// client on turn/start. Mirrors eos-core's CollaborationMode and Codex's
-// turn/start.collaborationMode. Takes precedence over model/reasoning in
+// client on turn/start. Mirrors eos-core's CollaborationMode and the
+// turn/start.collaborationMode wire field. Takes precedence over model/reasoning in
 // options.
 type CollaborationMode struct {
 	Mode     ModeKind                  `json:"mode"`
@@ -758,8 +799,7 @@ type Attachment struct {
 }
 
 // ApprovalDecision is the typed wire approval decision (camelCase on the wire),
-// mirroring eos-core's ApprovalDecision / Codex's CommandExecutionApprovalDecision
-// common variants. Command-only amendment variants are omitted: eos has no
+// mirroring eos-core's ApprovalDecision common variants. Command-only amendment variants are omitted: eos has no
 // execpolicy/network-amendment approval flows, so they would be dead code.
 type ApprovalDecision string
 
@@ -1152,6 +1192,8 @@ type BrowserRuntimeStatus struct {
 	CurrentURL     string              `json:"current_url,omitempty"`
 	Control        BrowserControlState `json:"control"`
 	LastError      string              `json:"last_error,omitempty"`
+	Backend        string              `json:"backend,omitempty"`
+	Phase          string              `json:"phase,omitempty"`
 }
 
 type BrowserTabInfo struct {
@@ -1219,24 +1261,63 @@ type BrowserLiveStartRequest struct {
 }
 
 type BrowserInputRequest struct {
-	Kind       string  `json:"kind"`
-	Action     string  `json:"action,omitempty"`
-	X          float64 `json:"x"`
-	Y          float64 `json:"y"`
-	Button     string  `json:"button,omitempty"`
-	ClickCount *uint32 `json:"click_count,omitempty"`
-	DeltaX     float64 `json:"delta_x"`
-	DeltaY     float64 `json:"delta_y"`
-	Key        string  `json:"key,omitempty"`
-	Code       string  `json:"code,omitempty"`
-	KeyCode    uint32  `json:"key_code"`
-	Text       string  `json:"text,omitempty"`
-	Modifiers  uint32  `json:"modifiers"`
-	Value      string  `json:"value,omitempty"`
+	Kind           string  `json:"kind"`
+	Action         string  `json:"action,omitempty"`
+	X              float64 `json:"x"`
+	Y              float64 `json:"y"`
+	Button         string  `json:"button,omitempty"`
+	ClickCount     *uint32 `json:"click_count,omitempty"`
+	DeltaX         float64 `json:"delta_x"`
+	DeltaY         float64 `json:"delta_y"`
+	Key            string  `json:"key,omitempty"`
+	Code           string  `json:"code,omitempty"`
+	KeyCode        uint32  `json:"key_code"`
+	Text           string  `json:"text,omitempty"`
+	Modifiers      uint32  `json:"modifiers"`
+	Value          string  `json:"value,omitempty"`
+	SelectionStart *uint32 `json:"selection_start,omitempty"`
+	SelectionEnd   *uint32 `json:"selection_end,omitempty"`
 }
 
 type BrowserHistoryRequest struct {
 	Action string `json:"action"`
+}
+
+// BrowserCopySelectionResult 是 browser/copy_selection 的返回：页面当前选中文本。
+type BrowserCopySelectionResult struct {
+	Text string `json:"text"`
+}
+
+// BrowserFocusRequest 在目标 profile 打开地址（外部窗口）/置顶会话 tab。
+type BrowserFocusRequest struct {
+	URL     string `json:"url,omitempty"`
+	Profile string `json:"profile,omitempty"`
+}
+
+// BrowserProfileUpsertRequest 创建/更新 profile 注册表条目（browser/profile_upsert）。
+// 零值字段 = 不更新（新建时按全局默认无头）。
+type BrowserProfileUpsertRequest struct {
+	Name     string `json:"name"`
+	Headless bool   `json:"headless,omitempty"`
+	Note     string `json:"note,omitempty"`
+}
+
+// BrowserCredentialsImportRequest 外部浏览器登录态导入（browser/credentials_import）。
+// Endpoint 空 = 自动模式（拷贝默认 Chrome cookie 到临时调试实例，macOS/Linux）。
+type BrowserCredentialsImportRequest struct {
+	Endpoint string   `json:"endpoint,omitempty"`
+	Profile  string   `json:"profile,omitempty"`
+	Domains  []string `json:"domains,omitempty"`
+	DryRun   bool     `json:"dry_run,omitempty"`
+}
+
+// BrowserCredentialsImportResult 登录态导入结果。
+type BrowserCredentialsImportResult struct {
+	Imported uint64 `json:"imported"`
+	Skipped  uint64 `json:"skipped"`
+	Total    uint64 `json:"total"`
+	Source   string `json:"source"`
+	DryRun   bool   `json:"dry_run"`
 }
 
 type BrowserProfileRecord struct {
@@ -1244,6 +1325,9 @@ type BrowserProfileRecord struct {
 	Dir       string `json:"dir"`
 	CreatedAt int64  `json:"created_at"`
 	Note      string `json:"note,omitempty"`
+	// Headless 启动模式：nil = 按全局配置（新默认无头）；内置 default 无头、
+	// external 有头。
+	Headless *bool `json:"headless,omitempty"`
 }
 
 type ContextStats struct {
@@ -1277,10 +1361,10 @@ type CostItem struct {
 	TotalTokens       *int      `json:"total_tokens,omitempty"`
 	// ContextInputTokens 是该 turn 最近一次请求的真实 prompt tokens ≈ 上下文规模；
 	// InputTokens 是各步累加的计费口径（多轮 ReAct 会远超窗口，不能当占用展示）。
-	ContextInputTokens *int      `json:"context_input_tokens,omitempty"`
-	CostUSD            *float64  `json:"cost_usd,omitempty"`
-	UsageKnown         bool      `json:"usage_known"`
-	CostKnown          bool      `json:"cost_known"`
+	ContextInputTokens *int     `json:"context_input_tokens,omitempty"`
+	CostUSD            *float64 `json:"cost_usd,omitempty"`
+	UsageKnown         bool     `json:"usage_known"`
+	CostKnown          bool     `json:"cost_known"`
 }
 
 type VersionItem struct {
@@ -1414,6 +1498,8 @@ type GitStatusRequest struct {
 type GitChange struct {
 	Path  string `json:"path"`
 	State string `json:"state"`
+	// Staged 取 porcelain XY 的 X 位（首个字符）非空格；untracked 恒为 false。
+	Staged bool `json:"staged"`
 }
 
 type GitSummaryRequest struct {
@@ -1428,6 +1514,64 @@ type GitSummaryResult struct {
 	Ahead    uint32      `json:"ahead"`
 	Behind   uint32      `json:"behind"`
 	Changes  []GitChange `json:"changes,omitempty"`
+}
+
+type GitReposRequest struct {
+	WorkspaceRoot string `json:"workspace_root,omitempty"`
+}
+
+// GitRepoSummary 是工作区相关仓库（主仓库 + 一级子仓库）的单项概览；
+// primary 标记主仓库（工作区自身或其外层所在仓库，恒排第一）。
+type GitRepoSummary struct {
+	Root    string           `json:"root"`
+	Name    string           `json:"name,omitempty"`
+	Primary bool             `json:"primary"`
+	Summary GitSummaryResult `json:"summary"`
+}
+
+type GitReposResult struct {
+	Repos []GitRepoSummary `json:"repos,omitempty"`
+}
+
+type GitStageRequest struct {
+	WorkspaceRoot string   `json:"workspace_root,omitempty"`
+	Paths         []string `json:"paths,omitempty"`
+	All           bool     `json:"all"`
+	Unstage       bool     `json:"unstage"`
+}
+
+type GitCommitRequest struct {
+	WorkspaceRoot string `json:"workspace_root,omitempty"`
+	Message       string `json:"message,omitempty"`
+}
+
+type GitCommitResult struct {
+	Hash   string `json:"hash,omitempty"`
+	Branch string `json:"branch,omitempty"`
+}
+
+type GitPushRequest struct {
+	WorkspaceRoot string `json:"workspace_root,omitempty"`
+}
+
+// GitPushResult.Status 取值：pushed / merged_then_pushed / conflict /
+// merge_pending（冲突已解决但合并未提交）。
+type GitPushResult struct {
+	Status    string   `json:"status,omitempty"`
+	Branch    string   `json:"branch,omitempty"`
+	Conflicts []string `json:"conflicts,omitempty"`
+}
+
+type GitAbortMergeRequest struct {
+	WorkspaceRoot string `json:"workspace_root,omitempty"`
+}
+
+type GitSuggestMessageRequest struct {
+	WorkspaceRoot string `json:"workspace_root,omitempty"`
+}
+
+type GitSuggestMessageResult struct {
+	Message string `json:"message,omitempty"`
 }
 
 type GitDiffRequest struct {
@@ -1498,8 +1642,17 @@ type MemoryDocument struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
+// ProjectMemorySummary 是当前活动项目分区记忆（内核 snapshot.projects 至多一项）。
+type ProjectMemorySummary struct {
+	Key       string           `json:"key,omitempty"`
+	Root      string           `json:"root,omitempty"`
+	Name      string           `json:"name,omitempty"`
+	Documents []MemoryDocument `json:"documents"`
+}
+
 type MemorySnapshot struct {
-	Documents []MemoryDocument `json:"documents,omitempty"`
+	Documents []MemoryDocument       `json:"documents,omitempty"`
+	Projects  []ProjectMemorySummary `json:"projects,omitempty"`
 }
 
 type RoleConfig struct {

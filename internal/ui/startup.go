@@ -1,6 +1,6 @@
 package ui
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -14,11 +14,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/i18n"
-	sidecarclient "github.com/dreamSailing/eos/pkg/coreapi/sidecar/client"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/pkg/coreapi/sidecar"
+	sidecarclient "github.com/eosaios/eos/pkg/coreapi/sidecar/client"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // TUIOptions holds CLI-provided overrides for the interactive TUI
@@ -37,10 +38,6 @@ type TUIOptions struct {
 // T 是 i18n.T 的别名，用于简化调用
 func T(key, lang string, args ...interface{}) string {
 	return i18n.T(key, lang, args...)
-}
-
-func StartInteractiveTUI() {
-	StartInteractiveTUIWithOptions(TUIOptions{})
 }
 
 // applyTUIStartupModel 启动期模型处理：
@@ -135,7 +132,7 @@ func StartInteractiveTUIWithOptions(opts TUIOptions) {
 		}
 	}
 	slog.Info("ui.startup.app.run")
-	if _, err := tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion()).Run(); err != nil {
+	if _, err := tea.NewProgram(m).Run(); err != nil {
 		slog.Error("ui.startup.app.run.error", "error", err)
 		fmt.Fprintf(os.Stderr, "\nError: Application failed to start: %v\n", err)
 		fmt.Fprintf(os.Stderr, "Please check the logs for more details.\n")
@@ -155,6 +152,12 @@ func tuiSidecarClientOptions(opts TUIOptions, stderrWriter io.Writer) sidecarcli
 		Stderr:           stderrWriter,
 		VerifyChecksum:   true,
 		RequireSignature: true,
+		// 本地开发放行占位签名：dev-rebuild 脚本（scripts/dev_rebuild_core.go）
+		// 把本机新编译的内核 stage 进仓库 vendored core/，占位签名 + sha256
+		// 校验通过即可用，`go run .` 直接吃最新内核。release 门禁
+		// （EOS_RELEASE_ARTIFACT_CHECK）启用时 resolver 的 enforceReleaseGate
+		// 会强制改写为 false，发布产物仍只认 Ed25519 签名。
+		AllowDevPlaceholder: !sidecar.ReleaseArtifactCheck(),
 	}
 }
 

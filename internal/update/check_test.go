@@ -1,6 +1,6 @@
 package update
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -18,7 +18,7 @@ import (
 func TestFetchLatestTag_ParsesRedirectTag(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r,
-			"https://github.com/dreamSailing/eos/releases/tag/v1.2.3/",
+			"https://github.com/eosaios/eos/releases/tag/v1.2.3/",
 			http.StatusFound)
 	}))
 	defer srv.Close()
@@ -65,7 +65,7 @@ func TestFetchLatestTag_RetriesTransientNetworkErrors(t *testing.T) {
 			panic(http.ErrAbortHandler) // 模拟瞬断：连接被服务端中断
 		}
 		http.Redirect(w, r,
-			"https://github.com/dreamSailing/eos/releases/tag/v2.0.0",
+			"https://github.com/eosaios/eos/releases/tag/v2.0.0",
 			http.StatusFound)
 	}))
 	defer srv.Close()
@@ -98,7 +98,7 @@ func TestFetchLatestTag_TimeoutGetsFreshBudgetPerAttempt(t *testing.T) {
 			return
 		}
 		http.Redirect(w, r,
-			"https://github.com/dreamSailing/eos/releases/tag/v3.0.0",
+			"https://github.com/eosaios/eos/releases/tag/v3.0.0",
 			http.StatusFound)
 	}))
 	defer srv.Close()
@@ -127,14 +127,14 @@ func TestBuildCheckResult_ConstructsDeterministicURLs(t *testing.T) {
 	if r.AssetName != wantAsset {
 		t.Fatalf("AssetName = %q, want %q", r.AssetName, wantAsset)
 	}
-	base := "https://github.com/dreamSailing/eos/releases/download/v1.0.0-beta.10"
+	base := "https://github.com/eosaios/eos/releases/download/v1.0.0-beta.10"
 	if r.DownloadURL != base+"/"+wantAsset {
 		t.Fatalf("DownloadURL = %q", r.DownloadURL)
 	}
 	if r.ChecksumURL != base+"/SHA256SUMS.txt" {
 		t.Fatalf("ChecksumURL = %q", r.ChecksumURL)
 	}
-	if r.ReleaseURL != "https://github.com/dreamSailing/eos/releases/tag/v1.0.0-beta.10" {
+	if r.ReleaseURL != "https://github.com/eosaios/eos/releases/tag/v1.0.0-beta.10" {
 		t.Fatalf("ReleaseURL = %q", r.ReleaseURL)
 	}
 }

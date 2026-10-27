@@ -3,7 +3,7 @@ package jsonrpc
 import (
 	"context"
 
-	protocoljsonrpc "github.com/dreamSailing/eos/pkg/protocol/jsonrpc"
+	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
 
 // Notifier sends protocol notifications to connected clients.

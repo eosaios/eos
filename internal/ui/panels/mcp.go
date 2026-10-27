@@ -1,6 +1,6 @@
 package panels
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -9,12 +9,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/ui/styles"
 
-	"github.com/charmbracelet/bubbles/table"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/table"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // MCPServer MCP服务器信息
@@ -237,10 +237,10 @@ func (p *MCPPanel) View() string {
 
 	content.WriteString(p.styles.PanelTitle.Render(i18n.T("mcp.manager.title", p.language)))
 	content.WriteString("\n\n")
-	content.WriteString(fmt.Sprintf("%s: %d %s\n\n",
+	fmt.Fprintf(&content, "%s: %d %s\n\n",
 		i18n.T("cmd.mcp", p.language),
 		len(p.servers),
-		i18n.T("mcp.header", p.language)))
+		i18n.T("mcp.header", p.language))
 
 	if len(p.servers) == 0 {
 		content.WriteString(i18n.T("mcp.empty", p.language))
@@ -288,9 +288,9 @@ func (p *MCPPanel) View() string {
 			opStrs = append(opStrs, p.styles.TextMuted.Render(text))
 		}
 	}
-	content.WriteString(fmt.Sprintf("%s %s\n\n",
+	fmt.Fprintf(&content, "%s %s\n\n",
 		i18n.T("mcp.action", p.language),
-		strings.Join(opStrs, "  ")))
+		strings.Join(opStrs, "  "))
 
 	content.WriteString(p.styles.TextMuted.Render(
 		i18n.T("mcp.help", p.language)))

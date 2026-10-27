@@ -1,6 +1,6 @@
 package ui
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 func (m *AppModel) handleVerifySlash(args []string) tea.Cmd {
@@ -60,7 +60,8 @@ func (m *AppModel) handleVerifySlash(args []string) tea.Cmd {
 		}
 		return InvokeDoneMsg{Content: content}
 	}
-	return tea.Batch(invoke, m.shell.StatusTick())
+	// 本轮开始快照 git 计数基线：turn 结束评估提交提醒时按净增加判定（纯提问/只读轮不弹）。
+	return tea.Batch(invoke, m.shell.StatusTick(), m.snapshotGitBaseline())
 }
 
 func buildVerifyPrompt(m *AppModel, args []string) string {

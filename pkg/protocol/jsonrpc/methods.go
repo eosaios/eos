@@ -39,6 +39,7 @@ const (
 	MethodLSPList                    = "lsp/list"
 	MethodLSPDetect                  = "lsp/detect"
 	MethodLSPStart                   = "lsp/start"
+	MethodLSPInstall                 = "lsp/install"
 	MethodLSPDiagnostics             = "lsp/diagnostics"
 	MethodLSPDiagnosticsSummary      = "lsp/diagnostics/summary"
 	MethodConfigRulesGet             = "config/rules/get"
@@ -64,7 +65,10 @@ const (
 	MethodBrowserClose               = "browser/close"
 	MethodBrowserTabs                = "browser/tabs"
 	MethodBrowserProfiles            = "browser/profiles"
+	MethodBrowserProfileUpsert       = "browser/profile_upsert"
+	MethodBrowserCredentialsImport   = "browser/credentials_import"
 	MethodBrowserControlTakeover     = "browser/control_takeover"
+	MethodBrowserControlConfirm      = "browser/control_confirm"
 	MethodBrowserControlResume       = "browser/control_resume"
 	MethodBrowserPickStart           = "browser/pick_start"
 	MethodBrowserPickStop            = "browser/pick_stop"
@@ -79,6 +83,14 @@ const (
 	MethodBrowserLiveStop            = "browser/live_stop"
 	MethodBrowserInput               = "browser/input"
 	MethodBrowserHistory             = "browser/history"
+	MethodBrowserCopySelection       = "browser/copy_selection"
+	MethodBrowserHostRegister        = "browser/host_register"
+	MethodBrowserHostRespond         = "browser/host_respond"
+	MethodBrowserHostState           = "browser/host_state"
+	MethodDesktopHostStatus          = "desktop/host/status"
+	MethodDesktopHostRegister        = "desktop/host/register"
+	MethodDesktopHostUnregister      = "desktop/host/unregister"
+	MethodDesktopHostRespond         = "desktop/host/respond"
 	MethodContextPreview             = "context/preview"
 	MethodContextStats               = "context/stats"
 	MethodContextWindow              = "context/window"
@@ -134,11 +146,21 @@ const (
 	MethodGitBranches                = "git/branches"
 	MethodGitLog                     = "git/log"
 	MethodGitShow                    = "git/show"
+	MethodGitRepos                   = "git/repos"
+	MethodGitStage                   = "git/stage"
+	MethodGitCommit                  = "git/commit"
+	MethodGitPush                    = "git/push"
+	MethodGitMergeAbort              = "git/merge_abort"
+	MethodGitSuggestMessage          = "git/suggest_message"
 	MethodInsightPredictNextUser     = "insight/predict_next_user_message"
+	MethodInsightRefineInput         = "insight/refine_input"
 	MethodInsightPlanSnapshot        = "insight/plan_snapshot"
 	MethodMemorySnapshot             = "memory/snapshot"
 	MethodMemorySave                 = "memory/save"
 	MethodMemoryRebuildIndex         = "memory/rebuild_index"
+	MethodCapturesList               = "captures/list"
+	MethodCapturesSave               = "captures/save"
+	MethodCapturesDelete             = "captures/delete"
 	MethodMemoryRecordAdd            = "memory/record/add"
 	MethodMemoryRecordList           = "memory/record/list"
 	MethodMemoryRecordSearch         = "memory/record/search"
@@ -156,6 +178,7 @@ const (
 	MethodEventUnsubscribe           = "event/unsubscribe"
 	MethodTurnStart                  = "turn/start"
 	MethodTurnInterrupt              = "turn/interrupt"
+	MethodTurnResume                 = "turn/resume"
 	MethodToolCatalog                = "tool/catalog"
 	MethodToolExecute                = "tool/execute"
 	MethodToolTraces                 = "tool/traces"
@@ -229,6 +252,7 @@ func AllCoreMethods() []string {
 		MethodLSPList,
 		MethodLSPDetect,
 		MethodLSPStart,
+		MethodLSPInstall,
 		MethodLSPDiagnostics,
 		MethodLSPDiagnosticsSummary,
 		MethodConfigRulesGet,
@@ -254,7 +278,10 @@ func AllCoreMethods() []string {
 		MethodBrowserClose,
 		MethodBrowserTabs,
 		MethodBrowserProfiles,
+		MethodBrowserProfileUpsert,
+		MethodBrowserCredentialsImport,
 		MethodBrowserControlTakeover,
+		MethodBrowserControlConfirm,
 		MethodBrowserControlResume,
 		MethodBrowserPickStart,
 		MethodBrowserPickStop,
@@ -269,6 +296,14 @@ func AllCoreMethods() []string {
 		MethodBrowserLiveStop,
 		MethodBrowserInput,
 		MethodBrowserHistory,
+		MethodBrowserCopySelection,
+		MethodBrowserHostRegister,
+		MethodBrowserHostRespond,
+		MethodBrowserHostState,
+		MethodDesktopHostStatus,
+		MethodDesktopHostRegister,
+		MethodDesktopHostUnregister,
+		MethodDesktopHostRespond,
 		MethodContextPreview,
 		MethodContextStats,
 		MethodContextWindow,
@@ -324,11 +359,21 @@ func AllCoreMethods() []string {
 		MethodGitBranches,
 		MethodGitLog,
 		MethodGitShow,
+		MethodGitRepos,
+		MethodGitStage,
+		MethodGitCommit,
+		MethodGitPush,
+		MethodGitMergeAbort,
+		MethodGitSuggestMessage,
 		MethodInsightPredictNextUser,
+		MethodInsightRefineInput,
 		MethodInsightPlanSnapshot,
 		MethodMemorySnapshot,
 		MethodMemorySave,
 		MethodMemoryRebuildIndex,
+		MethodCapturesList,
+		MethodCapturesSave,
+		MethodCapturesDelete,
 		MethodRoleList,
 		MethodRoleResolve,
 		MethodAgentSpawn,
@@ -342,6 +387,7 @@ func AllCoreMethods() []string {
 		MethodEventUnsubscribe,
 		MethodTurnStart,
 		MethodTurnInterrupt,
+		MethodTurnResume,
 		MethodToolCatalog,
 		MethodToolExecute,
 		MethodToolTraces,

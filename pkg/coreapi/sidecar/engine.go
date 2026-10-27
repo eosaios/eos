@@ -10,11 +10,11 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dreamSailing/eos/pkg/coreapi"
-	coreapijsonrpc "github.com/dreamSailing/eos/pkg/coreapi/jsonrpc"
-	"github.com/dreamSailing/eos/pkg/protocol"
-	protocoljsonrpc "github.com/dreamSailing/eos/pkg/protocol/jsonrpc"
-	"github.com/dreamSailing/eos/pkg/sandbox"
+	"github.com/eosaios/eos/pkg/coreapi"
+	coreapijsonrpc "github.com/eosaios/eos/pkg/coreapi/jsonrpc"
+	"github.com/eosaios/eos/pkg/protocol"
+	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
+	"github.com/eosaios/eos/pkg/sandbox"
 )
 
 var ErrCallerUnavailable = errors.New("core sidecar caller is unavailable")
@@ -64,8 +64,11 @@ func StartRemoteEngine(ctx context.Context, opts ProcessOptions) (*RemoteEngine,
 	engine.caller = client
 	engine.client = client
 	if _, err := engine.Initialize(ctx); err != nil {
-		_ = client.Close()
-		return nil, err
+		initializeErr := fmt.Errorf("initialize eos-core %q: %w", client.cmd.Path, err)
+		if closeErr := client.Close(); closeErr != nil {
+			return nil, errors.Join(initializeErr, fmt.Errorf("eos-core exit/cleanup: %w", closeErr))
+		}
+		return nil, initializeErr
 	}
 	go func() {
 		<-client.Wait()
@@ -452,6 +455,14 @@ func (s remoteTurnService) Interrupt(ctx context.Context, ref coreapi.TurnRef) e
 	return s.engine.call(ctx, protocoljsonrpc.MethodTurnInterrupt, ref, &out)
 }
 
+func (s remoteTurnService) Resume(ctx context.Context, ref coreapi.TurnRef) (coreapi.Turn, error) {
+	var out coreapi.Turn
+	if err := s.engine.call(ctx, protocoljsonrpc.MethodTurnResume, ref, &out); err != nil {
+		return coreapi.Turn{}, err
+	}
+	return out, nil
+}
+
 type remoteApprovalService struct {
 	engine *RemoteEngine
 }
@@ -602,7 +613,7 @@ type remoteSandboxService struct {
 
 func (s remoteSandboxService) Policy(ctx context.Context, ref coreapi.SessionRef) (sandbox.Policy, error) {
 	var out sandbox.Policy
-	if err := s.engine.call(ctx, protocoljsonrpc.MethodSandboxPolicy, coreapi.SandboxPolicyRequest{SessionID: ref.SessionID}, &out); err != nil {
+	if err := s.engine.call(ctx, protocoljsonrpc.MethodSandboxPolicy, coreapi.SandboxPolicyRequest(ref), &out); err != nil {
 		return sandbox.Policy{}, err
 	}
 	return out, nil
@@ -794,6 +805,14 @@ func (s remoteLSPService) Start(ctx context.Context, req coreapi.LSPLanguageRequ
 	return out, nil
 }
 
+func (s remoteLSPService) Install(ctx context.Context, req coreapi.LSPLanguageRequest) (string, error) {
+	var out string
+	if err := s.engine.call(ctx, protocoljsonrpc.MethodLSPInstall, req, &out); err != nil {
+		return "", err
+	}
+	return out, nil
+}
+
 func (s remoteLSPService) Diagnostics(ctx context.Context) ([]string, error) {
 	var out []string
 	if err := s.engine.call(ctx, protocoljsonrpc.MethodLSPDiagnostics, nil, &out); err != nil {
@@ -874,6 +893,11 @@ func (s remoteExtensionService) BrowserClose(ctx context.Context, req coreapi.Br
 func (s remoteExtensionService) BrowserControlTakeover(ctx context.Context, req coreapi.BrowserControlTakeoverRequest) error {
 	var out map[string]any
 	return s.engine.call(ctx, protocoljsonrpc.MethodBrowserControlTakeover, req, &out)
+}
+
+func (s remoteExtensionService) BrowserControlConfirm(ctx context.Context) error {
+	var out map[string]any
+	return s.engine.call(ctx, protocoljsonrpc.MethodBrowserControlConfirm, coreapi.BrowserControlResumeRequest{}, &out)
 }
 
 func (s remoteExtensionService) BrowserControlResume(ctx context.Context) error {
@@ -1268,6 +1292,16 @@ func (s remoteInsightService) PredictNextUserMessage(ctx context.Context, req co
 		Text string `json:"text"`
 	}
 	if err := s.engine.call(ctx, protocoljsonrpc.MethodInsightPredictNextUser, req, &out); err != nil {
+		return "", err
+	}
+	return out.Text, nil
+}
+
+func (s remoteInsightService) RefineInput(ctx context.Context, req coreapi.RefineInputRequest) (string, error) {
+	var out struct {
+		Text string `json:"text"`
+	}
+	if err := s.engine.call(ctx, protocoljsonrpc.MethodInsightRefineInput, req, &out); err != nil {
 		return "", err
 	}
 	return out.Text, nil

@@ -1,6 +1,6 @@
 package panels
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -9,14 +9,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/ai"
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/ai"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/ui/styles"
 
-	"github.com/charmbracelet/bubbles/table"
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/table"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/mattn/go-runewidth"
 )
 
@@ -73,7 +73,7 @@ func NewContextPanel(styles *styles.Styles, lang string) *ContextPanel {
 	t.KeyMap.LineUp.SetKeys("up", "k")
 	t.KeyMap.LineDown.SetKeys("down", "j")
 
-	vp := viewport.New(0, 0)
+	vp := viewport.New()
 	vp.MouseWheelEnabled = true
 	vp.MouseWheelDelta = 3
 
@@ -382,8 +382,8 @@ func (p *ContextPanel) viewDetail() string {
 	content.WriteString("\n\n")
 
 	// 消息元信息
-	content.WriteString(fmt.Sprintf("%s: %s\n", i18n.T("ctx.col.role", p.language), p.styles.TextInfo.Render(selected.Role)))
-	content.WriteString(fmt.Sprintf("%s: %d\n", i18n.T("ctx.col.tokens", p.language), selected.Tokens))
+	fmt.Fprintf(&content, "%s: %s\n", i18n.T("ctx.col.role", p.language), p.styles.TextInfo.Render(selected.Role))
+	fmt.Fprintf(&content, "%s: %d\n", i18n.T("ctx.col.tokens", p.language), selected.Tokens)
 	content.WriteString("\n")
 
 	// 消息内容
@@ -422,8 +422,8 @@ func (p *ContextPanel) syncLayout() {
 
 	p.table.SetWidth(w)
 	p.table.SetHeight(tableHeight)
-	p.detail.Width = w
-	p.detail.Height = h
+	p.detail.SetWidth(w)
+	p.detail.SetHeight(h)
 	p.updateTableColumns()
 }
 

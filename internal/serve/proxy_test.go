@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
-	coreapijsonrpc "github.com/dreamSailing/eos/pkg/coreapi/jsonrpc"
-	"github.com/dreamSailing/eos/pkg/protocol/jsonrpc"
+	coreapijsonrpc "github.com/eosaios/eos/pkg/coreapi/jsonrpc"
+	"github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
 
 // recordingCaller 记录所有 Call 的 method + params，并按 method 返回预设结果。
@@ -101,7 +101,7 @@ func TestInitializeReturnsInitResultMethods(t *testing.T) {
 	caller := &recordingCaller{}
 	wantMethods := []string{"initialize", "session/create", "tool/execute"}
 	router, _ := NewRouter(Options{
-		Caller: caller,
+		Caller:     caller,
 		InitResult: initResultWith(wantMethods),
 	})
 

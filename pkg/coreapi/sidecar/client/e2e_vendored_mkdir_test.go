@@ -8,22 +8,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dreamSailing/eos/pkg/coreapi"
-	sidecarclient "github.com/dreamSailing/eos/pkg/coreapi/sidecar/client"
-	"github.com/dreamSailing/eos/pkg/protocol/jsonrpc"
+	"github.com/eosaios/eos/pkg/coreapi"
+	sidecarclient "github.com/eosaios/eos/pkg/coreapi/sidecar/client"
+	"github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
-
-// packagedCoreBinary is the vendored sidecar that `go run .` actually loads.
-const packagedCoreBinary = `C:/home/eos/eos-cli/pkg/coreapi/sidecar/binaries/x86_64-pc-windows-gnu/eos-core.exe`
 
 // TestE2EVendoredFileMkdirRelativePathApproval drives the exact sidecar that
 // `go run .` resolves, proving the Rust relative-path fix is packaged and that
 // a relative file_mkdir under workspace-write succeeds after approval instead
 // of stalling on "outside all writable roots".
 func TestE2EVendoredFileMkdirRelativePathApproval(t *testing.T) {
-	if _, err := os.Stat(packagedCoreBinary); err != nil {
-		t.Skipf("packaged sidecar not found at %s: %v", packagedCoreBinary, err)
-	}
+	coreBinary := resolveE2ECoreBinary(t)
+	t.Logf("driving real core: %s", coreBinary)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -31,7 +27,7 @@ func TestE2EVendoredFileMkdirRelativePathApproval(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	client, err := sidecarclient.Start(ctx, sidecarclient.Options{
-		BinaryPath: packagedCoreBinary,
+		BinaryPath: coreBinary,
 		Env: map[string]string{
 			"EOS_SANDBOX_MODE":           "workspace-write",
 			"EOS_WORKSPACE_ROOT":         tmpDir,
@@ -71,23 +67,38 @@ func TestE2EVendoredFileMkdirRelativePathApproval(t *testing.T) {
 		t.Fatalf("missing approval_id: %s", string(toolResult.Output))
 	}
 
-	var approveResult coreapi.ToolResult
+	// approval/respond 的同步返回是 ApprovalReceipt，实际工具结果通过事件异步送达。
+	var receipt struct {
+		ApprovalID string `json:"approval_id"`
+		Decision   string `json:"decision"`
+		Accepted   bool   `json:"accepted"`
+	}
 	if err := client.Process().Call(ctx, jsonrpc.MethodApprovalRespond, map[string]any{
 		"approval_id": pending.ApprovalID,
 		"decision":    "accept",
-	}, &approveResult); err != nil {
+	}, &receipt); err != nil {
 		t.Fatalf("approval/respond error = %v", err)
 	}
-	if approveResult.Status != "ok" {
-		t.Fatalf("approval/respond status = %q, want ok (display=%q output=%s)",
-			approveResult.Status, approveResult.Display, string(approveResult.Output))
+	if !receipt.Accepted || receipt.ApprovalID != pending.ApprovalID || receipt.Decision != "accept" {
+		t.Fatalf("approval/respond receipt = %+v, want accepted=true decision=accept", receipt)
 	}
 
-	info, err := os.Stat(filepath.Join(tmpDir, "test"))
-	if err != nil {
-		t.Fatalf("expected directory created: %v", err)
+	// 副作用断言：目录必须真的被创建，且只创建一次。
+	created := filepath.Join(tmpDir, "test")
+	deadline := time.Now().Add(30 * time.Second)
+	var info os.FileInfo
+	for {
+		var err error
+		info, err = os.Stat(created)
+		if err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("expected directory %s to be created after approval: %v", created, err)
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 	if !info.IsDir() {
-		t.Fatalf("test is not a directory")
+		t.Fatalf("%s exists but is not a directory", created)
 	}
 }

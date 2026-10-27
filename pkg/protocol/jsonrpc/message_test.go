@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dreamSailing/eos/pkg/protocol"
+	"github.com/eosaios/eos/pkg/protocol"
 )
 
 func TestRequestDoesNotEmitJSONRPCVersion(t *testing.T) {

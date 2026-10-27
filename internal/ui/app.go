@@ -21,17 +21,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/ui/adapter"
-	"github.com/dreamSailing/eos/internal/ui/components/messages"
-	"github.com/dreamSailing/eos/internal/ui/panels"
-	"github.com/dreamSailing/eos/internal/ui/styles"
-	"github.com/dreamSailing/eos/internal/ui/views/confirm"
-	"github.com/dreamSailing/eos/internal/ui/views/help"
-	"github.com/dreamSailing/eos/internal/ui/views/setup"
-	"github.com/dreamSailing/eos/internal/ui/views/shell"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/ui/adapter"
+	"github.com/eosaios/eos/internal/ui/components/messages"
+	"github.com/eosaios/eos/internal/ui/panels"
+	"github.com/eosaios/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/ui/views/confirm"
+	"github.com/eosaios/eos/internal/ui/views/help"
+	"github.com/eosaios/eos/internal/ui/views/setup"
+	"github.com/eosaios/eos/internal/ui/views/shell"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // AppState 应用程序状态
@@ -120,10 +120,11 @@ type AppModel struct {
 	gitSummaryRoot      string
 	gitSummaryCheckedAt time.Time
 
-	// gitHintedDirty / gitHintedAhead 是上次提交提醒时的计数（-1 = 从未提示），
-	// 计数相对上次提示无变化则不重复提醒，避免刷屏。
-	gitHintedDirty int
-	gitHintedAhead int
+	// gitBaselineDirty / gitBaselineAhead 是本轮 AI turn 开始时的工作区计数
+	// 快照（-1 = 基线缺失：非 git / 查询失败 / 快照未及返回）。turn 结束评估
+	// 提交提醒时只有计数相对基线净增加才提示——纯提问/只读轮不弹。
+	gitBaselineDirty int
+	gitBaselineAhead int
 
 	trustPendingPath   string
 	trustPendingAction string
@@ -202,6 +203,8 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleGitSummaryMsg(msg)
 	case GitCommitHintMsg:
 		return m.handleGitCommitHintMsg(msg)
+	case GitBaselineMsg:
+		return m.handleGitBaselineMsg(msg)
 	case tea.WindowSizeMsg:
 		return m.handleWindowSizeMsg(msg)
 	case tea.MouseMsg:
@@ -242,6 +245,8 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case clearCopiedMsg:
 		return m.handleClearCopiedMsg(msg)
 
+	case BrowserTakeoverConfirmMsg:
+		return m.handleBrowserTakeoverConfirm(msg)
 	case BrowserTakeoverStartedMsg:
 		return m.handleBrowserTakeoverStarted(msg)
 	case BrowserTakeoverEndedMsg:
@@ -388,42 +393,52 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, m.finalizeUpdate(nil)
 }
 
-// View 渲染应用视图
-func (m *AppModel) View() string {
+// View 渲染应用视图。v2 下 AltScreen / 鼠标模式也在这里声明。
+func (m *AppModel) View() tea.View {
 	if m.width == 0 || m.height == 0 {
-		return "Loading..."
+		return tea.NewView("Loading...")
 	}
 
+	var content string
 	switch m.activeView {
 	case "shell":
 		view := m.shell.View()
 		if m.actionPopup != nil {
-			return overlayCenter(m.width, m.height, view, m.actionPopup.View())
+			content = overlayCenter(m.width, m.height, view, m.actionPopup.View())
+		} else {
+			content = view
 		}
-		return view
 	case "confirm":
 		if m.confirmView != nil {
-			return m.confirmView.View()
+			content = m.confirmView.View()
+		} else {
+			content = m.shell.View()
 		}
-		return m.shell.View()
 	case "help":
-		return m.helpView.View()
+		content = m.helpView.View()
 	case "setup":
 		switch sv := m.setupView.(type) {
 		case *setup.SetupView:
-			return sv.View()
+			content = sv.View()
 		case *setup.ModelSetupView:
-			return sv.View()
+			content = sv.View()
 		case *setup.MCPConfigEditorView:
-			return sv.View()
+			content = sv.View()
+		default:
+			content = "Loading..."
 		}
-		return "Loading..."
 	case "panel":
 		if panel, ok := m.panels[m.activePanel]; ok {
-			return panel.View()
+			content = panel.View()
+		} else {
+			content = m.styles.App.Render("Panel not found: " + m.activePanel)
 		}
-		return m.styles.App.Render("Panel not found: " + m.activePanel)
 	default:
-		return m.styles.App.Render("Welcome to EOS!")
+		content = m.styles.App.Render("Welcome to EOS!")
 	}
+
+	v := tea.NewView(content)
+	v.AltScreen = true
+	v.MouseMode = tea.MouseModeCellMotion
+	return v
 }

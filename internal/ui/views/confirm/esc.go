@@ -1,6 +1,6 @@
 package confirm
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -9,8 +9,8 @@ package confirm
 //
 // 设计目标：消除「esc 按 confirm.Kind 一刀切」的壳层裁决
 // （旧逻辑：permission→decline，其它→cancel）。改为基于弹框 options 内容
-// 推断 esc 应发的 decision，对齐 eos-app workbench-approvals-logic.ts 的
-// decisionForEsc 与 codex 不变量 P3（esc 永远是安全 abort，必须发 decision，
+// 推断 esc 应发的 decision，与 eos-app workbench-approvals-logic.ts 的
+// decisionForEsc 同一套硬性不变量（esc 永远是安全 abort，必须发 decision，
 // 不能只关 UI 否则内核阻塞在等待 approval 上）。
 
 import "strings"

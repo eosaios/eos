@@ -22,12 +22,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/ui/panels"
-	"github.com/dreamSailing/eos/internal/ui/views/confirm"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/ui/panels"
+	"github.com/eosaios/eos/internal/ui/views/confirm"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // WorkspaceReloadDoneMsg 工作区重载完成消息
@@ -206,8 +206,8 @@ func (m *AppModel) handleWorkspaceReloadDoneMsg(msg WorkspaceReloadDoneMsg) (tea
 	m.refreshMemoryPanel()
 	m.refreshRulesPanel()
 	// 新工作区是新仓库：提交提醒按全新状态重新计数。
-	m.gitHintedDirty = -1
-	m.gitHintedAhead = -1
+	m.gitBaselineDirty = -1
+	m.gitBaselineAhead = -1
 	return m, m.finalizeUpdate(nil)
 }
 

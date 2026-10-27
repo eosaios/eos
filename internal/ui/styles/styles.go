@@ -1,11 +1,11 @@
 package styles
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
 
-import "github.com/charmbracelet/lipgloss"
+import "charm.land/lipgloss/v2"
 
 // Styles 是应用程序中使用的所有样式的集合
 type Styles struct {
@@ -82,7 +82,7 @@ type Styles struct {
 	MsgToolSuccess lipgloss.Style
 	MsgToolError   lipgloss.Style
 
-	// 文本流工具调用样式（对齐 codex 的 bullet + 状态标题 + 缩进输出）
+	// 文本流工具调用样式（bullet + 状态标题 + 缩进输出）
 	StreamToolName     lipgloss.Style // 工具名（accent 加粗）
 	StreamToolRunning  lipgloss.Style // running 态圆点
 	StreamToolSuccess  lipgloss.Style // success 圆点/时长

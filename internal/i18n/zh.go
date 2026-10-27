@@ -1,6 +1,6 @@
 package i18n
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -200,9 +200,6 @@ var zhText = map[string]string{
 	"shortcut.plan_mode":              "默认 Agent 自动执行",
 	"shortcut.verbose":                "详细输出",
 	"shortcut.newline":                "换行",
-	"todos.header":                    "待办",
-	"todos.footer":                    "R 刷新 · Esc 返回",
-	"todos.empty":                     "暂无待办",
 	"welcome.title":                   "让我们开始吧",
 	"welcome.model":                   "模型",
 	"welcome.api":                     "接口",
@@ -317,6 +314,12 @@ var zhText = map[string]string{
 	"mcp.editor.placeholder":                 "在此输入 JSON ...",
 	"mcp.browser.ready":                      "内置浏览器运行中：%s",
 	"mcp.browser.error":                      "内置浏览器异常：%s",
+	"browser.takeover.confirm_title":         "AI 请求接管浏览器",
+	"browser.takeover.confirm_question":      "AI 请求你接管（原因 %s）——确认后页面由你操作",
+	"browser.takeover.confirm_started":       "AI 请求你接管浏览器，等待确认",
+	"browser.takeover.confirm_go":            "确认接管",
+	"browser.takeover.confirm_ignore":        "忽略（超时自动还给 AI）",
+	"browser.takeover.confirm_failed":        "确认接管失败: %s",
 	"browser.takeover.title":                 "Browser takeover",
 	"browser.takeover.question":              "Reason: %s",
 	"browser.takeover.started":               "Browser handed to you (human control)",
@@ -709,8 +712,10 @@ var zhText = map[string]string{
 	// 面板底部提示
 	"rules.footer.editing":  "Ctrl+S 保存 · Esc 取消编辑 · Tab 切换范围",
 	"rules.footer.browse":   "Tab 切换范围 · E 编辑 · R 刷新 · Esc 返回",
+	"memory.scope.global":   "全局",
+	"memory.scope.project":  "项目",
 	"memory.footer.editing": "Ctrl+S 保存笔记 · Esc 取消",
-	"memory.footer.browse":  "Tab 切换文件 · A 添加笔记 · R 刷新 · Esc 返回",
+	"memory.footer.browse":  "Tab 切换文件 · 1/2 切换全局/项目 · A 添加笔记 · R 刷新 · Esc 返回",
 	"lsp.footer.detail":     "Esc 返回 · R 刷新",
 	"lsp.footer.list":       "Enter 详情 · R 刷新 · Esc 返回",
 }

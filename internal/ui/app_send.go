@@ -23,16 +23,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreamSailing/eos/internal/ai"
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/pkg/clip"
-	"github.com/dreamSailing/eos/internal/ui/features/slash"
-	"github.com/dreamSailing/eos/internal/ui/panels"
-	"github.com/dreamSailing/eos/internal/ui/views/setup"
-	"github.com/dreamSailing/eos/internal/ui/views/shell"
+	"github.com/eosaios/eos/internal/ai"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/pkg/clip"
+	"github.com/eosaios/eos/internal/ui/features/slash"
+	"github.com/eosaios/eos/internal/ui/panels"
+	"github.com/eosaios/eos/internal/ui/views/setup"
+	"github.com/eosaios/eos/internal/ui/views/shell"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
+
+// readClipboardImage 是 clip.ReadImage 的注入缝，var 以便测试 stub（仓库既有惯例）。
+var readClipboardImage = clip.ReadImage
 
 // predictionDebounceMsg 预测防抖消息，用于延迟触发下一条消息预测
 type predictionDebounceMsg struct {
@@ -247,7 +250,8 @@ func (m *AppModel) sendMessageText(text string, withPendingImages bool) tea.Cmd 
 		}
 		return InvokeDoneMsg{Content: content}
 	}
-	return tea.Batch(invoke, m.shell.StatusTick())
+	// 本轮开始快照 git 计数基线：turn 结束评估提交提醒时按净增加判定（纯提问/只读轮不弹）。
+	return tea.Batch(invoke, m.shell.StatusTick(), m.snapshotGitBaseline())
 }
 
 // sendBashCommand 执行 Bash 命令
@@ -294,7 +298,7 @@ func (m *AppModel) pasteClipboardImage() tea.Cmd {
 		m.appendSystem(i18n.T("image.bash_mode", m.state.Language), "warning")
 		return func() tea.Msg { return nil }
 	}
-	b, err := clip.ReadImage()
+	b, err := readClipboardImage()
 	if err != nil {
 		if strings.Contains(err.Error(), "empty clipboard image") {
 			m.appendSystem(i18n.T("image.clipboard_empty", m.state.Language), "warning")

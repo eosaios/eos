@@ -21,15 +21,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreamSailing/eos/internal/ai"
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/pkg/settings"
-	"github.com/dreamSailing/eos/internal/ui/panels"
-	"github.com/dreamSailing/eos/pkg/coreapi"
+	"github.com/eosaios/eos/internal/ai"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/pkg/settings"
+	"github.com/eosaios/eos/internal/ui/panels"
+	"github.com/eosaios/eos/pkg/coreapi"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // ctxUsageTickMsg 上下文使用率定时刷新消息
@@ -66,7 +66,7 @@ func (m *AppModel) maybeRefreshGitSummary() tea.Cmd {
 	return func() tea.Msg {
 		result, err := adapter.GitSummary(context.Background(), root)
 		if err != nil {
-			// 非 git 工作区 / git 不可用：按 Codex 惯例省略显示，不报错。
+			// 非 git 工作区 / git 不可用：省略显示，不报错。
 			return GitSummaryMsg{Branch: ""}
 		}
 		return GitSummaryMsg{Branch: result.Branch, Dirty: len(result.Changes), Ahead: int(result.Ahead)}
@@ -239,12 +239,46 @@ func (m *AppModel) refreshMemoryPanel() {
 	}
 	snap, err := m.adapter.MemorySnapshot(context.Background())
 	if err != nil {
-		panel.SetData(nil)
+		panel.SetData(nil, nil)
 		return
 	}
 	summary := memorySnapshotDocument(snap, "memory_summary.md")
 	handbook := memorySnapshotDocument(snap, "MEMORY.md")
-	panel.SetData([]panels.MemoryDoc{panelMemoryDoc(summary), panelMemoryDoc(handbook)})
+	panel.SetData([]panels.MemoryDoc{panelMemoryDoc(summary), panelMemoryDoc(handbook)}, panelProjectMemory(snap))
+}
+
+// panelProjectMemory 投影当前活动项目分区（snapshot.projects 至多一项）。
+func panelProjectMemory(snapshot coreapi.MemorySnapshot) *panels.MemoryProject {
+	if len(snapshot.Projects) == 0 {
+		return nil
+	}
+	project := snapshot.Projects[0]
+	var docs [2]panels.MemoryDoc
+	for i, scope := range memoryDocScopesList() {
+		docs[i] = panelMemoryDoc(memorySnapshotDocumentOf(project.Documents, scope))
+	}
+	return &panels.MemoryProject{
+		Key:  project.Key,
+		Root: project.Root,
+		Name: project.Name,
+		Docs: docs,
+	}
+}
+
+// memoryDocScopesList 与内核 panel_snapshot 的文档顺序一致。
+func memoryDocScopesList() [2]string {
+	return [2]string{"memory_summary.md", "MEMORY.md"}
+}
+
+// memorySnapshotDocumentOf 从指定文档集合中取 scope 对应文档（缺失返回零值）。
+func memorySnapshotDocumentOf(documents []coreapi.MemoryDocument, scope string) coreapi.MemoryDocument {
+	scope = strings.ToLower(strings.TrimSpace(scope))
+	for _, doc := range documents {
+		if strings.EqualFold(strings.TrimSpace(doc.Scope), scope) {
+			return doc
+		}
+	}
+	return coreapi.MemoryDocument{Scope: scope}
 }
 
 // overlayCenter 将弹框内容居中叠加到底层视图之上。
@@ -252,7 +286,6 @@ func (m *AppModel) refreshMemoryPanel() {
 func overlayCenter(width, height int, background, overlay string) string {
 	return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, overlay,
 		lipgloss.WithWhitespaceChars(" "),
-		lipgloss.WithWhitespaceForeground(lipgloss.Color("")),
 	)
 }
 
@@ -360,7 +393,7 @@ func (m *AppModel) handleMemorySave(msg panels.MemorySaveMsg) {
 		m.appendSystem(i18n.T("memory.note_empty", m.state.Language), "warning")
 		return
 	}
-	if err := m.adapter.SaveMemory(context.Background(), content); err != nil {
+	if err := m.adapter.SaveMemory(context.Background(), msg.Scope, content); err != nil {
 		m.appendSystem(fmt.Sprintf(i18n.T("toast.memory_save_failed", m.state.Language), err), "error")
 		return
 	}

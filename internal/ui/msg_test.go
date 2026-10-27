@@ -1,6 +1,6 @@
 package ui
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -8,8 +8,8 @@ package ui
 import (
 	"testing"
 
-	uiadapter "github.com/dreamSailing/eos/internal/ui/adapter"
-	"github.com/dreamSailing/eos/pkg/protocol"
+	uiadapter "github.com/eosaios/eos/internal/ui/adapter"
+	"github.com/eosaios/eos/pkg/protocol"
 )
 
 func TestConvertEventApprovalRequired(t *testing.T) {
@@ -407,7 +407,6 @@ func TestConvertEventReasoningCompletedJoinsContentVec(t *testing.T) {
 		t.Fatalf("Text=%q, want empty for reasoning items", completed.Text)
 	}
 }
-
 
 func TestConvertEventBrowserEvents(t *testing.T) {
 	cases := []struct {

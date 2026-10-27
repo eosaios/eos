@@ -1,6 +1,6 @@
 package setup
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -8,12 +8,12 @@ package setup
 import (
 	"testing"
 
-	"github.com/dreamSailing/eos/internal/ai"
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/ui/styles"
-	"github.com/dreamSailing/eos/pkg/coreapi"
+	"github.com/eosaios/eos/internal/ai"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/ui/styles"
+	"github.com/eosaios/eos/pkg/coreapi"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // newPlanConfigWizard 构造处于配置步骤、选中套餐类 preset（两个可选模型）的向导。
@@ -39,10 +39,9 @@ func newPlanConfigWizard() *ModelSetupView {
 }
 
 // assertTabSequence 逐个按键后校验 focusIndex 轨迹。
-func assertTabSequence(t *testing.T, v *ModelSetupView, keyType tea.KeyType, want []int) {
+func assertTabSequence(t *testing.T, v *ModelSetupView, key tea.KeyPressMsg, want []int) {
 	t.Helper()
 	for _, w := range want {
-		key := tea.KeyMsg{Type: keyType}
 		v.Update(key)
 		if v.focusIndex != w {
 			t.Fatalf("after %s, focusIndex = %d, want %d", key.String(), v.focusIndex, w)
@@ -54,24 +53,24 @@ func assertTabSequence(t *testing.T, v *ModelSetupView, keyType tea.KeyType, wan
 // Shift+Tab 反向同样回绕。回归：旧实现在模型选择处吞掉 Tab 导致焦点卡死。
 func TestPlanConfigFocusCycles(t *testing.T) {
 	v := newPlanConfigWizard()
-	assertTabSequence(t, v, tea.KeyTab, []int{2, 3, 0})
-	assertTabSequence(t, v, tea.KeyShiftTab, []int{3, 2, 0})
+	assertTabSequence(t, v, tea.KeyPressMsg{Code: tea.KeyTab}, []int{2, 3, 0})
+	assertTabSequence(t, v, tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}, []int{3, 2, 0})
 }
 
 // 套餐内模型选择器：←/→ 切换模型并同步到表单值（handleSave 读 inputs[3]）。
 func TestPlanPickerCyclesPlanModels(t *testing.T) {
 	v := newPlanConfigWizard()
-	v.Update(tea.KeyMsg{Type: tea.KeyTab})
-	v.Update(tea.KeyMsg{Type: tea.KeyTab})
+	v.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	v.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 	if v.focusIndex != 3 {
 		t.Fatalf("focusIndex = %d, want 3 (plan picker)", v.focusIndex)
 	}
 
-	v.Update(tea.KeyMsg{Type: tea.KeyRight})
+	v.Update(tea.KeyPressMsg{Code: tea.KeyRight})
 	if got := v.inputs[3].Value(); got != "model-b" {
 		t.Fatalf("after right, model = %q, want model-b", got)
 	}
-	v.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	v.Update(tea.KeyPressMsg{Code: tea.KeyLeft})
 	if got := v.inputs[3].Value(); got != "model-a" {
 		t.Fatalf("after left, model = %q, want model-a", got)
 	}
@@ -84,8 +83,8 @@ func TestCustomProviderFocusCycles(t *testing.T) {
 	v.customProvider = true
 	v.focusInput(0)
 
-	assertTabSequence(t, v, tea.KeyTab, []int{1, 2, 3, 0})
-	assertTabSequence(t, v, tea.KeyShiftTab, []int{3, 2, 1, 0})
+	assertTabSequence(t, v, tea.KeyPressMsg{Code: tea.KeyTab}, []int{1, 2, 3, 0})
+	assertTabSequence(t, v, tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}, []int{3, 2, 1, 0})
 }
 
 // 自定义模型：API Base 只读，焦点在 显示名(0)→API Key(2)→模型名(3) 循环。
@@ -97,8 +96,8 @@ func TestCustomModelFocusSkipsAPIBase(t *testing.T) {
 	v.apiBaseReadOnly = true
 	v.focusInput(0)
 
-	assertTabSequence(t, v, tea.KeyTab, []int{2, 3, 0})
-	assertTabSequence(t, v, tea.KeyShiftTab, []int{3, 2, 0})
+	assertTabSequence(t, v, tea.KeyPressMsg{Code: tea.KeyTab}, []int{2, 3, 0})
+	assertTabSequence(t, v, tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}, []int{3, 2, 0})
 }
 
 // 普通 preset：模型只读，焦点在 显示名(0)↔API Key(2) 循环。
@@ -110,8 +109,8 @@ func TestFixedPresetFocusCycles(t *testing.T) {
 	v.apiBaseReadOnly = true
 	v.focusInput(0)
 
-	assertTabSequence(t, v, tea.KeyTab, []int{2, 0})
-	assertTabSequence(t, v, tea.KeyShiftTab, []int{2, 0})
+	assertTabSequence(t, v, tea.KeyPressMsg{Code: tea.KeyTab}, []int{2, 0})
+	assertTabSequence(t, v, tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}, []int{2, 0})
 }
 
 // 编辑模式：显示名只读，焦点在 API Base(1)→API Key(2)→模型名(3) 循环。
@@ -125,8 +124,8 @@ func TestEditModeFocusSkipsDisplayName(t *testing.T) {
 	if v.focusIndex != 1 {
 		t.Fatalf("focusIndex = %d, want 1 (api base)", v.focusIndex)
 	}
-	assertTabSequence(t, v, tea.KeyTab, []int{2, 3, 1})
-	assertTabSequence(t, v, tea.KeyShiftTab, []int{3, 2, 1})
+	assertTabSequence(t, v, tea.KeyPressMsg{Code: tea.KeyTab}, []int{2, 3, 1})
+	assertTabSequence(t, v, tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift}, []int{3, 2, 1})
 }
 
 // 编辑模式保存：固定原始条目名并标记 EditMode。

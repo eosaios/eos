@@ -17,8 +17,27 @@ func TestAllCoreMethodsFreezesMigrationSurface(t *testing.T) {
 	//   + 3 浏览器面板标签条方法（tab_new/tab_switch/tab_close，桌面端
 	//     「顶部标签条 + 工具栏 + 视口尺寸行」布局的可操作 tab 支持）
 	//   + 1 model/verify（新增/编辑模型前的连通测试，桌面端向导前置校验）
-	if len(methods) != 174 {
-		t.Fatalf("AllCoreMethods() len=%d, want 174", len(methods))
+	//   + 1 turn/resume（续跑失败 turn：不追加用户消息，内核按已提交历史续写；
+	//     resume 语义，桌面端错误面板「重试」按钮的新链路）
+	//   + 6 git 操作方法（repos/stage/commit/push/merge_abort/suggest_message，
+	//     桌面端 git 提交推送操作台：确定性 git 命令 + 一次性 LLM 提交信息）
+	//   + 1 lsp/install（语言服务一键安装：语言 → 生态安装命令映射，装后重探测）
+	//   + 1 insight/refine_input（输入框 AI 优化表达：一次性 LLM 改写用户草稿，
+	//     桌面端发送按钮旁的润色入口）
+	//   + 1 browser/profile_upsert（内置/外部浏览器 profile 管理：创建/更新
+	//     注册表条目，headless 按 profile 决定内置视口/外部窗口）
+	//   + 1 browser/credentials_import（登录态导入：外部 Chrome cookie →
+	//     内置 profile，自动模式拷贝临时调试实例 / 手动 endpoint）
+	//   + 1 browser/copy_selection（内嵌视口选区读取：Runtime.evaluate 取
+	//     Selection/Input 选中文本，壳层写系统剪贴板——headless 剪贴板与
+	//     系统剪贴板分离的桥）
+	//   + 3 browser/host_*（桌面内置宿主协议：原生壳注册为宿主 / 应答注入
+	//     结果 / 广播标签页状态，AI 与人共用同一原生标签页）
+	//   + 3 captures（采集板：满意 AI 回复的常驻知识卡，桌面端右侧采集板
+	//     面板 + capture_* AI 工具共用的数据面）
+	//   + 4 desktop/host/*（Rust 冻结版已有的桌面宿主契约，补齐 Go 同步遗漏）
+	if len(methods) != 197 {
+		t.Fatalf("AllCoreMethods() len=%d, want 197", len(methods))
 	}
 
 	seen := make(map[string]bool, len(methods))
@@ -33,6 +52,10 @@ func TestAllCoreMethodsFreezesMigrationSurface(t *testing.T) {
 	}
 
 	required := []string{
+		MethodDesktopHostStatus,
+		MethodDesktopHostRegister,
+		MethodDesktopHostUnregister,
+		MethodDesktopHostRespond,
 		MethodWorkspaceWorktreeCreate,
 		MethodSessionDelete,
 		MethodMCPList,

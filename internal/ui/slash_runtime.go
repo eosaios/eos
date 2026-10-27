@@ -1,6 +1,6 @@
 package ui
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -17,12 +17,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/modes"
-	"github.com/dreamSailing/eos/internal/ui/panels"
-	"github.com/dreamSailing/eos/pkg/coreapi"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/modes"
+	"github.com/eosaios/eos/internal/ui/panels"
+	"github.com/eosaios/eos/pkg/coreapi"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 func (m *AppModel) localize(zh, en string) string {
@@ -46,13 +46,21 @@ func (m *AppModel) currentWorkspaceRoot() string {
 }
 
 func isSupportedExecutionModeInput(raw string) bool {
-	if strings.TrimSpace(raw) == "" {
+	// 不能用 Normalize* 的结果做判断：未知输入会被归一成默认档
+	// （auto/workspace-write/on-request），导致任意脏输入都被判合法。
+	// 这里直接对照名称与别名表匹配原文。
+	key := strings.TrimSpace(raw)
+	if key == "" {
 		return false
 	}
-	normalized := modes.NormalizeExecutionMode(raw)
 	for _, item := range modes.SupportedExecutionModes() {
-		if item.Name == normalized {
+		if strings.EqualFold(item.Name, key) {
 			return true
+		}
+		for _, alias := range item.Aliases {
+			if strings.EqualFold(alias, key) {
+				return true
+			}
 		}
 	}
 	return false
@@ -66,26 +74,36 @@ func (m *AppModel) executionModeUsage() string {
 }
 
 func isSupportedAccessModeInput(raw string) bool {
-	if strings.TrimSpace(raw) == "" {
+	key := strings.TrimSpace(raw)
+	if key == "" {
 		return false
 	}
-	normalized := modes.NormalizeAccessMode(raw)
 	for _, item := range modes.SupportedAccessModes() {
-		if item.Name == normalized {
+		if strings.EqualFold(item.Name, key) {
 			return true
+		}
+		for _, alias := range item.Aliases {
+			if strings.EqualFold(alias, key) {
+				return true
+			}
 		}
 	}
 	return false
 }
 
 func isSupportedApprovalModeInput(raw string) bool {
-	if strings.TrimSpace(raw) == "" {
+	key := strings.TrimSpace(raw)
+	if key == "" {
 		return false
 	}
-	normalized := modes.NormalizeApprovalMode(raw)
 	for _, item := range modes.SupportedApprovalModes() {
-		if item.Name == normalized {
+		if strings.EqualFold(item.Name, key) {
 			return true
+		}
+		for _, alias := range item.Aliases {
+			if strings.EqualFold(alias, key) {
+				return true
+			}
 		}
 	}
 	return false
@@ -928,8 +946,8 @@ func (m *AppModel) restoreSessionHistory(id string) {
 			}
 			m.appendHistory(entry)
 		case kind == "reasoning":
-			// 思考内容：归档为暗色摘要一行（与实时完成归档一致，对齐
-			// codex/eos-app 的「思考过程」折叠块）。renderHistoryEntry 会把
+			// 思考内容：归档为暗色摘要一行（与实时完成归档一致，同
+			// eos-app 的「思考过程」折叠块）。renderHistoryEntry 会把
 			// reasoning kind 渲染成 "💭 Thinking · Xs" + 末行摘要。
 			content := strings.TrimSpace(msg.Content)
 			if content == "" {
@@ -1280,9 +1298,6 @@ func (m *AppModel) handleThemeSlash(args []string) tea.Cmd {
 			return nil
 		}
 		current := s.Theme
-		if current == "" {
-			current = "dark"
-		}
 		m.appendSystem(fmt.Sprintf("%s: %s", m.localize("当前主题", "Current theme"), current), "info")
 		return nil
 	}
@@ -1414,7 +1429,7 @@ func (m *AppModel) handleShareSlash() tea.Cmd {
 		if role == "" {
 			role = "unknown"
 		}
-		sb.WriteString(fmt.Sprintf("**%s**: %s\n\n", role, strings.TrimSpace(msg.Content)))
+		fmt.Fprintf(&sb, "**%s**: %s\n\n", role, strings.TrimSpace(msg.Content))
 	}
 
 	content := sb.String()
@@ -1533,9 +1548,9 @@ func (m *AppModel) pluginInstallCmd(source string) tea.Cmd {
 		// 用户在 TUI 按 y 确认 → 二次调用带 confirm_permissions=true
 		if out.NeedsConfirm && len(out.Permissions) > 0 {
 			var sb strings.Builder
-			sb.WriteString(fmt.Sprintf("🔒 插件 %s v%s 需要以下权限：\n", out.Name, out.Version))
+			fmt.Fprintf(&sb, "🔒 插件 %s v%s 需要以下权限：\n", out.Name, out.Version)
 			for _, perm := range out.Permissions {
-				sb.WriteString(fmt.Sprintf("  • %s\n", perm))
+				fmt.Fprintf(&sb, "  • %s\n", perm)
 			}
 			sb.WriteString("\n按 y 确认安装，其他键取消")
 			m.appendSystem(sb.String(), "warning")
@@ -1641,13 +1656,13 @@ func (m *AppModel) pluginSearchCmd(query string) tea.Cmd {
 			return
 		}
 		var sb strings.Builder
-		sb.WriteString(fmt.Sprintf("🔍 找到 %d 个插件：\n", out.Total))
+		fmt.Fprintf(&sb, "🔍 找到 %d 个插件：\n", out.Total)
 		for _, p := range out.Results {
 			perms := strings.Join(p.Permissions, ", ")
 			if perms != "" {
 				perms = fmt.Sprintf(" [权限: %s]", perms)
 			}
-			sb.WriteString(fmt.Sprintf("  📦 %s v%s — %s（by %s）%s\n", p.Name, p.Version, p.Description, p.Author, perms))
+			fmt.Fprintf(&sb, "  📦 %s v%s — %s（by %s）%s\n", p.Name, p.Version, p.Description, p.Author, perms)
 		}
 		sb.WriteString("\n用 /plugin install <名称> 安装")
 		m.appendSystem(sb.String(), "info")

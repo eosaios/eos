@@ -1,6 +1,6 @@
 package cli
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -19,15 +19,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/dreamSailing/eos/pkg/coreapi"
-	"github.com/dreamSailing/eos/pkg/coreapi/engineprovider"
-	"github.com/dreamSailing/eos/pkg/coreapi/sidecar"
-	"github.com/dreamSailing/eos/pkg/protocol"
-	protocoljsonrpc "github.com/dreamSailing/eos/pkg/protocol/jsonrpc"
+	"github.com/eosaios/eos/pkg/coreapi"
+	"github.com/eosaios/eos/pkg/coreapi/engineprovider"
+	"github.com/eosaios/eos/pkg/coreapi/sidecar"
+	"github.com/eosaios/eos/pkg/protocol"
 )
 
 func TestPrintResult_JSONOutput(t *testing.T) {
@@ -100,7 +98,7 @@ func TestPrintResult_OmitEmptyFields(t *testing.T) {
 }
 
 // TestBuildTurnCompletedEvent_AcceptsCoreAPIUsageSummary 验证 buildTurnCompletedEvent
-// 产出对齐 codex 的 turn.completed 事件结构（type=turn.completed + 嵌套 usage），
+// 产出 stream-json 收尾的 turn.completed 事件结构（type=turn.completed + 嵌套 usage），
 // 且消费 coreapi.UsageSummary（不再依赖 sharedcore）。
 func TestBuildTurnCompletedEvent_AcceptsCoreAPIUsageSummary(t *testing.T) {
 	input := 200
@@ -108,10 +106,10 @@ func TestBuildTurnCompletedEvent_AcceptsCoreAPIUsageSummary(t *testing.T) {
 	total := 500
 	cost := 0.01
 	usage := coreapi.UsageSummary{
-		InputTokens:  &input,
-		ReplyTokens:  &reply,
-		TotalTokens:  &total,
-		CostUSD:      &cost,
+		InputTokens: &input,
+		ReplyTokens: &reply,
+		TotalTokens: &total,
+		CostUSD:     &cost,
 	}
 
 	evt := buildTurnCompletedEvent(2*time.Second, usage)
@@ -208,7 +206,7 @@ func TestRunSingleTurnConsumesTurnEventsBeforeStartReturns(t *testing.T) {
 
 // TestRunStreamJSONTurnEmitsIncrementalJSONL 验证 stream-json 真增量流：
 // turn.started → 逐个 item.* 事件 → turn.completed，每行一个 JSONL，
-// 对齐 codex exec --json 契约（不再是 start/content/done 三段伪流）。
+// 遵守 exec --json 的 JSONL 契约（不再是 start/content/done 三段伪流）。
 func TestRunStreamJSONTurnEmitsIncrementalJSONL(t *testing.T) {
 	events := make(chan protocol.Envelope, 8)
 	releaseStart := make(chan struct{})
@@ -421,8 +419,16 @@ func TestProductionSidecarProcessOptionsRequiresVerifiedArtifact(t *testing.T) {
 	if !opts.RequireSignature {
 		t.Fatal("productionSidecarProcessOptions() must require a signed manifest")
 	}
+	// dev（未设 release 门禁）：放行占位签名——dev-rebuild 内核 stage 进仓库
+	// vendored core/ 后 `go run .` 直接可用。
+	if !opts.AllowDevPlaceholder {
+		t.Fatal("productionSidecarProcessOptions() must allow dev placeholder signatures outside the release gate")
+	}
+	// release 门禁启用：必须拒绝占位签名（发布产物只认 Ed25519 签名）。
+	t.Setenv("EOS_RELEASE_ARTIFACT_CHECK", "1")
+	opts = productionSidecarProcessOptions(env)
 	if opts.AllowDevPlaceholder {
-		t.Fatal("productionSidecarProcessOptions() must not allow development placeholder signatures")
+		t.Fatal("productionSidecarProcessOptions() must reject dev placeholder signatures under the release gate")
 	}
 	if opts.Env["EOS_ACCESS_MODE"] != "workspace-write" {
 		t.Fatalf("Env was not preserved: %#v", opts.Env)
@@ -474,78 +480,6 @@ func TestStartRustOnlyEngineFailsOnRequiredMethodsMismatch(t *testing.T) {
 	_, err := startRustOnlyEngine(context.Background(), "print-test", nil)
 	if err == nil {
 		t.Fatal("startRustOnlyEngine succeeded with missing binary; expected error")
-	}
-}
-
-func TestEnsureHeadlessSessionUsesCurrentSession(t *testing.T) {
-	caller := &headlessSessionCaller{replies: map[string]any{
-		protocoljsonrpc.MethodStateSnapshot:  coreapi.StateSnapshot{ForegroundWorkspace: "C:/work/current"},
-		protocoljsonrpc.MethodSessionCurrent: coreapi.Session{ID: "sess-current", WorkspaceRoot: "C:/work/current"},
-	}}
-	engine := sidecar.NewRemoteEngine(caller)
-
-	session, err := ensureHeadlessSession(context.Background(), engine)
-	if err != nil {
-		t.Fatalf("ensureHeadlessSession() error = %v", err)
-	}
-	if session.ID != "sess-current" {
-		t.Fatalf("session.ID=%q, want sess-current", session.ID)
-	}
-	if caller.hasMethod(protocoljsonrpc.MethodSessionCreate) {
-		t.Fatal("ensureHeadlessSession created a new session despite current session existing")
-	}
-	params, ok := caller.firstParams(protocoljsonrpc.MethodSessionCurrent).(coreapi.CurrentSessionRequest)
-	if !ok {
-		t.Fatalf("session/current params type = %T", caller.firstParams(protocoljsonrpc.MethodSessionCurrent))
-	}
-	if params.WorkspaceRoot != "C:/work/current" {
-		t.Fatalf("workspace_root=%q, want C:/work/current", params.WorkspaceRoot)
-	}
-}
-
-func TestEnsureHeadlessSessionCreatesWhenCurrentMissing(t *testing.T) {
-	caller := &headlessSessionCaller{replies: map[string]any{
-		protocoljsonrpc.MethodStateSnapshot:  coreapi.StateSnapshot{ForegroundWorkspace: "C:/work/new"},
-		protocoljsonrpc.MethodSessionCurrent: coreapi.Session{},
-		protocoljsonrpc.MethodSessionCreate:  coreapi.Session{ID: "sess-new", WorkspaceRoot: "C:/work/new"},
-	}}
-	engine := sidecar.NewRemoteEngine(caller)
-
-	session, err := ensureHeadlessSession(context.Background(), engine)
-	if err != nil {
-		t.Fatalf("ensureHeadlessSession() error = %v", err)
-	}
-	if session.ID != "sess-new" {
-		t.Fatalf("session.ID=%q, want sess-new", session.ID)
-	}
-	params, ok := caller.firstParams(protocoljsonrpc.MethodSessionCreate).(coreapi.CreateSessionRequest)
-	if !ok {
-		t.Fatalf("session/create params type = %T", caller.firstParams(protocoljsonrpc.MethodSessionCreate))
-	}
-	if params.WorkspaceRoot != "C:/work/new" {
-		t.Fatalf("workspace_root=%q, want C:/work/new", params.WorkspaceRoot)
-	}
-}
-
-func TestSubscribeTurnEventsIncludesSessionFilter(t *testing.T) {
-	caller := &headlessSessionCaller{replies: map[string]any{
-		protocoljsonrpc.MethodEventSubscribe: map[string]any{"subscription_id": "sub-1"},
-	}}
-	engine := sidecar.NewRemoteEngine(caller)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	ch, unsubscribe := subscribeTurnEvents(ctx, engine, "sess-1", "turn-1")
-	defer unsubscribe()
-	if ch == nil {
-		t.Fatal("subscribeTurnEvents returned nil channel")
-	}
-	params, ok := caller.firstParams(protocoljsonrpc.MethodEventSubscribe).(coreapi.EventSubscribeRequest)
-	if !ok {
-		t.Fatalf("event/subscribe params type = %T", caller.firstParams(protocoljsonrpc.MethodEventSubscribe))
-	}
-	if params.SessionID != "sess-1" || params.TurnID != "turn-1" {
-		t.Fatalf("event filter session=%q turn=%q, want sess-1/turn-1", params.SessionID, params.TurnID)
 	}
 }
 
@@ -639,54 +573,6 @@ type printTestEventSubscriber struct {
 
 func (s printTestEventSubscriber) Subscribe(context.Context, coreapi.EventFilter) (<-chan protocol.Envelope, error) {
 	return s.events, nil
-}
-
-type headlessSessionCaller struct {
-	mu      sync.Mutex
-	calls   []headlessSessionCall
-	replies map[string]any
-}
-
-type headlessSessionCall struct {
-	method string
-	params any
-}
-
-func (c *headlessSessionCaller) Call(_ context.Context, method string, params any, out any) error {
-	c.mu.Lock()
-	c.calls = append(c.calls, headlessSessionCall{method: method, params: params})
-	reply := c.replies[method]
-	c.mu.Unlock()
-	if out == nil || reply == nil {
-		return nil
-	}
-	data, err := json.Marshal(reply)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(data, out)
-}
-
-func (c *headlessSessionCaller) hasMethod(method string) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for _, call := range c.calls {
-		if call.method == method {
-			return true
-		}
-	}
-	return false
-}
-
-func (c *headlessSessionCaller) firstParams(method string) any {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for _, call := range c.calls {
-		if call.method == method {
-			return call.params
-		}
-	}
-	return nil
 }
 
 // 防止 engineprovider / sidecar 被误删

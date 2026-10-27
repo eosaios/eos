@@ -19,12 +19,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/state"
-	"github.com/dreamSailing/eos/internal/ui/components/messages"
-	"github.com/dreamSailing/eos/internal/ui/render"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/state"
+	"github.com/eosaios/eos/internal/ui/components/messages"
+	"github.com/eosaios/eos/internal/ui/render"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // ansiRe 匹配 ANSI 转义序列，用于清理文本中的终端样式代码
@@ -85,7 +85,7 @@ func (m *AppModel) renderHistoryEntry(e historyEntry) string {
 			return e.content
 		case "reasoning":
 			// Archived thinking block: render as a dim one-line summary (the
-			// last non-empty line, truncated). Matches codex's persisted
+			// last non-empty line, truncated). Matches the persisted
 			// reasoning summary and the eos-app collapsed "思考过程" block.
 			return messages.LastNonEmptyLine(e.content)
 		default:
@@ -351,7 +351,8 @@ func (m *AppModel) handleAIResponse(msg AIResponseMsg) tea.Cmd {
 			(len(m.history) > 0 && m.history[len(m.history)-1].kind == "ai" &&
 				strings.TrimSpace(m.history[len(m.history)-1].content) == mainContent)
 		// 避免重复记录：如果本轮有委派且内容与 agent final 相同则跳过
-		if !alreadyCommitted && !(m.delegatedThisRound && mainContent != "" && agentContent != "" && mainContent == agentContent) {
+		if !alreadyCommitted &&
+			(!m.delegatedThisRound || mainContent == "" || agentContent == "" || mainContent != agentContent) {
 			m.appendHistory(historyEntry{
 				kind:          "ai",
 				content:       msg.Content,
@@ -385,8 +386,8 @@ func (m *AppModel) handleAIResponse(msg AIResponseMsg) tea.Cmd {
 }
 
 // startAgentMessageItem begins a new text-segment item. Streaming updates stay
-// in aiLive until item_completed or a tool_call archives them (codex-style:
-// ItemStarted for AgentMessage does not commit partial text).
+// in aiLive until item_completed or a tool_call archives them (ItemStarted for
+// AgentMessage does not commit partial text).
 func (m *AppModel) startAgentMessageItem(itemID string) {
 	itemID = strings.TrimSpace(itemID)
 	if itemID != "" && itemID == m.activeItemID {
@@ -543,7 +544,7 @@ func (m *AppModel) handleItemCompleted(msg ItemCompletedMsg) {
 // 如果已有同 ID 的进行中卡片，只更新参数而非新建
 func (m *AppModel) handleToolCall(msg ToolCallMsg) tea.Cmd {
 	// A tool call starts: archive any in-progress text segment so the tool
-	// card appears after it (codex-style [text]→[tool] interleaving).
+	// card appears after it ([text]→[tool] interleaving).
 	m.archiveAgentMessage()
 	m.aiLive.Reset()
 	m.activeItemID = ""

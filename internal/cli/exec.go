@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/dreamSailing/eos/pkg/coreapi"
+	"github.com/eosaios/eos/internal/headless"
+	"github.com/eosaios/eos/pkg/coreapi"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +24,8 @@ type execOptions struct {
 	AccessMode     string
 	ApprovalMode   string
 	SkipPermission bool
+	// Session 非空时恢复既有会话继续对话：显式 session id 或 "last"（最近更新的会话）。
+	Session string
 }
 
 func newExecCmd() *cobra.Command {
@@ -34,18 +38,23 @@ func newExecCmd() *cobra.Command {
 		accessMode     string
 		approvalMode   string
 		skipPermission bool
+		resume         string
 	)
 
 	cmd := &cobra.Command{
-		Use:   "exec <prompt>",
+		Use:   "exec <prompt|->",
 		Short: "Run a single prompt in headless mode.",
-		Long:  "Execute a single prompt in headless mode without the TUI. Supports workspace, sandbox, execution-mode, output format, and timeout options.",
+		Long:  "Execute a single prompt in headless mode without the TUI. Pass '-' to read the prompt from stdin. Supports workspace, sandbox, execution-mode, output format, timeout, and --resume <session-id|last> to continue an existing session.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			prompt, err := resolveExecPrompt(args[0])
+			if err != nil {
+				return err
+			}
 			access, approval := mergeConfigPermissions(cmd.Flags(), "sandbox", accessMode, approvalMode)
 			modes := resolveModeConfig(access, approval, sandbox, skipPermission)
 			return runExec(cmd.Context(), execOptions{
-				Prompt:         args[0],
+				Prompt:         prompt,
 				Workspace:      strings.TrimSpace(workspace),
 				Sandbox:        modes.SandboxMode,
 				ExecutionMode:  strings.TrimSpace(executionMode),
@@ -54,6 +63,7 @@ func newExecCmd() *cobra.Command {
 				AccessMode:     modes.AccessMode,
 				ApprovalMode:   modes.ApprovalMode,
 				SkipPermission: modes.SkipAllChecks,
+				Session:        strings.TrimSpace(resume),
 			})
 		},
 	}
@@ -66,8 +76,25 @@ func newExecCmd() *cobra.Command {
 	cmd.Flags().StringVar(&accessMode, "access-mode", "", "Sandbox access mode: read-only, workspace-write, or danger-full-access")
 	cmd.Flags().StringVar(&approvalMode, "approval-mode", "", "Approval mode: untrusted, on-request, or never (on-failure is accepted as an alias of on-request)")
 	cmd.Flags().BoolVar(&skipPermission, "dangerously-skip-permissions", false, "Full-access preset: --access-mode danger-full-access --approval-mode never")
+	cmd.Flags().StringVar(&resume, "resume", "", "Resume a session instead of starting a new one: explicit session id, or 'last' for the most recently updated session")
 
 	return cmd
+}
+
+// resolveExecPrompt 处理 stdin 输入：'-' 表示 prompt 从管道读入（脚本化
+// 用法），其余原样返回。
+func resolveExecPrompt(arg string) (string, error) {
+	if strings.TrimSpace(arg) != "-" {
+		return arg, nil
+	}
+	data, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return "", fmt.Errorf("read prompt from stdin: %w", err)
+	}
+	if strings.TrimSpace(string(data)) == "" {
+		return "", fmt.Errorf("stdin prompt is empty")
+	}
+	return string(data), nil
 }
 
 // runExec 是 eos exec <prompt> 的生产入口。
@@ -99,8 +126,11 @@ func runExec(ctx context.Context, opts execOptions) error {
 	if err := applyExecStartup(ctx, engine, opts); err != nil {
 		return err
 	}
+	if err := applyExecSession(ctx, engine, opts); err != nil {
+		return err
+	}
 
-	// stream-json 走真增量 JSONL 流式（与 print 模式一致，对齐 codex exec --json）。
+	// stream-json 走真增量 JSONL 流式（与 print 模式一致的 JSONL 契约）。
 	if strings.EqualFold(strings.TrimSpace(opts.Output), "stream-json") {
 		if err := runStreamJSONTurn(ctx, engine, opts.Prompt, startedAt, ""); err != nil {
 			if ctx.Err() == context.DeadlineExceeded {
@@ -125,7 +155,7 @@ func runExec(ctx context.Context, opts execOptions) error {
 	if summary, err := engine.Usage().Summary(ctx); err == nil {
 		usage = summary
 	}
-	modelName, _ := resolveActiveModelName(ctx, engine)
+	modelName, _ := headless.ResolveActiveModelName(ctx, engine)
 
 	result := ExecResult{
 		Content:     content,
@@ -175,6 +205,67 @@ func execOptionEnv(opts execOptions) map[string]string {
 		delete(env, "EOS_SANDBOX_MODE")
 	}
 	return env
+}
+
+// applyExecSession 在 --resume <id|last> 时把既有会话恢复为当前会话，
+// 使后续 ensureHeadlessSession 的 Current() 命中它，headless 上下文与
+// 持久化状态（审批等待、上下文摘要）得以延续。
+func applyExecSession(ctx context.Context, engine coreapi.Engine, opts execOptions) error {
+	if engine == nil {
+		return fmt.Errorf("core engine unavailable")
+	}
+	if opts.Session == "" {
+		return nil
+	}
+	id := opts.Session
+	if strings.EqualFold(id, "last") {
+		latest, err := latestExecSession(ctx, engine, opts.Workspace)
+		if err != nil {
+			return err
+		}
+		id = latest
+	}
+	workspaceRoot := execWorkspaceRoot(ctx, engine, opts.Workspace)
+	if _, err := engine.Sessions().Resume(ctx, coreapi.ResumeSessionRequest{SessionID: id, WorkspaceRoot: workspaceRoot}); err != nil {
+		return fmt.Errorf("resume session %s: %w", id, err)
+	}
+	if err := engine.Sessions().SetCurrent(ctx, coreapi.SetCurrentSessionRequest{SessionID: id, WorkspaceRoot: workspaceRoot}); err != nil {
+		return fmt.Errorf("set current session %s: %w", id, err)
+	}
+	fmt.Fprintf(os.Stderr, "Resumed session: %s\n", id)
+	return nil
+}
+
+// latestExecSession 按 UpdatedAt 找最近更新的会话（--resume last）。
+func latestExecSession(ctx context.Context, engine coreapi.Engine, workspace string) (string, error) {
+	sessions, err := engine.Sessions().List(ctx, coreapi.ListSessionsRequest{WorkspaceRoot: execWorkspaceRoot(ctx, engine, workspace)})
+	if err != nil {
+		return "", fmt.Errorf("list sessions: %w", err)
+	}
+	if len(sessions) == 0 {
+		return "", fmt.Errorf("no previous session to resume")
+	}
+	latest := sessions[0]
+	for _, s := range sessions[1:] {
+		if s.UpdatedAt.After(latest.UpdatedAt) {
+			latest = s
+		}
+	}
+	return latest.ID, nil
+}
+
+// execWorkspaceRoot 归一 exec 视角的工作区根：显式 flag > 引擎前台工作区 > cwd。
+func execWorkspaceRoot(ctx context.Context, engine coreapi.Engine, workspace string) string {
+	if ws := strings.TrimSpace(workspace); ws != "" {
+		return ws
+	}
+	if state, err := engine.State().Snapshot(ctx, coreapi.StateSnapshotRequest{}); err == nil && strings.TrimSpace(state.ForegroundWorkspace) != "" {
+		return state.ForegroundWorkspace
+	}
+	if cwd, err := os.Getwd(); err == nil {
+		return strings.TrimSpace(cwd)
+	}
+	return ""
 }
 
 // applyExecStartup 把 workspace/execution-mode 等 startup 配置应用到已 handshake 的 engine。

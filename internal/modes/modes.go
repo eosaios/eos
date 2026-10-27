@@ -1,6 +1,6 @@
 package modes
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -86,8 +86,8 @@ var approvalModeDescriptors = []ApprovalModeDescriptor{
 	{
 		Name:    "on-request",
 		Aliases: []string{"on_request", "onrequest", "request", "on-failure", "on_failure", "onfailure", "失败后审批", "请求时审批"},
-		// 内核 ApprovalMode 只有三个值（untrusted/on-request/never，对标 Codex
-		// approval_policy）；on-failure 是内核解析侧的历史别名，折叠到 on-request，
+		// 内核 ApprovalMode 只有三个值（untrusted/on-request/never）；
+		// on-failure 是内核解析侧的历史别名，折叠到 on-request，
 		// 不再作为独立档位宣传。
 		Description: "Allow the agent to request approval when it decides escalation is needed.",
 	},
@@ -99,8 +99,8 @@ var approvalModeDescriptors = []ApprovalModeDescriptor{
 }
 
 // sandboxModeDescriptors 不再定义独立的沙箱轴词表：沙箱轴与访问轴共用内核
-// SandboxMode 的 kebab-case 三值（read-only / workspace-write / danger-full-access，
-// 对标 Codex sandbox_mode）。历史上的 GUI 双值（workspace / full_access）只作为
+// SandboxMode 的 kebab-case 三值（read-only / workspace-write / danger-full-access）。
+// 历史上的 GUI 双值（workspace / full_access）只作为
 // NormalizeSandboxMode 的兼容别名保留。
 
 func NormalizeExecutionMode(mode string) string {
@@ -195,12 +195,6 @@ func NormalizeSandboxMode(mode string) string {
 	if strings.TrimSpace(mode) == "" {
 		return "workspace-write"
 	}
-	return NormalizeAccessMode(mode)
-}
-
-// SandboxModeFromAccessMode 保留为兼容入口：沙箱轴与访问轴共用词表后即为恒等
-// 映射（规范值不变，历史 GUI 双值折叠到规范值）。
-func SandboxModeFromAccessMode(mode string) string {
 	return NormalizeAccessMode(mode)
 }
 

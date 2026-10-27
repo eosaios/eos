@@ -1,13 +1,12 @@
 package protocol
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 	"time"
 )
@@ -16,7 +15,7 @@ func TestNewEventDefaults(t *testing.T) {
 	before := time.Now()
 	ev := NewEvent(EventTypeItemDelta, EventOptions{
 		RequestID: "req_123",
-		Payload:   TextPayloadMap(TextPayload{Text: "hello"}),
+		Payload:   map[string]any{"text": "hello"},
 	})
 	after := time.Now()
 
@@ -60,13 +59,13 @@ func TestEnvelopeJSONShape(t *testing.T) {
 		CorrelationID: "approval_01",
 		Timestamp:     ts,
 		Source:        SourceServe,
-		Payload: ApprovalRequestPayload(ApprovalRequest{
-			ApprovalID: "approval_01",
-			Title:      "执行确认",
-			Message:    "是否继续？",
-			RiskLevel:  "high",
-			Options:    []string{"allow_once", "deny"},
-		}),
+		Payload: map[string]any{
+			"approval_id": "approval_01",
+			"title":       "执行确认",
+			"message":     "是否继续？",
+			"risk_level":  "high",
+			"options":     []string{"allow_once", "deny"},
+		},
 	})
 
 	raw, err := json.Marshal(ev)
@@ -136,52 +135,45 @@ func TestRequestLifecycleEnvelopeCarriesStableFields(t *testing.T) {
 	}
 }
 
-func TestValidateEnvelopeAcceptsApprovalEvent(t *testing.T) {
-	ev := NewEvent(EventTypeApprovalReq, EventOptions{
-		RequestID: "approval_01",
-		Source:    SourceServe,
-		Payload: ApprovalRequestPayload(ApprovalRequest{
-			ApprovalID: "approval_01",
-			Message:    "continue?",
-		}),
-	})
-
-	if err := ValidateEnvelope(ev); err != nil {
-		t.Fatalf("ValidateEnvelope() error = %v", err)
+func TestNormalizeEventTypeAllMappings(t *testing.T) {
+	cases := map[EventType]EventType{
+		EventTypeTurnStarted:               EventTypeRequestStarted,
+		EventTypeTurnItemStarted:           EventTypeItemStarted,
+		EventTypeTurnItemDelta:             EventTypeItemDelta,
+		EventTypeTurnItemCompleted:         EventTypeItemCompleted,
+		EventTypeTurnCompleted:             EventTypeRequestDone,
+		EventTypeTurnError:                 EventTypeRequestFailed,
+		EventTypeTurnCancelled:             EventTypeRequestFailed,
+		EventTypeTurnInterrupted:           EventTypeRequestFailed,
+		EventTypeTurnWaitingApproval:       EventTypeApprovalReq,
+		EventTypeTurnPreCompact:            EventTypeTextReasoning,
+		EventTypeTurnMidCompact:            EventTypeTextReasoning,
+		EventTypeTurnModelDownshift:        EventTypeTextReasoning,
+		EventTypeTurnContextWindowExceeded: EventTypeTextReasoning,
+		EventTypeTurnToolLoopExhausted:     EventTypeTextReasoning,
+		EventType("custom.event"):          EventType("custom.event"),
+	}
+	for in, want := range cases {
+		if got := NormalizeEventType(in); got != want {
+			t.Fatalf("Normalize(%q) = %q, want %q", in, got, want)
+		}
 	}
 }
 
-func TestValidateEnvelopeRejectsMissingRequestID(t *testing.T) {
-	ev := NewEvent(EventTypeRequestDone, EventOptions{
-		Source: SourceCore,
-		Payload: map[string]any{
-			"status": "success",
-		},
-	})
-
-	err := ValidateEnvelope(ev)
-	if err == nil {
-		t.Fatal("ValidateEnvelope() error = nil, want request_id failure")
+func TestClonePayload(t *testing.T) {
+	if ClonePayload(nil) != nil {
+		t.Fatal("nil")
 	}
-	if !strings.Contains(err.Error(), "request_id") {
-		t.Fatalf("ValidateEnvelope() error = %v, want request_id mention", err)
+	if ClonePayload(map[string]any{}) != nil {
+		t.Fatal("empty")
 	}
-}
-
-func TestValidateEnvelopeRejectsMissingSessionPayload(t *testing.T) {
-	ev := NewEvent(EventTypeSessionUpdated, EventOptions{
-		SessionID: "sess_01",
-		Source:    SourceServe,
-		Payload: map[string]any{
-			"status": "idle",
-		},
-	})
-
-	err := ValidateEnvelope(ev)
-	if err == nil {
-		t.Fatal("ValidateEnvelope() error = nil, want session payload failure")
+	in := map[string]any{"a": 1, "b": "x"}
+	out := ClonePayload(in)
+	if out["a"] != 1 || out["b"] != "x" {
+		t.Fatalf("clone = %v", out)
 	}
-	if !strings.Contains(err.Error(), "payload.session_id") {
-		t.Fatalf("ValidateEnvelope() error = %v, want payload.session_id mention", err)
+	out["a"] = 2
+	if in["a"] != 1 {
+		t.Fatal("clone should be independent")
 	}
 }

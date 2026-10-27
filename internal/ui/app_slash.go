@@ -19,13 +19,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/ui/features/slash"
-	"github.com/dreamSailing/eos/internal/ui/panels"
-	"github.com/dreamSailing/eos/internal/version"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/ui/features/slash"
+	"github.com/eosaios/eos/internal/ui/panels"
+	"github.com/eosaios/eos/internal/version"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // handleSlashCommand 处理斜杠命令
@@ -93,7 +93,15 @@ func slashCommandHandler(m *AppModel) map[string]func(args []string) tea.Cmd {
 			return nil
 		},
 		"/context": func(_ []string) tea.Cmd { m.openContextPanel(); return nil },
-		"/memory":  func(_ []string) tea.Cmd { m.openMemoryPanel(); return nil },
+		"/memory": func(args []string) tea.Cmd {
+			m.openMemoryPanel()
+			if len(args) > 0 && strings.EqualFold(strings.TrimSpace(args[0]), "project") {
+				if panel, ok := m.panels["memory"].(*panels.MemoryPanel); ok && panel != nil {
+					panel.SelectProjectScope()
+				}
+			}
+			return nil
+		},
 		"/cost": func(_ []string) tea.Cmd {
 			m.clearPrediction()
 			m.activeView = "panel"
@@ -304,10 +312,10 @@ func (m *AppModel) tryInvokeSkillSlash(skillName string, args []string) bool {
 }
 
 func (m *AppModel) handleHiddenLegalSlash() tea.Cmd {
-	m.appendSystem("Copyright (c) 2026 DreamSailing", "info")
+	m.appendSystem("Copyright (c) 2026 EOSAIOS", "info")
 	m.appendSystem("License: EOS Non-Commercial License v1.1 (EOS-NCL-1.1)", "info")
 	m.appendSystem("SPDX-License-Identifier: EOS-NCL-1.1", "info")
-	m.appendSystem("Contact: smart-os@qq.com", "info")
+	m.appendSystem("Contact: legal@eosaios.com", "info")
 	m.appendSystem(fmt.Sprintf("Version: %s | Commit: %s | Build: %s", version.AppVersion, version.BuildCommit, version.BuildDate), "info")
 	return nil
 }

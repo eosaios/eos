@@ -7,6 +7,11 @@
 eos-cli / eos-app 各自 vendored 一份 eos-core sidecar 二进制，两个壳层独立。
 sidecar 构建分两条路径，职责严格分工：
 
+macOS/Linux 的 `go run ./scripts/dev_rebuild_core.go` 从本次构建所指向的
+`eos-core-rs/crates/eos-core-protocol/schema.json` 读取能力列表，不沿用旧 manifest
+的 features；导出缺失、空列表或重复方法时，在写入产物前报错。输出仍是开发占位签名，
+不能作为正式签名制品提交或分发。
+
 ### 本机开发迭代（仅 host target）
 
 **`dev-rebuild.ps1`** — 改 eos-core-rs 内核后，一键重编当前 host target
@@ -37,16 +42,15 @@ powershell -File scripts/dev-rebuild.ps1 -SkipApp   # 只分发 eos-cli，不碰
 
 触发：GitHub Actions → sync-vendored-sidecar.yml → Run workflow（手动）。
 build job 产出签名 artifact，sync job 分发到 `pkg/coreapi/sidecar/core/<triple>/`
-并 commit 回仓库。可选 `sync_app=true` 同步到 eos-app（Gitee，需 deploy key secret）。
+并 commit 回仓库。可选 `sync_app=true` 同步到下游 eos-app 仓库（需 deploy key secret）。
 
 需要的 secrets（在 eos-cli 仓库 Settings → Secrets 配置）：
 - `EOS_SIGNING_KEY`：Ed25519 签名私钥（PKCS#8 PEM 内容，与 eos-core-rs/scripts/eos-signing-key.pem 一致）
-- `EOS_CORE_REPO`：eos-core-rs 的 GitHub 仓库（owner/name，默认 dreamSailing/eos-core-rs）
+- `EOS_CORE_REPO`：eos-core-rs 的 GitHub 仓库（owner/name，默认 eosaios/eos-core-rs）
 - `EOS_CORE_PAT`：若 eos-core-rs 是私有仓，需 PAT 访问（公开仓留空）
-- `EOS_APP_GIT_URL` + `EOS_APP_DEPLOY_KEY`（可选）：同步到 eos-app（Gitee）
+- `EOS_APP_GIT_URL` + `EOS_APP_DEPLOY_KEY`（可选）：同步到下游 eos-app 仓库
 
 ## 其它脚本
 
 - `regen-protocol.ps1` — 重新生成 protocol schema（schema.json 变更后跑）
-- `embed_gopls.{sh,bat}` + `download_gopls.go` — 嵌入 gopls（Go 增强版构建用）
-- `generate_eos_icon.ps1` — 生成应用图标
+- `generate_eos_icon.ps1` — 已废弃的旧图标管线（剪影风，非家族白卡全出血标准），勿再使用

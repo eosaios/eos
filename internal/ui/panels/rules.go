@@ -1,6 +1,6 @@
 package panels
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/i18n"
-	uinput "github.com/dreamSailing/eos/internal/ui/components/input"
-	"github.com/dreamSailing/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/i18n"
+	uinput "github.com/eosaios/eos/internal/ui/components/input"
+	"github.com/eosaios/eos/internal/ui/styles"
 
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
 )
 
 type RulesRefreshMsg struct{}
@@ -46,7 +46,7 @@ type RulesPanel struct {
 }
 
 func NewRulesPanel(styles *styles.Styles, lang string) *RulesPanel {
-	vp := viewport.New(0, 0)
+	vp := viewport.New()
 	vp.MouseWheelEnabled = true
 	vp.MouseWheelDelta = 3
 	ed := uinput.New()
@@ -247,8 +247,8 @@ func (p *RulesPanel) SetSize(width, height int) {
 	if h < 0 {
 		h = 0
 	}
-	p.view.Width = w
-	p.view.Height = h
+	p.view.SetWidth(w)
+	p.view.SetHeight(h)
 	p.editor.SetSize(w, h)
 	p.updateViewContent()
 }

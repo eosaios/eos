@@ -41,8 +41,11 @@ func TestExecCmd_FlagParsing(t *testing.T) {
 	if f := flags.Lookup("dangerously-skip-permissions"); f == nil {
 		t.Fatal("missing --dangerously-skip-permissions flag")
 	}
+	if f := flags.Lookup("resume"); f == nil {
+		t.Fatal("missing --resume flag")
+	}
 
-	if cmd.Use != "exec <prompt>" {
+	if cmd.Use != "exec <prompt|->" {
 		t.Fatalf("unexpected Use: %s", cmd.Use)
 	}
 	if !cmd.HasFlags() {
@@ -362,5 +365,52 @@ func TestExecFailsWithoutRustBinary(t *testing.T) {
 	if !strings.Contains(err.Error(), "eos-core") && !strings.Contains(err.Error(), "rust") &&
 		!strings.Contains(err.Error(), "sidecar") && !strings.Contains(err.Error(), "binary") {
 		t.Logf("note: runExec error = %q", err.Error())
+	}
+}
+
+func TestResolveExecPrompt_PlainArg(t *testing.T) {
+	got, err := resolveExecPrompt("  fix the bug  ")
+	if err != nil {
+		t.Fatalf("resolveExecPrompt() error = %v", err)
+	}
+	if got != "  fix the bug  " {
+		t.Fatalf("plain arg should pass through verbatim, got %q", got)
+	}
+}
+
+func TestResolveExecPrompt_StdinDash(t *testing.T) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("os.Pipe() error = %v", err)
+	}
+	if _, err := w.WriteString("prompt from pipe"); err != nil {
+		t.Fatalf("pipe write error = %v", err)
+	}
+	w.Close()
+	orig := os.Stdin
+	os.Stdin = r
+	defer func() { os.Stdin = orig }()
+
+	got, err := resolveExecPrompt("-")
+	if err != nil {
+		t.Fatalf("resolveExecPrompt('-') error = %v", err)
+	}
+	if got != "prompt from pipe" {
+		t.Fatalf("stdin prompt = %q, want %q", got, "prompt from pipe")
+	}
+}
+
+func TestResolveExecPrompt_StdinEmpty(t *testing.T) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("os.Pipe() error = %v", err)
+	}
+	w.Close()
+	orig := os.Stdin
+	os.Stdin = r
+	defer func() { os.Stdin = orig }()
+
+	if _, err := resolveExecPrompt("-"); err == nil {
+		t.Fatal("empty stdin should error")
 	}
 }

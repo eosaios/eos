@@ -1,6 +1,6 @@
 package setup
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -11,16 +11,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreamSailing/eos/internal/ai"
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/ui/styles"
-	"github.com/dreamSailing/eos/pkg/coreapi"
+	"github.com/eosaios/eos/internal/ai"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/ui/styles"
+	"github.com/eosaios/eos/pkg/coreapi"
 
-	"github.com/charmbracelet/bubbles/table"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/table"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // ModelSetupStep 模型设置步骤
@@ -103,7 +103,7 @@ func NewModelSetupWizard(styles *styles.Styles, lang string) *ModelSetupView {
 	inputs := make([]textinput.Model, 4)
 	for i := range inputs {
 		inputs[i] = textinput.New()
-		inputs[i].Width = 50
+		inputs[i].SetWidth(50)
 	}
 	inputs[1].EchoMode = textinput.EchoPassword // API Key
 
@@ -171,7 +171,10 @@ func (v *ModelSetupView) loadProviders() {
 // 其余 provider 直接用其原始名称。rust_catalog 在 ai 包没有 language 上下文，
 // 只能在这里按当前语言渲染。
 func providerDisplayName(p *ai.ProviderConfig, language string) string {
-	if p != nil && p.ID == "custom" {
+	if p == nil {
+		return ""
+	}
+	if p.ID == "custom" {
 		return i18n.T("setup.custom", language)
 	}
 	return p.Name
@@ -256,7 +259,7 @@ func (v *ModelSetupView) SetSize(width, height int) {
 	v.modelTable.SetWidth(modelWidth)
 
 	for i := range v.inputs {
-		v.inputs[i].Width = width - 20
+		v.inputs[i].SetWidth(width - 20)
 	}
 }
 

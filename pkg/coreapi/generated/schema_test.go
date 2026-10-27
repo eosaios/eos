@@ -4,7 +4,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/dreamSailing/eos/pkg/protocol/jsonrpc"
+	"github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
 
 func TestGeneratedMethodsCoverAllCoreMethods(t *testing.T) {

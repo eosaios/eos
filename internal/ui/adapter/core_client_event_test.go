@@ -3,7 +3,7 @@ package adapter
 import (
 	"testing"
 
-	"github.com/dreamSailing/eos/pkg/protocol"
+	"github.com/eosaios/eos/pkg/protocol"
 )
 
 func TestRuntimeEventFromEnvelopeNormalizesRustTurnEvent(t *testing.T) {

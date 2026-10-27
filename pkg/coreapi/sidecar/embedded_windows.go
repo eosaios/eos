@@ -1,4 +1,5 @@
 //go:build windows && !eos_noembed
+
 // 内嵌内核是 CLI 二进制的分发形态（go install 兜底）；桌面端构建传
 // -tags eos_noembed 排除（自带 core/ 布局，避免归档多 9MB 冗余）。
 

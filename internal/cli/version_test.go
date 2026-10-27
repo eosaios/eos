@@ -1,6 +1,6 @@
 package cli
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dreamSailing/eos/internal/version"
+	"github.com/eosaios/eos/internal/version"
 )
 
 // TestPrintVersionOutput 验证版本输出包含 AppVersion 与运行平台。
@@ -58,7 +58,9 @@ func TestRootRunShortCircuitsOnVersionFlag(t *testing.T) {
 	os.Stdout = wOut
 	t.Cleanup(func() { os.Stdout = origStdout })
 
-	rootCmd.Run(rootCmd, nil)
+	if err := rootCmd.RunE(rootCmd, nil); err != nil {
+		t.Fatalf("version root command: %v", err)
+	}
 	_ = wOut.Close()
 
 	output, _ := io.ReadAll(rOut)

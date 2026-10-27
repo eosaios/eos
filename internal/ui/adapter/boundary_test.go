@@ -4,10 +4,42 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
 )
+
+// eachImport 遍历当前目录下非测试 Go 源文件的 import 列表。
+// parser.ParseDir 自 Go 1.25 起废弃（不按 build tags 归属文件），
+// 这里按 os.ReadDir + parser.ParseFile 逐文件解析 ImportsOnly。
+func eachImport(t *testing.T, fn func(filePath, importPath string)) {
+	t.Helper()
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("os.Getwd() error = %v", err)
+	}
+	entries, err := os.ReadDir(wd)
+	if err != nil {
+		t.Fatalf("os.ReadDir() error = %v", err)
+	}
+	fset := token.NewFileSet()
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".go") ||
+			strings.HasSuffix(name, "_test.go") || strings.HasSuffix(name, ".tmp") {
+			continue
+		}
+		file, err := parser.ParseFile(fset, name, nil, parser.ImportsOnly)
+		if err != nil {
+			t.Fatalf("parser.ParseFile(%q) error = %v", name, err)
+		}
+		filePath := filepath.Join(wd, name)
+		for _, imp := range file.Imports {
+			fn(filePath, strings.Trim(imp.Path.Value, `"`))
+		}
+	}
+}
 
 func TestImportBoundary(t *testing.T) {
 	forbidden := map[string]string{
@@ -19,85 +51,46 @@ func TestImportBoundary(t *testing.T) {
 		prefix string
 		msg    string
 	}{
-		{"github.com/dreamSailing/eos/internal/tools", "adapter 禁止直接依赖 internal/tools，请改用 coreapi.Engine"},
+		{"github.com/eosaios/eos/internal/tools", "adapter 禁止直接依赖 internal/tools，请改用 coreapi.Engine"},
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("os.Getwd() error = %v", err)
-	}
+	eachImport(t, func(filePath, path string) {
+		if msg, ok := forbidden[path]; ok {
+			t.Errorf("%s: forbidden import %q — %s", filePath, path, msg)
+		}
 
-	fset := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fset, wd, func(fi os.FileInfo) bool {
-		return !strings.HasSuffix(fi.Name(), "_test.go") &&
-			!strings.HasSuffix(fi.Name(), ".tmp")
-	}, parser.ImportsOnly)
-	if err != nil {
-		t.Fatalf("parser.ParseDir() error = %v", err)
-	}
-
-	for _, pkg := range pkgs {
-		for filePath, file := range pkg.Files {
-			for _, imp := range file.Imports {
-				path := strings.Trim(imp.Path.Value, `"`)
-
-				if msg, ok := forbidden[path]; ok {
-					t.Errorf("%s: forbidden import %q — %s", filePath, path, msg)
+		for _, fp := range forbiddenPrefixes {
+			if strings.HasPrefix(path, fp.prefix) {
+				if _, isExact := forbidden[path]; isExact {
+					continue
 				}
-
-				for _, fp := range forbiddenPrefixes {
-					if strings.HasPrefix(path, fp.prefix) {
-						if _, isExact := forbidden[path]; isExact {
-							continue
-						}
-						t.Errorf("%s: forbidden import %q — %s", filePath, path, fp.msg)
-					}
-				}
+				t.Errorf("%s: forbidden import %q — %s", filePath, path, fp.msg)
 			}
 		}
-	}
+	})
 }
 
 func TestAllowedImports(t *testing.T) {
 	allowed := map[string]bool{
-		"github.com/dreamSailing/eos/internal/ai":                true,
-		"github.com/dreamSailing/eos/internal/config":            true,
-		"github.com/dreamSailing/eos/internal/pkg/settings":      true,
-		"github.com/dreamSailing/eos/pkg/coreapi":                true,
-		"github.com/dreamSailing/eos/pkg/coreapi/jsonrpc":        true,
-		"github.com/dreamSailing/eos/pkg/coreapi/sidecar":        true,
-		"github.com/dreamSailing/eos/pkg/coreapi/sidecar/client": true,
-		"github.com/dreamSailing/eos/pkg/protocol":               true,
-		"github.com/dreamSailing/eos/pkg/protocol/jsonrpc":       true,
+		"github.com/eosaios/eos/internal/ai":                true,
+		"github.com/eosaios/eos/internal/config":            true,
+		"github.com/eosaios/eos/internal/pkg/settings":      true,
+		"github.com/eosaios/eos/pkg/coreapi":                true,
+		"github.com/eosaios/eos/pkg/coreapi/jsonrpc":        true,
+		"github.com/eosaios/eos/pkg/coreapi/sidecar":        true,
+		"github.com/eosaios/eos/pkg/coreapi/sidecar/client": true,
+		"github.com/eosaios/eos/pkg/protocol":               true,
+		"github.com/eosaios/eos/pkg/protocol/jsonrpc":       true,
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("os.Getwd() error = %v", err)
-	}
-
-	fset := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fset, wd, func(fi os.FileInfo) bool {
-		return !strings.HasSuffix(fi.Name(), "_test.go") &&
-			!strings.HasSuffix(fi.Name(), ".tmp")
-	}, parser.ImportsOnly)
-	if err != nil {
-		t.Fatalf("parser.ParseDir() error = %v", err)
-	}
-
-	for _, pkg := range pkgs {
-		for filePath, file := range pkg.Files {
-			for _, imp := range file.Imports {
-				path := strings.Trim(imp.Path.Value, `"`)
-				if strings.HasPrefix(path, "github.com/dreamSailing/eos/internal/") ||
-					strings.HasPrefix(path, "github.com/dreamSailing/eos/pkg/") {
-					if !allowed[path] {
-						t.Errorf("%s: unexpected internal/pkg import %q not in allowlist — if legitimate, update TestAllowedImports", filePath, path)
-					}
-				}
+	eachImport(t, func(filePath, path string) {
+		if strings.HasPrefix(path, "github.com/eosaios/eos/internal/") ||
+			strings.HasPrefix(path, "github.com/eosaios/eos/pkg/") {
+			if !allowed[path] {
+				t.Errorf("%s: unexpected internal/pkg import %q not in allowlist — if legitimate, update TestAllowedImports", filePath, path)
 			}
 		}
-	}
+	})
 }
 
 func TestCoreFallbackContraction(t *testing.T) {

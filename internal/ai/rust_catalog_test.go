@@ -3,7 +3,7 @@ package ai
 import (
 	"testing"
 
-	"github.com/dreamSailing/eos/pkg/coreapi"
+	"github.com/eosaios/eos/pkg/coreapi"
 )
 
 // ep is a shorthand for creating ProviderEndpoint literals in tests.

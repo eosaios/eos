@@ -1,6 +1,6 @@
 package shell
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/dreamSailing/eos/internal/ui/styles"
+	tea "charm.land/bubbletea/v2"
+	"github.com/eosaios/eos/internal/ui/styles"
 )
 
 var ansiPattern = regexp.MustCompile(`\x1b\[[0-9;]*m`)
@@ -103,7 +103,7 @@ func TestRightKeyAcceptsPredictionOnlyWhenInputEmpty(t *testing.T) {
 	model := New(100, 30, s, "zh")
 	model.SetPrediction("请继续展开这个方案")
 
-	handled, _ := model.HandleKey(tea.KeyMsg{Type: tea.KeyRight})
+	handled, _ := model.HandleKey(tea.KeyPressMsg{Code: tea.KeyRight})
 	if !handled {
 		t.Fatalf("expected right key to accept prediction")
 	}
@@ -121,7 +121,7 @@ func TestRightKeyAppendsPredictionSuffixForExistingInput(t *testing.T) {
 	model.SetInputValue("请继续")
 	model.SetPrediction("请继续展开这个方案")
 
-	handled, _ := model.HandleKey(tea.KeyMsg{Type: tea.KeyRight})
+	handled, _ := model.HandleKey(tea.KeyPressMsg{Code: tea.KeyRight})
 	if !handled {
 		t.Fatalf("expected right key to accept suffix prediction")
 	}
@@ -136,7 +136,7 @@ func TestTabKeyAcceptsPredictionWhenHintsHidden(t *testing.T) {
 	model.SetInputValue("请继续")
 	model.SetPrediction("请继续展开这个方案")
 
-	handled, _ := model.HandleKey(tea.KeyMsg{Type: tea.KeyTab})
+	handled, _ := model.HandleKey(tea.KeyPressMsg{Code: tea.KeyTab})
 	if !handled {
 		t.Fatalf("expected tab key to accept suffix prediction")
 	}
@@ -165,7 +165,7 @@ func TestEnterAcceptsSlashHintAndRestoresInputBoxPosition(t *testing.T) {
 	}
 
 	// Accepting the hint via Enter must hide the hints AND restore the layout.
-	handled, _ := model.HandleKey(tea.KeyMsg{Type: tea.KeyEnter})
+	handled, _ := model.HandleKey(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if !handled {
 		t.Fatalf("expected Enter to be handled while hints visible")
 	}
@@ -190,7 +190,7 @@ func TestEscDismissesSlashHintAndRestoresInputBoxPosition(t *testing.T) {
 		t.Fatalf("expected slash hints to be visible")
 	}
 
-	handled, _ := model.HandleKey(tea.KeyMsg{Type: tea.KeyEsc})
+	handled, _ := model.HandleKey(tea.KeyPressMsg{Code: tea.KeyEsc})
 	if !handled {
 		t.Fatalf("expected Esc to be handled while hints visible")
 	}

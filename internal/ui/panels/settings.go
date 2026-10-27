@@ -1,6 +1,6 @@
 package panels
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -10,15 +10,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dreamSailing/eos/internal/config"
-	"github.com/dreamSailing/eos/internal/i18n"
-	"github.com/dreamSailing/eos/internal/pkg/settings"
-	"github.com/dreamSailing/eos/internal/ui/styles"
+	"github.com/eosaios/eos/internal/config"
+	"github.com/eosaios/eos/internal/i18n"
+	"github.com/eosaios/eos/internal/pkg/settings"
+	"github.com/eosaios/eos/internal/ui/styles"
 
-	"github.com/charmbracelet/bubbles/table"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/table"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 // SettingsPanel 设置面板
@@ -94,8 +94,7 @@ func NewSettingsPanel(styles *styles.Styles, mgr *settings.Manager, lang string)
 
 	// 创建编辑输入框
 	input := textinput.New()
-	input.Width = 40
-
+	input.SetWidth(40)
 	panel := &SettingsPanel{
 		BasePanel:   NewBasePanel("settings"),
 		styles:      styles,
@@ -163,7 +162,7 @@ func defaultPanelSettings() *settings.Settings {
 	return &settings.Settings{
 		AutoContext:          true,
 		DesktopNotifications: &tn,
-		MaxInjectKB:          48,
+		MaxInjectKB:          32,
 		WatchDebounceMs:      500,
 		PollIntervalSec:      5,
 		Language:             "zh",
@@ -519,9 +518,9 @@ func (p *SettingsPanel) View() string {
 			opStrs = append(opStrs, p.styles.TextMuted.Render(text))
 		}
 	}
-	content.WriteString(fmt.Sprintf("%s %s\n\n",
+	fmt.Fprintf(&content, "%s %s\n\n",
 		i18n.T("models.action", p.language),
-		strings.Join(opStrs, "  ")))
+		strings.Join(opStrs, "  "))
 
 	content.WriteString(p.styles.TextMuted.Render(i18n.T("settings.help", p.language)))
 
@@ -535,9 +534,9 @@ func (p *SettingsPanel) viewEditMode() string {
 	content.WriteString(p.styles.PanelTitle.Render(i18n.T("settings.edit.title", p.language)))
 	content.WriteString("\n\n")
 
-	content.WriteString(fmt.Sprintf("%s: %s\n\n",
+	fmt.Fprintf(&content, "%s: %s\n\n",
 		i18n.T("settings.col.name", p.language),
-		p.styles.TextInfo.Render(p.editKeyLabel())))
+		p.styles.TextInfo.Render(p.editKeyLabel()))
 
 	if p.editChoices != nil {
 		var opts []string
@@ -576,7 +575,7 @@ func (p *SettingsPanel) SetSize(width, height int) {
 	p.BasePanel.SetSize(width, height)
 	p.table.SetWidth(width - 4)
 	p.table.SetHeight(height - 12)
-	p.editInput.Width = width - 10
+	p.editInput.SetWidth(width - 10)
 }
 
 // SettingsSaveMsg 保存设置消息

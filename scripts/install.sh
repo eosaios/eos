@@ -2,7 +2,7 @@
 # EOS CLI 官方安装脚本（macOS / Linux）
 #
 # 用法：
-#   curl -fsSL https://cdn.jsdelivr.net/gh/dreamSailing/eos@main/scripts/install.sh | bash
+#   curl -fsSL https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.sh | bash
 #   ./install.sh --version v1.0.0          # 安装指定版本
 #   ./install.sh --bin ~/.local/bin --dir ~/.local/share/eos
 #
@@ -13,7 +13,7 @@
 
 set -euo pipefail
 
-REPO="dreamSailing/eos"
+REPO="eosaios/eos"
 VERSION=""
 BIN_DIR="${EOS_INSTALL_BIN:-$HOME/.local/bin}"
 DIST_DIR="${EOS_INSTALL_DIR:-$HOME/.local/share/eos}"
@@ -104,7 +104,7 @@ for round in 1 2 3 4 5; do
   fi
   echo "下载未完成，重试 (${round}/5)..."
 done
-[ -n "$VERIFIED" ] || err "下载失败：网络不稳定或 ${BASE_URL} 不可达。建议：1) 重新运行本脚本（支持断点续传）  2) 配置代理后重试  3) go install github.com/dreamSailing/eos@latest  4) 手动下载 ${BASE_URL}/${ASSET}"
+[ -n "$VERIFIED" ] || err "下载失败：网络不稳定或 ${BASE_URL} 不可达。建议：1) 重新运行本脚本（支持断点续传）  2) 配置代理后重试  3) go install github.com/eosaios/eos@latest  4) 手动下载 ${BASE_URL}/${ASSET}"
 echo "SHA256 校验通过"
 
 echo "安装到 ${DIST_DIR} ..."
@@ -117,7 +117,13 @@ if [ -d "${DIST_DIR}/core" ] || [ -e "${DIST_DIR}/eos" ]; then
   mkdir -p "$DIST_DIR"
 fi
 tar -xzf "${TMP}/${ASSET}" -C "$TMP"
-SRC_DIR="$(dirname "$(find "${TMP}" -maxdepth 2 -name eos -type f | head -1)")"
+# 归档结构固定为单一顶层目录（<stage>/eos + <stage>/core/）。不用 find
+# -maxdepth：那是 GNU 扩展，macOS 自带的 BSD find 不支持会直接报错。
+SRC_DIR=""
+for d in "${TMP}"/*/; do
+  if [ -f "${d}eos" ]; then SRC_DIR="${d%/}"; break; fi
+done
+[ -n "$SRC_DIR" ] || err "归档结构异常：未在 ${ASSET} 中找到 eos 可执行文件"
 cp -R "${SRC_DIR}/." "$DIST_DIR/"
 [ -n "$OLD" ] && rm -rf "$OLD" 2>/dev/null || true
 chmod +x "${DIST_DIR}/eos"

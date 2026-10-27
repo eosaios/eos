@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	coreapijsonrpc "github.com/dreamSailing/eos/pkg/coreapi/jsonrpc"
+	coreapijsonrpc "github.com/eosaios/eos/pkg/coreapi/jsonrpc"
 )
 
 func TestBuildManifestUsesCoreInitResult(t *testing.T) {

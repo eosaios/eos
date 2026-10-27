@@ -1,6 +1,6 @@
 package ui
 
-// Copyright (c) 2026 DreamSailing
+// Copyright (c) 2026 EOSAIOS
 // SPDX-License-Identifier: EOS-NCL-1.1
 // 本文件基于 EOS 非商用许可证 v1.1 发布，详见 LICENSE。
 // 商业使用请联系版权人获得商业授权。
@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	uiadapter "github.com/dreamSailing/eos/internal/ui/adapter"
-	"github.com/dreamSailing/eos/internal/update"
-	"github.com/dreamSailing/eos/pkg/protocol"
+	uiadapter "github.com/eosaios/eos/internal/ui/adapter"
+	"github.com/eosaios/eos/internal/update"
+	"github.com/eosaios/eos/pkg/protocol"
 )
 
 // Msg 是所有消息类型的接口
@@ -89,6 +89,8 @@ func ConvertEvent(e uiadapter.RuntimeEvent) Msg {
 			Event:           agentEventKind(e.Type),
 			Content:         eventText(e, "error", "reason", "message", "text"),
 		}
+	case "browser.takeover.confirm":
+		return BrowserTakeoverConfirmMsg{Reason: payloadString(e, "reason"), Note: payloadString(e, "note")}
 	case "browser.takeover.started":
 		return BrowserTakeoverStartedMsg{Reason: payloadString(e, "reason"), Note: payloadString(e, "note")}
 	case "browser.takeover.ended":
@@ -106,13 +108,19 @@ func ConvertEvent(e uiadapter.RuntimeEvent) Msg {
 	}
 }
 
+// BrowserTakeoverConfirmMsg AI 请求人工接管，等人确认（browser.takeover.confirm）。
+type BrowserTakeoverConfirmMsg struct {
+	Reason string
+	Note   string
+}
+
 // BrowserTakeoverStartedMsg 内核请求/人接管了浏览器（browser.takeover.started）。
 type BrowserTakeoverStartedMsg struct {
 	Reason string
 	Note   string
 }
 
-// BrowserTakeoverEndedMsg 接管结束（resumed/timeout/cancelled）。
+// BrowserTakeoverEndedMsg 接管结束（resumed/timeout/cancelled/unconfirmed/declined）。
 type BrowserTakeoverEndedMsg struct {
 	Result string
 }
@@ -583,33 +591,34 @@ type VersionCheckMsg struct {
 }
 
 // 实现 msgType 方法以满足接口要求
+func (BrowserTakeoverConfirmMsg) msgType() {}
 func (BrowserTakeoverStartedMsg) msgType() {}
 func (BrowserTakeoverEndedMsg) msgType()   {}
 func (BrowserActionMsg) msgType()          {}
 func (BrowserDownloadDoneMsg) msgType()    {}
 func (BrowserPickSelectedMsg) msgType()    {}
-func (WindowSizeMsg) msgType()       {}
-func (TickMsg) msgType()             {}
-func (KeyMsg) msgType()              {}
-func (MouseMsg) msgType()            {}
-func (AIRequestMsg) msgType()        {}
-func (AIResponseMsg) msgType()       {}
-func (ItemStartedMsg) msgType()      {}
-func (ItemDeltaMsg) msgType()        {}
-func (ItemCompletedMsg) msgType()    {}
-func (InvokeDoneMsg) msgType()       {}
-func (PredictionUpdateMsg) msgType() {}
-func (ThinkingMsg) msgType()         {}
-func (ToolCallMsg) msgType()         {}
-func (ToolResultMsg) msgType()       {}
-func (AgentTaskMsg) msgType()        {}
-func (AgentFinalMsg) msgType()       {}
-func (ModeChangedMsg) msgType()      {}
-func (PromptRequestMsg) msgType()    {}
-func (PromptResultMsg) msgType()     {}
-func (PanelOpenMsg) msgType()        {}
-func (PanelCloseMsg) msgType()       {}
-func (PanelActionMsg) msgType()      {}
-func (SettingsUpdateMsg) msgType()   {}
-func (VersionCheckMsg) msgType()     {}
-func (ErrorMsg) msgType()            {}
+func (WindowSizeMsg) msgType()             {}
+func (TickMsg) msgType()                   {}
+func (KeyMsg) msgType()                    {}
+func (MouseMsg) msgType()                  {}
+func (AIRequestMsg) msgType()              {}
+func (AIResponseMsg) msgType()             {}
+func (ItemStartedMsg) msgType()            {}
+func (ItemDeltaMsg) msgType()              {}
+func (ItemCompletedMsg) msgType()          {}
+func (InvokeDoneMsg) msgType()             {}
+func (PredictionUpdateMsg) msgType()       {}
+func (ThinkingMsg) msgType()               {}
+func (ToolCallMsg) msgType()               {}
+func (ToolResultMsg) msgType()             {}
+func (AgentTaskMsg) msgType()              {}
+func (AgentFinalMsg) msgType()             {}
+func (ModeChangedMsg) msgType()            {}
+func (PromptRequestMsg) msgType()          {}
+func (PromptResultMsg) msgType()           {}
+func (PanelOpenMsg) msgType()              {}
+func (PanelCloseMsg) msgType()             {}
+func (PanelActionMsg) msgType()            {}
+func (SettingsUpdateMsg) msgType()         {}
+func (VersionCheckMsg) msgType()           {}
+func (ErrorMsg) msgType()                  {}

@@ -20,15 +20,15 @@ import (
 	"testing"
 )
 
-const modulePath = "github.com/dreamSailing/eos"
+const modulePath = "github.com/eosaios/eos"
 
 // forbiddenUIImports 列出已退役删除的包路径。守卫仍保留：防止任何人重新引入
 // internal/bridge / internal/runtime / internal/tools / pkg/core（旧 Go/Eino 内核）。
 var forbiddenUIImports = []string{
-	"github.com/dreamSailing/eos/internal/bridge",
-	"github.com/dreamSailing/eos/internal/runtime",
-	"github.com/dreamSailing/eos/internal/tools",
-	"github.com/dreamSailing/eos/pkg/core",
+	"github.com/eosaios/eos/internal/bridge",
+	"github.com/eosaios/eos/internal/runtime",
+	"github.com/eosaios/eos/internal/tools",
+	"github.com/eosaios/eos/pkg/core",
 }
 
 func TestUIDirectRuntimeCouplingDoesNotSpread(t *testing.T) {
@@ -119,18 +119,18 @@ func isForbiddenUIImport(importPath string) bool {
 }
 
 var forbiddenCLIImports = []string{
-	"github.com/dreamSailing/eos/internal/bridge",
-	"github.com/dreamSailing/eos/internal/tools",
-	"github.com/dreamSailing/eos/internal/session",
+	"github.com/eosaios/eos/internal/bridge",
+	"github.com/eosaios/eos/internal/tools",
+	"github.com/eosaios/eos/internal/session",
 }
 
 // cliForbiddenProductionImports 是所有 CLI 命令必须遵守的禁列。
 // 这些包（旧 Go/Eino 内核）已被删除，守卫保留以防止重新引入。
 var cliForbiddenProductionImports = []string{
-	"github.com/dreamSailing/eos/pkg/core",
-	"github.com/dreamSailing/eos/internal/bridge",
-	"github.com/dreamSailing/eos/internal/runtime",
-	"github.com/dreamSailing/eos/internal/tools",
+	"github.com/eosaios/eos/pkg/core",
+	"github.com/eosaios/eos/internal/bridge",
+	"github.com/eosaios/eos/internal/runtime",
+	"github.com/eosaios/eos/internal/tools",
 }
 
 func TestCLIHeadlessNoBridgeImport(t *testing.T) {
