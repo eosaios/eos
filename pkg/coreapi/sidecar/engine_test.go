@@ -149,10 +149,7 @@ func TestRemoteEngineSupportedMethodsCallSidecar(t *testing.T) {
 	// 晚于紧随其后的 Turns().Start，导致 call 顺序断言假阴性。等到
 	// event/unsubscribe 落账再继续。
 	deadline := time.Now().Add(2 * time.Second)
-	for {
-		if caller.hasMethod(protocoljsonrpc.MethodEventUnsubscribe) {
-			break
-		}
+	for !caller.hasMethod(protocoljsonrpc.MethodEventUnsubscribe) {
 		if time.Now().After(deadline) {
 			t.Fatalf("timed out waiting for async %s after cancel", protocoljsonrpc.MethodEventUnsubscribe)
 		}

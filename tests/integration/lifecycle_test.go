@@ -104,11 +104,23 @@ func TestIT08_CancelDuringStreamDoesNotComplete(t *testing.T) {
 
 	// 取消瞬间已在途的增量到达终态之前是合理的；真正要禁止的是
 	// **终态之后**还在流出内容 —— 那会让 UI 继续把已取消的任务当成进行中。
+	// 用接收顺序判定，不用墙钟：Windows 上多条事件可能落到同一 At，
+	// !At.Before(terminal.At) 会把终态前已到达的增量误判为迟到。
 	conn.WaitQuiet(5 * time.Second)
-	for _, e := range conn.EventsOfTurn(turnID) {
-		if e.Type == "turn.item_delta" && !e.At.Before(terminal.At) {
-			t.Errorf("终态 %s(%s) 之后仍收到文本增量 %q：迟到数据把已取消的 turn 重新激活",
-				terminal.Type, terminal.At.Format(time.RFC3339Nano), e.PayloadString("delta"))
+	events := conn.EventsOfTurn(turnID)
+	terminalIdx := -1
+	for i, e := range events {
+		if testsupport.IsTerminalEvent(e.Type) {
+			terminalIdx = i
+			break
+		}
+	}
+	if terminalIdx >= 0 {
+		for _, e := range events[terminalIdx+1:] {
+			if e.Type == "turn.item_delta" {
+				t.Errorf("终态 %s(%s) 之后仍收到文本增量 %q：迟到数据把已取消的 turn 重新激活",
+					terminal.Type, terminal.At.Format(time.RFC3339Nano), e.PayloadString("delta"))
+			}
 		}
 	}
 
@@ -332,7 +344,7 @@ func waitForPersistedText(conn *testsupport.CoreConn, sessID, want string, timeo
 func TestIT06_SessionAuthorizationDoesNotLeakAcrossSessions(t *testing.T) {
 	const dirName = "scoped_dir"
 
-	h := newHarness(t,
+	h := newApprovalHarness(t,
 		&testsupport.ModelScript{
 			Name: "call", DisconnectAfterN: -1,
 			ToolCalls: []testsupport.ScriptedToolCall{{
