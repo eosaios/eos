@@ -64,8 +64,11 @@ func StartRemoteEngine(ctx context.Context, opts ProcessOptions) (*RemoteEngine,
 	engine.caller = client
 	engine.client = client
 	if _, err := engine.Initialize(ctx); err != nil {
-		_ = client.Close()
-		return nil, err
+		initializeErr := fmt.Errorf("initialize eos-core %q: %w", client.cmd.Path, err)
+		if closeErr := client.Close(); closeErr != nil {
+			return nil, errors.Join(initializeErr, fmt.Errorf("eos-core exit/cleanup: %w", closeErr))
+		}
+		return nil, initializeErr
 	}
 	go func() {
 		<-client.Wait()

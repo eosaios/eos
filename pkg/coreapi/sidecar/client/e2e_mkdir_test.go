@@ -13,9 +13,8 @@ import (
 	"github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
 
-// localCoreBinary points at a locally-built eos-core sidecar so this test can
-// exercise sandbox/approval changes without a signed release binary.
-const localCoreBinary = `C:/home/eos/eos-core-rs/target/debug/eos-core.exe`
+// 本用例使用与 `eos` 相同的解析规则定位内核；对着本地构建的内核跑时
+// 设置 EOS_CORE_PATH 即可，无需改测试代码。
 
 // TestE2EFileMkdirRelativePathApproval verifies that a relative write path
 // (e.g. a model-supplied "test") is resolved against the request workspace root
@@ -23,9 +22,8 @@ const localCoreBinary = `C:/home/eos/eos-core-rs/target/debug/eos-core.exe`
 // denied as "outside all writable roots". This reproduces the user scenario
 // where creating a directory via FileMkdir stalled after approval.
 func TestE2EFileMkdirRelativePathApproval(t *testing.T) {
-	if _, err := os.Stat(localCoreBinary); err != nil {
-		t.Skipf("locally-built sidecar not found at %s: %v", localCoreBinary, err)
-	}
+	coreBinary := resolveE2ECoreBinary(t)
+	t.Logf("driving real core: %s", coreBinary)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -33,7 +31,7 @@ func TestE2EFileMkdirRelativePathApproval(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	client, err := sidecarclient.Start(ctx, sidecarclient.Options{
-		BinaryPath: localCoreBinary,
+		BinaryPath: coreBinary,
 		Env: map[string]string{
 			"EOS_SANDBOX_MODE":           "workspace-write",
 			"EOS_WORKSPACE_ROOT":         tmpDir,

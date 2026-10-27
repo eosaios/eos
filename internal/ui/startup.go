@@ -148,9 +148,9 @@ func StartInteractiveTUIWithOptions(opts TUIOptions) {
 
 func tuiSidecarClientOptions(opts TUIOptions, stderrWriter io.Writer) sidecarclient.Options {
 	return sidecarclient.Options{
-		Env:            tuiOptionEnv(opts),
-		Stderr:         stderrWriter,
-		VerifyChecksum: true,
+		Env:              tuiOptionEnv(opts),
+		Stderr:           stderrWriter,
+		VerifyChecksum:   true,
 		RequireSignature: true,
 		// 本地开发放行占位签名：dev-rebuild 脚本（scripts/dev_rebuild_core.go）
 		// 把本机新编译的内核 stage 进仓库 vendored core/，占位签名 + sha256

@@ -101,7 +101,7 @@ func TestInitializeReturnsInitResultMethods(t *testing.T) {
 	caller := &recordingCaller{}
 	wantMethods := []string{"initialize", "session/create", "tool/execute"}
 	router, _ := NewRouter(Options{
-		Caller: caller,
+		Caller:     caller,
 		InitResult: initResultWith(wantMethods),
 	})
 

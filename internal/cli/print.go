@@ -63,10 +63,17 @@ type PrintResult struct {
 // Production path: starts an eos-core sidecar via engineprovider.Select (ModeAuto
 // → Rust-only). On Rust startup failure or missing required methods, returns
 // an error; does NOT silently fall back to Go sharedcore.
-func RunPrintMode(opts PrintOptions) error {
+func RunPrintMode(opts PrintOptions) (runErr error) {
 	if opts.OutputFormat == "" {
 		opts.OutputFormat = "text"
 	}
+	// Every failure, including resolution and startup failures, uses the same
+	// output contract. Return the error as well so the CLI entry owns exit status.
+	defer func() {
+		if runErr != nil {
+			writePrintError(opts.OutputFormat, runErr)
+		}
+	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -88,7 +95,6 @@ func RunPrintMode(opts PrintOptions) error {
 	// 不走 runSingleTurn 的"累积完整内容后统一输出"伪流。
 	if strings.EqualFold(strings.TrimSpace(opts.OutputFormat), "stream-json") {
 		if err := runStreamJSONTurn(ctx, engine, opts.Query, startedAt, opts.ModelOverride); err != nil {
-			writePrintError(opts.OutputFormat, err)
 			return err
 		}
 		return nil
@@ -96,7 +102,6 @@ func RunPrintMode(opts PrintOptions) error {
 
 	content, err := runSingleTurn(ctx, engine, opts.Query, opts.OutputFormat, opts.ModelOverride)
 	if err != nil {
-		writePrintError(opts.OutputFormat, err)
 		return err
 	}
 

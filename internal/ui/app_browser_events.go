@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/eosaios/eos/internal/i18n"
 	"github.com/eosaios/eos/internal/ui/views/confirm"
-	tea "charm.land/bubbletea/v2"
 )
 
 // browser_takeover 本地确认框 kind（与 bg_kill/workspace_trust 同模式：
@@ -75,7 +75,7 @@ func (m *AppModel) handleConfirmResultBrowserTakeoverConfirm(msg confirm.ResultM
 }
 
 // handleBrowserTakeoverStarted 人工接管开始：系统消息 + 本地确认框
-//（样式与交互对齐既有 confirm 浮层--up/down/enter/esc）。
+// （样式与交互对齐既有 confirm 浮层--up/down/enter/esc）。
 func (m *AppModel) handleBrowserTakeoverStarted(msg BrowserTakeoverStartedMsg) (tea.Model, tea.Cmd) {
 	reason := strings.TrimSpace(msg.Reason)
 	if reason == "" {

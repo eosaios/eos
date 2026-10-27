@@ -12,10 +12,10 @@ import (
 
 	uistyles "github.com/eosaios/eos/internal/ui/styles"
 
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/glamour"
 	gansi "github.com/charmbracelet/glamour/ansi"
 	glstyles "github.com/charmbracelet/glamour/styles"
-	"charm.land/lipgloss/v2"
 	"github.com/muesli/termenv"
 )
 
@@ -166,7 +166,7 @@ func (r *MarkdownRenderer) SetStyles(styles *RenderStyles) {
 }
 
 // SetChromaTheme 设置代码块 chroma 主题并强制重建 TermRenderer
-//（rebuild 只按宽度缓存，主题变更必须显式失效）。
+// （rebuild 只按宽度缓存，主题变更必须显式失效）。
 func (r *MarkdownRenderer) SetChromaTheme(theme string) {
 	r.chromaTheme = NormalizeChromaTheme(theme)
 	r.mu.Lock()

@@ -64,8 +64,8 @@ func SubscribeTurnEvents(ctx context.Context, engine coreapi.Engine, sessionID, 
 
 // AwaitTurn 驱动一次已启动的 turn 到终止：消费 turn/start 异步结果与事件流，
 // 每个事件经 NormalizeEvent 后交给 sink。sink 返回 stop=true 时提前结束
-// （审批快速返回等场景）；返回 err 时立即透传。事件流自然关闭且 start 已
-// 返回视为静默完成（nil）。ctx 取消返回 ctx.Err()。
+// （审批快速返回等场景）；返回 err 时立即透传。没有观察到终态就关闭的事件流
+// 返回错误，避免 sidecar 退出被误报成功。ctx 取消返回 ctx.Err()。
 func AwaitTurn(
 	ctx context.Context,
 	startDone <-chan TurnStartResult,
@@ -75,6 +75,12 @@ func AwaitTurn(
 	eventsCh := events
 	startDoneCh := startDone
 	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if eventsCh == nil && startDoneCh == nil {
+			return fmt.Errorf("core event stream closed before turn completed")
+		}
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -90,9 +96,6 @@ func AwaitTurn(
 		case ev, ok := <-eventsCh:
 			if !ok {
 				eventsCh = nil
-				if startDoneCh == nil {
-					return nil
-				}
 				continue
 			}
 			eventType, payload, raw := NormalizeEvent(ev)
