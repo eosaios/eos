@@ -11,8 +11,6 @@ package sidecar
 import (
 	"context"
 	"errors"
-	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -20,6 +18,8 @@ import (
 
 	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
 	"github.com/eosaios/eos/pkg/sandbox"
+
+	"github.com/eosaios/eos/internal/testexec"
 )
 
 type failingSidecarCaller struct{}
@@ -249,47 +249,7 @@ func TestStartRemoteEngineInitializeFailAndFullStart(t *testing.T) {
 	t.Setenv("EOS_CORE_BIN_DIR", "")
 	ctx := context.Background()
 
-	dir := t.TempDir()
-	core := filepath.Join(dir, "eos-core")
-	py := `#!/usr/bin/env python3
-import sys, json
-mode = sys.argv[1] if len(sys.argv) > 1 else 'ok'
-
-def read_frame():
-    length = 0
-    while True:
-        line = sys.stdin.readline()
-        if not line:
-            return None
-        line = line.strip()
-        if not line:
-            break
-        if line.lower().startswith('content-length:'):
-            length = int(line.split(':', 1)[1].strip())
-    if length <= 0:
-        return None
-    return sys.stdin.read(length)
-
-while True:
-    raw = read_frame()
-    if raw is None:
-        break
-    try:
-        req = json.loads(raw)
-    except Exception:
-        continue
-    resp = {'jsonrpc': '2.0', 'id': req.get('id')}
-    if mode == 'error':
-        resp['error'] = {'code': -32000, 'message': 'kernel stub failure'}
-    else:
-        resp['result'] = {'ok': True}
-    out = json.dumps(resp)
-    sys.stdout.write('Content-Length: %d\n\n%s' % (len(out), out))
-    sys.stdout.flush()
-`
-	if err := os.WriteFile(core, []byte(py), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	core := testexec.RPCServer(t, nil)
 
 	// 错误模式：StartProcess 成功、Initialize 失败 → 66-69 臂。
 	if _, err := StartRemoteEngine(ctx, ProcessOptions{BinaryPath: core, Args: []string{"error"}}); err == nil {

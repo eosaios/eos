@@ -13,9 +13,7 @@ package webbridge
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -194,32 +192,12 @@ func TestBridgeServiceDelegateSystemDialogDomain(t *testing.T) {
 func TestBridgeServiceDelegateSystemFilesDomain(t *testing.T) {
 	s, _, rec := newChatSessionsTestBridge(t, &chatSessionsGatewayStub{})
 
-	// OpenLogDirectory：PATH 前置假 open 拦截真实 Finder 唤起，
-	// 脚本记录参数即可断言委托确实解析了日志目录。
-	fakeBin := t.TempDir()
-	openCalls := filepath.Join(fakeBin, "open-calls")
-	script := "#!/bin/sh\nprintf '%s\\n' \"$1\" >> " + openCalls + "\nexit 0\n"
-	if err := os.WriteFile(filepath.Join(fakeBin, "open"), []byte(script), 0o755); err != nil {
-		t.Fatalf("写假 open: %v", err)
-	}
-	t.Setenv("PATH", fakeBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	_, openCalls := installOpenCommandFixtures(t)
+	s.logFile = filepath.Join(t.TempDir(), "eos.log")
 	if err := s.OpenLogDirectory(); err != nil {
 		t.Fatalf("OpenLogDirectory: %v", err)
 	}
-	// exec.Start 异步起进程，轮询等假脚本落记录（Start 不等退出）。
-	var recorded string
-	// Keep the fake launcher alive while macOS validates its fresh script.
-	deadline := time.Now().Add(30 * time.Second)
-	for time.Now().Before(deadline) {
-		if data, err := os.ReadFile(openCalls); err == nil && strings.TrimSpace(string(data)) != "" {
-			recorded = string(data)
-			break
-		}
-		time.Sleep(20 * time.Millisecond)
-	}
-	if recorded == "" {
-		t.Fatal("假 open 未记录目录调用")
-	}
+	waitFakeOpen(t, openCalls, filepath.Dir(s.logFile))
 
 	// RevealInFileManager 空 path / 相对路径无工作区两个校验臂。
 	if err := s.RevealInFileManager("  "); err == nil {

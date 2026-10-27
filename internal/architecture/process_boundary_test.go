@@ -33,6 +33,8 @@ import (
 // 格式：文件路径:函数名:被调用函数 = 出现次数。
 // 新调用点必须通过 sandbox.GuardedRunner 或在此显式分类。
 var allowedProcessExecCalls = map[string]int{
+	// Test fixtures compile native Go peers; they are never model-driven commands.
+	"internal/testexec/program.go:Build:exec.CommandContext":                     1,
 	"internal/document/convert.go:convertWithSoffice:utils.Command":              1,
 	"internal/pkg/filedialog/filedialog_darwin.go:ChooseDirectory:exec.Command":  1,
 	"internal/pkg/filedialog/filedialog_linux.go:ChooseDirectory:exec.Command":   1,
@@ -95,6 +97,12 @@ func TestProcessExecutionCallSitesAreClassified(t *testing.T) {
 		file, err := parser.ParseFile(fset, path, nil, 0)
 		if err != nil {
 			return err
+		}
+
+		for _, imported := range file.Imports {
+			if strings.Trim(imported.Path.Value, "\"") == "github.com/eosaios/eos/internal/testexec" {
+				return fmt.Errorf("native process fixtures may only be imported by _test.go files: %s", path)
+			}
 		}
 		rel, err := filepath.Rel(root, path)
 		if err != nil {

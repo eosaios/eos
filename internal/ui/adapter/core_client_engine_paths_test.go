@@ -8,6 +8,7 @@ package adapter
 import (
 	"context"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -430,7 +431,8 @@ func TestCoreClientAdapterInvokeFlow(t *testing.T) {
 		protocol.Envelope{EventType: protocol.EventTypeRequestDone},
 	)
 
-	out, err := adapter.Invoke(ctx, "查询", "auto", nil, false)
+	files := []coreapi.Attachment{{Name: "需求.md", Path: "IyBoZWxsbw==", MIME: "text/markdown", Kind: "file"}}
+	out, err := adapter.InvokeWithAttachments(ctx, TurnInput{Text: "查询", ExecutionMode: "auto", Attachments: files})
 	close(stop1)
 	if err != nil {
 		t.Fatalf("Invoke: %v", err)
@@ -442,6 +444,9 @@ func TestCoreClientAdapterInvokeFlow(t *testing.T) {
 		t.Fatalf("turn starts = %d", len(engine.turnStarts))
 	}
 	started := engine.turnStarts[0]
+	if !reflect.DeepEqual(started.Attachments, files) {
+		t.Fatalf("attachments=%+v, want %+v", started.Attachments, files)
+	}
 	if started.Input != "查询" || started.SessionID == "" {
 		t.Errorf("turn start req = %+v", started)
 	}

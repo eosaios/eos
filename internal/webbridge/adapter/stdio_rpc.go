@@ -1942,25 +1942,6 @@ func (g *StdioGateway) StartupDiagnostics() StartupDiagnosticsResult {
 	return out
 }
 
-// CoreAPIAttachments 把壳层附件转换为 coreapi DTO（供桥接层组装
-// StartTurnRequest）。
-func CoreAPIAttachments(items []Attachment) []coreapi.Attachment {
-	out := make([]coreapi.Attachment, 0, len(items))
-	for _, item := range items {
-		path := strings.TrimSpace(item.Path)
-		if path == "" {
-			continue
-		}
-		out = append(out, coreapi.Attachment{
-			Name: strings.TrimSpace(item.Name),
-			Path: path,
-			MIME: strings.TrimSpace(item.MIME),
-			Kind: strings.TrimSpace(item.Kind),
-		})
-	}
-	return out
-}
-
 func stdioCompactCoreAPIAttachments(items []coreapi.Attachment) []coreapi.Attachment {
 	out := make([]coreapi.Attachment, 0, len(items))
 	for _, item := range items {

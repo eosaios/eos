@@ -2,6 +2,7 @@ package webbridge
 
 import (
 	"fmt"
+	"io"
 	"mime"
 	"os"
 	"path/filepath"
@@ -16,8 +17,7 @@ func copyAttachmentIntoWorkspace(source string, workspace string) (string, error
 	if workspace == "" {
 		return source, nil
 	}
-	ext := filepath.Ext(source)
-	safeName := safeAttachmentFilename(filepath.Base(source), ext)
+	safeName := filepath.Base(source)
 	targetDir := filepath.Join(workspace, ".eos", "attachments")
 	if err := os.MkdirAll(targetDir, 0o755); err != nil {
 		return "", err
@@ -42,9 +42,14 @@ func detectAttachmentMIME(path string) string {
 			return typ
 		}
 	}
-	if data, err := os.ReadFile(path); err == nil {
-		if typ, ok := detectAttachmentImageMIME(data); ok {
-			return typ
+	if file, err := os.Open(path); err == nil {
+		data := make([]byte, 512)
+		n, readErr := file.Read(data)
+		closeErr := file.Close()
+		if closeErr == nil && (readErr == nil || readErr == io.EOF) {
+			if typ, ok := detectAttachmentImageMIME(data[:n]); ok {
+				return typ
+			}
 		}
 	}
 	return ""

@@ -124,12 +124,16 @@ func (s *BridgeService) callStartTurnStreamRPC(ctx context.Context, sessionID, i
 	// collaboration_mode carried on turn/start. When
 	// the user selects "plan", each turn carries Mode=Plan so the core injects
 	// plan.md, parses <proposed_plan>, and gates request_user_input.
+	input, encoded, err := adapter.CoreAPITurnInput(input, attachments)
+	if err != nil {
+		return nil, coreapi.Turn{}, err
+	}
 	req := coreapi.StartTurnRequest{
 		SessionID:   sessionID,
 		TurnID:      turnID,
 		Input:       input,
 		ImagePaths:  imagePaths,
-		Attachments: adapter.CoreAPIAttachments(attachments),
+		Attachments: encoded,
 	}
 	if s.executionModeReadOnly() == "plan" {
 		req.CollaborationMode = &coreapi.CollaborationMode{Mode: coreapi.ModePlan}

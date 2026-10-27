@@ -17,6 +17,7 @@ import (
 
 func TestPathNoHomeFallback(t *testing.T) {
 	t.Setenv("HOME", "")
+	t.Setenv("USERPROFILE", "")
 	if got := Path(); got != ".eos.json" {
 		t.Fatalf("无 HOME = %q", got)
 	}

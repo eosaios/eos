@@ -23,11 +23,16 @@ on:
         description: "eos-core-rs 构建 ref（默认 main）"
         required: false
         default: "main"
+      sidecar_run_id:
+        description: "复用本仓成功构建并签名的 sidecar 运行 ID（留空重新构建）"
+        required: false
+        default: ""
   push:
     tags: ["v*"]
 
 permissions:
   contents: write
+  actions: read
 
 env:
   CARGO_TERM_COLOR: always
@@ -58,7 +63,17 @@ jobs:
         with:
           lfs: true
 
+      - name: Validate release notes before building
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]] || { echo "::error::invalid version"; exit 1; }
+          test -s ".github/release-notes/$RELEASE_VERSION.md"
+
       - name: Checkout eos-core-rs (private)
+        if: ${{ !inputs.sidecar_run_id }}
         uses: actions/checkout@v4
         with:
           repository: eosaios/eos-core-rs
@@ -71,6 +86,7 @@ jobs:
           go-version: "1.25"
 
       - name: Install Rust target
+        if: ${{ !inputs.sidecar_run_id }}
         run: rustup target add ${{ matrix.triple }}
 
       # X11 供 CLI Go 侧剪贴板；pipewire/drm/gbm/wayland/xdo 供内核 xcap
@@ -82,15 +98,18 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libx11-dev pkg-config libpipewire-0.3-dev libdrm-dev libgbm-dev libwayland-dev libxdo-dev libegl-dev
 
       - uses: Swatinem/rust-cache@v2
+        if: ${{ !inputs.sidecar_run_id }}
         with:
           workspaces: eos-core-rs
           key: ${{ matrix.triple }}
 
       - name: Build sidecar (release)
+        if: ${{ !inputs.sidecar_run_id }}
         working-directory: eos-core-rs
         run: cargo build --release --target ${{ matrix.triple }} -p eos-core-bin
 
       - name: Sign and package sidecar
+        if: ${{ !inputs.sidecar_run_id }}
         shell: pwsh
         working-directory: eos-core-rs
         env:
@@ -111,6 +130,32 @@ jobs:
           & pwsh -NoProfile -File scripts/package-public-artifact.ps1 `
             -Target "${{ matrix.triple }}" `
             -PrivateKeyPath scripts/eos-signing-key.pem
+
+      - name: Verify reusable sidecar run
+        if: ${{ inputs.sidecar_run_id }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIDECAR_RUN_ID: ${{ inputs.sidecar_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$SIDECAR_RUN_ID" =~ ^[0-9]+$ ]]
+          result=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SIDECAR_RUN_ID" --jq '.conclusion')
+          [ "$result" = success ] || { echo "::error::sidecar run did not succeed"; exit 1; }
+
+      - name: Download signed sidecar
+        if: ${{ inputs.sidecar_run_id }}
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.sidecar_run_id }}
+          github-token: ${{ github.token }}
+          name: sidecar-${{ matrix.triple }}
+          path: eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}
+
+      - name: Restore sidecar executable mode
+        if: ${{ matrix.goos != 'windows' }}
+        shell: bash
+        run: chmod +x "eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}/eos-core"
 
       - name: Verify sidecar sha256
         shell: bash
@@ -141,11 +186,25 @@ jobs:
           if [ "${{ matrix.goos }}/${{ matrix.goarch }}" = "darwin/amd64" ]; then
             export CC="clang -arch x86_64"
           fi
+          # The standalone/go:embed path must carry the same freshly built core
+          # as the archive. Copy BEFORE compiling Go, not only into dist/core/.
+          CORE_STAGE="eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}"
+          CORE_EMBED="pkg/coreapi/sidecar/core/${{ matrix.triple }}"
+          mkdir -p "$CORE_EMBED"
+          cp "$CORE_STAGE"/eos-core* "$CORE_EMBED/"
+          cp "$CORE_STAGE/manifest.json" "$CORE_EMBED/"
           go build -trimpath \
             -ldflags "-s -w -X github.com/eosaios/eos/internal/version.AppVersion=$VERSION -X github.com/eosaios/eos/internal/version.BuildCommit=$COMMIT -X github.com/eosaios/eos/internal/version.BuildDate=$DATE" \
             -o "dist/$STAGE/$BIN" .
-          cp "eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}"/eos-core* "dist/$STAGE/core/${{ matrix.triple }}/"
-          cp "eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}/manifest.json" "dist/$STAGE/core/${{ matrix.triple }}/"
+          cp "$CORE_EMBED"/eos-core* "dist/$STAGE/core/${{ matrix.triple }}/"
+          cp "$CORE_EMBED/manifest.json" "dist/$STAGE/core/${{ matrix.triple }}/"
+          # darwin/amd64 is cross-compiled on an arm64 runner; its native
+          # runtime acceptance needs an Intel machine.
+          if [ "${{ matrix.goos }}/${{ matrix.goarch }}" != "darwin/amd64" ]; then
+            python3 scripts/verify_release_runtime.py \
+              --cli "dist/$STAGE/$BIN" \
+              --core-dir "dist/$STAGE/core/${{ matrix.triple }}"
+          fi
           cd dist
           if [ "$GOOS_T" = "windows" ]; then
             # 不用 powershell Compress-Archive（反斜杠条目）也不用 GNU tar
@@ -170,6 +229,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -186,12 +247,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           VERSION="${{ inputs.version || github.ref_name }}"
+          NOTES_FILE=".github/release-notes/$VERSION.md"
+          [ -s "$NOTES_FILE" ] || { echo "::error::missing release notes: $NOTES_FILE"; exit 1; }
+          # The supported CLI beta channel is consumed through releases/latest
+          # by install.sh and eos update; do not strand it on beta.30.
           gh release create "$VERSION" dist/* \
+            --target "$GITHUB_SHA" \
             --title "EOS CLI $VERSION" \
-            --notes "三端生产包（Windows / macOS / Linux），内核为构建时 eos-core-rs 指定 ref 的签名产物。校验见 SHA256SUMS.txt。" \
-            --repo "$GITHUB_REPOSITORY" 2>/dev/null \
-          || gh release upload "$VERSION" dist/* --clobber --repo "$GITHUB_REPOSITORY"
+            --notes-file "$NOTES_FILE" \
+            --prerelease=false --latest \
+            --repo "$GITHUB_REPOSITORY"
 
   winget:
     # 发版后自动向 microsoft/winget-pkgs 提 manifest 更新 PR。
@@ -202,7 +269,7 @@ jobs:
     name: Submit to winget-pkgs
     runs-on: windows-latest
     needs: release
-    if: ${{ vars.WINGET_SUBMIT != 'off' }}
+    if: ${{ vars.WINGET_SUBMIT != 'off' && !contains(inputs.version || github.ref_name, '-') }}
     steps:
       - name: Download wingetcreate
         run: |

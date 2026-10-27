@@ -662,7 +662,7 @@ func TestCreateSessionSuccessAndErrorArms(t *testing.T) {
 	t.Run("空 workspace 回退 activeWorkspace", func(t *testing.T) {
 		workspace := t.TempDir()
 		gateway := &chatSessionsGatewayStub{defaultWorkspace: workspace}
-		s, svc, _ := newChatSessionsTestBridge(t, gateway)
+		s, svc, rec := newChatSessionsTestBridge(t, gateway)
 		s.stateMu.Lock()
 		s.activeWorkspace = workspace
 		s.stateMu.Unlock()
@@ -673,6 +673,8 @@ func TestCreateSessionSuccessAndErrorArms(t *testing.T) {
 		if state.CurrentSessionID == "" {
 			t.Fatal("CurrentSessionID empty with activeWorkspace fallback")
 		}
+		// shellUpdated 的 bootstrap 写入必须在测试目录清理前结束。
+		eventually(t, "shellUpdated after create", func() bool { return rec.has(shellUpdatedEventName) })
 	})
 }
 
@@ -881,8 +883,11 @@ func TestDeleteSessionArms(t *testing.T) {
 
 	t.Run("RPC os.ErrNotExist 容忍继续删本地", func(t *testing.T) {
 		gateway := &chatSessionsGatewayStub{deleteErr: os.ErrNotExist}
-		s, svc, _ := newChatSessionsTestBridge(t, gateway)
+		s, svc, rec := newChatSessionsTestBridge(t, gateway)
 		workspace := t.TempDir()
+		defer eventually(t, "delete-session background state saved", func() bool {
+			return rec.has(shellUpdatedEventName)
+		})
 		s.stateMu.Lock()
 		s.sessions["sess-1"] = &sessionState{ID: "sess-1", WorkspacePath: workspace}
 		s.stateMu.Unlock()
@@ -899,8 +904,11 @@ func TestDeleteSessionArms(t *testing.T) {
 
 	t.Run("删当前会话切到同 workspace 最新", func(t *testing.T) {
 		gateway := &chatSessionsGatewayStub{}
-		s, svc, _ := newChatSessionsTestBridge(t, gateway)
+		s, svc, rec := newChatSessionsTestBridge(t, gateway)
 		workspace := t.TempDir()
+		defer eventually(t, "delete-session background state saved", func() bool {
+			return rec.has(shellUpdatedEventName)
+		})
 		s.stateMu.Lock()
 		s.sessions["sess-1"] = &sessionState{ID: "sess-1", WorkspacePath: workspace, UpdatedAt: time.Now().Add(-time.Hour)}
 		s.sessions["sess-2"] = &sessionState{ID: "sess-2", WorkspacePath: workspace, UpdatedAt: time.Now()}
@@ -920,8 +928,11 @@ func TestDeleteSessionArms(t *testing.T) {
 
 	t.Run("删光后 current 置空走清空 set-current-session", func(t *testing.T) {
 		gateway := &chatSessionsGatewayStub{}
-		s, svc, _ := newChatSessionsTestBridge(t, gateway)
+		s, svc, rec := newChatSessionsTestBridge(t, gateway)
 		workspace := t.TempDir()
+		defer eventually(t, "delete-session background state saved", func() bool {
+			return rec.has(shellUpdatedEventName)
+		})
 		s.stateMu.Lock()
 		s.sessions["sess-1"] = &sessionState{ID: "sess-1", WorkspacePath: workspace}
 		s.currentSessionID = "sess-1"

@@ -7,6 +7,8 @@ package adapter
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -432,15 +434,22 @@ func TestStdioRpcTurnStreamCancelArms(t *testing.T) {
 
 // TestStdioRpcPureHelpers 附件转换 / 终态判定纯函数表测。
 func TestStdioRpcPureHelpers(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "a.png")
+	if err := os.WriteFile(path, []byte("image-bytes"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	items := []Attachment{
-		{Name: " a ", Path: " /a.png ", MIME: " image/png ", Kind: " image "},
+		{Name: " a ", Path: " " + path + " ", MIME: " image/png ", Kind: " image "},
 		{Name: "empty", Path: "   "},
 	}
-	out := CoreAPIAttachments(items)
-	if len(out) != 1 || out[0].Name != "a" || out[0].Path != "/a.png" || out[0].MIME != "image/png" || out[0].Kind != "image" {
+	_, out, err := CoreAPITurnInput("", items)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(out) != 1 || out[0].Name != "a" || out[0].Path != "aW1hZ2UtYnl0ZXM=" || out[0].MIME != "image/png" || out[0].Kind != "image" {
 		t.Fatalf("CoreAPIAttachments = %+v", out)
 	}
-	if got := CoreAPIAttachments(nil); len(got) != 0 {
+	if _, got, err := CoreAPITurnInput("", nil); err != nil || len(got) != 0 {
 		t.Fatalf("空附件应返回空: %+v", got)
 	}
 	if !stdioIsTerminalCoreTurnEvent(Event{EventType: "request.completed"}) ||
