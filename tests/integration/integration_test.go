@@ -35,8 +35,8 @@ func newHarness(t *testing.T, scripts ...*testsupport.ModelScript) *harness {
 		scripts = []*testsupport.ModelScript{testsupport.NewBackgroundScript()}
 	}
 	model := testsupport.NewModelServer(t, scripts...)
-	// 审批流用例（IT-03/04/06）需要 untrusted：产品语义下 on-request
-	// 对 medium 风险工具（file_mkdir）直接执行，不会产生 approval_required。
+	// 产品决策（default low friction）：on-request 下普通工作区 mkdir 不审批。
+	// IT-03/04/06 等审批流用例显式 untrusted，才能练到 approval_required。
 	conn, err := testsupport.StartCore(t, core, env.CoreEnv(map[string]string{
 		"EOS_SANDBOX_MODE":  string(testsupport.SandboxWorkspaceWrite),
 		"EOS_APPROVAL_MODE": "untrusted",

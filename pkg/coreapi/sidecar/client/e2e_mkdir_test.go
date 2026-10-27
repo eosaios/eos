@@ -30,9 +30,9 @@ func TestE2EFileMkdirRelativePathApproval(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	// 审批流断言必须用 untrusted：产品语义下 on-request/auto 对 medium
-	// 风险（含 file_mkdir）直接执行，不会返回 approval_required
-	// （见 internal/modes 对 auto / on-request 的说明）。
+	// 产品决策（default low friction）：on-request/默认下普通工作区 mkdir
+	// 不弹审批（与 internal/modes 一致）。审批流用例必须显式 untrusted，
+	// 才能覆盖 approval_required → accept/reject/acceptForSession。
 	client, err := sidecarclient.Start(ctx, sidecarclient.Options{
 		BinaryPath: coreBinary,
 		Env: map[string]string{
