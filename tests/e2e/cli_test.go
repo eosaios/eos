@@ -108,6 +108,9 @@ func (f *cliFixture) cmdEnv(extra map[string]string) []string {
 		"EOS_API_BASE":               f.model.BaseURL,
 		"EOS_API_KEY":                f.Token,
 		"EOS_MODEL":                  "eos-test-model",
+		// 收紧 print 单 turn 预算，保证模型故障路径能打出诊断而不是
+		// 挂到测试 120s 被 SIGKILL 成空输出（CLI-08）。
+		"EOS_PRINT_TURN_TIMEOUT_SEC": "20",
 	}
 	for k, v := range extra {
 		env[k] = v

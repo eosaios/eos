@@ -27,7 +27,22 @@ type harness struct {
 }
 
 // newHarness 建立隔离环境 + 真实内核 + 脚本模型服务。
+//
+// 产品决策（default low friction）：默认 on-request——普通工作区 medium
+// 操作（如 mkdir）不弹审批，与 internal/modes 描述一致。审批流用例请用
+// newApprovalHarness（untrusted），才能练到 approval_required。
 func newHarness(t *testing.T, scripts ...*testsupport.ModelScript) *harness {
+	t.Helper()
+	return newHarnessWithApproval(t, "on-request", scripts...)
+}
+
+// newApprovalHarness 显式 untrusted，专供 IT-03/04/06 等审批流。
+func newApprovalHarness(t *testing.T, scripts ...*testsupport.ModelScript) *harness {
+	t.Helper()
+	return newHarnessWithApproval(t, "untrusted", scripts...)
+}
+
+func newHarnessWithApproval(t *testing.T, approvalMode string, scripts ...*testsupport.ModelScript) *harness {
 	t.Helper()
 	env := testsupport.NewEnv(t)
 	core := testsupport.LocateRealCore(t)
@@ -37,7 +52,7 @@ func newHarness(t *testing.T, scripts ...*testsupport.ModelScript) *harness {
 	model := testsupport.NewModelServer(t, scripts...)
 	conn, err := testsupport.StartCore(t, core, env.CoreEnv(map[string]string{
 		"EOS_SANDBOX_MODE":  string(testsupport.SandboxWorkspaceWrite),
-		"EOS_APPROVAL_MODE": "on-request",
+		"EOS_APPROVAL_MODE": approvalMode,
 		"EOS_LOG_LEVEL":     "warn",
 	}))
 	if err != nil {
@@ -52,7 +67,7 @@ func newHarness(t *testing.T, scripts ...*testsupport.ModelScript) *harness {
 	}); err != nil {
 		t.Fatalf("model/upsert: %v", err)
 	}
-	t.Logf("集成环境: core=%s workspace=%s", core.String(), env.WorkspaceRoot)
+	t.Logf("集成环境: core=%s workspace=%s approval=%s", core.String(), env.WorkspaceRoot, approvalMode)
 	return h
 }
 
@@ -129,21 +144,14 @@ type toolResult struct {
 //   - 目标文件内容与权限都没有被修改；
 //   - 终态 completed，且最终回答是脚本里第二轮的文本。
 func TestIT02_ReadOnlyToolRoundTrip(t *testing.T) {
-	target := filepath.Join(t.TempDir(), "fixture.txt")
 	const wantContent = "行一\n行二 中文与 emoji 🌍\n"
-	if err := os.WriteFile(target, []byte(wantContent), 0o644); err != nil {
-		t.Fatalf("写 fixture: %v", err)
-	}
-	beforeHash := testsupport.FileHash(t, target)
-
-	toolName, args := pickReadTool(t, target)
-	t.Logf("选用只读工具 %s，参数 %s", toolName, args)
-
+	// 先起 harness 拿 workspace，把 fixture 放进工作区：只读往返不依赖区外读权限。
+	toolName, _ := pickReadTool(t, "fixture.txt")
 	h := newHarness(t,
 		&testsupport.ModelScript{
 			Name: "turn1-call-tool", TextDeltas: nil, DisconnectAfterN: -1,
 			ToolCalls: []testsupport.ScriptedToolCall{{
-				ID: "call_read", Name: toolName, ArgsJSON: args,
+				ID: "call_read", Name: toolName, ArgsJSON: `{"path":"fixture.txt"}`,
 			}},
 		},
 		&testsupport.ModelScript{
@@ -152,9 +160,15 @@ func TestIT02_ReadOnlyToolRoundTrip(t *testing.T) {
 		},
 		testsupport.NewBackgroundScript(),
 	)
+	target := filepath.Join(h.env.WorkspaceRoot, "fixture.txt")
+	if err := os.WriteFile(target, []byte(wantContent), 0o644); err != nil {
+		t.Fatalf("写 fixture: %v", err)
+	}
+	beforeHash := testsupport.FileHash(t, target)
+	t.Logf("选用只读工具 %s，参数 {\"path\":\"fixture.txt\"}", toolName)
 
 	sessID := h.newSession(t, "it02")
-	turnID := h.startTurn(t, sessID, "请读取 "+target)
+	turnID := h.startTurn(t, sessID, "请读取 fixture.txt")
 	terminal := h.conn.AssertTerminal(t, turnID, 60*time.Second)
 	if terminal.Type != "turn.completed" {
 		t.Fatalf("终态 = %q，want turn.completed（payload=%v）", terminal.Type, terminal.Payload)
@@ -166,7 +180,9 @@ func TestIT02_ReadOnlyToolRoundTrip(t *testing.T) {
 	// 工具调用结果必须进入第二轮模型请求。
 	reqs := h.model.WaitForRequests(t, 2, 30*time.Second)
 	second := reqs[1]
-	if !requestMentions(second, wantContent) && !requestMentions(second, target) {
+	if !requestMentions(second, wantContent) &&
+		!requestMentions(second, "fixture.txt") &&
+		!requestMentions(second, target) {
 		t.Errorf("第二轮模型请求未包含工具结果（既没有文件路径也没有内容）\nbody 摘要=%s", summarize(second))
 	}
 
@@ -187,7 +203,7 @@ func TestIT02_ReadOnlyToolRoundTrip(t *testing.T) {
 func TestIT03_ApprovalAcceptCreatesTargetOnce(t *testing.T) {
 	const dirName = "approved_dir"
 
-	h := newHarness(t,
+	h := newApprovalHarness(t,
 		&testsupport.ModelScript{
 			Name: "call-mkdir", DisconnectAfterN: -1,
 			ToolCalls: []testsupport.ScriptedToolCall{{
@@ -253,7 +269,7 @@ func TestIT03_ApprovalAcceptCreatesTargetOnce(t *testing.T) {
 func TestIT04_ApprovalRejectLeavesNoSideEffect(t *testing.T) {
 	const dirName = "rejected_dir"
 
-	h := newHarness(t,
+	h := newApprovalHarness(t,
 		&testsupport.ModelScript{
 			Name: "call-mkdir", DisconnectAfterN: -1,
 			ToolCalls: []testsupport.ScriptedToolCall{{
@@ -435,7 +451,43 @@ func pickReadTool(t *testing.T, targetPath string) (name, argsJSON string) {
 }
 
 func requestMentions(r testsupport.CapturedRequest, needle string) bool {
-	return strings.Contains(string(r.RawBody), needle)
+	if needle == "" {
+		return false
+	}
+	// RawBody 是 JSON：Windows 路径的反斜杠与换行会被转义，不能只做字面 Contains。
+	if strings.Contains(string(r.RawBody), needle) {
+		return true
+	}
+	needles := []string{needle}
+	if alt := filepath.ToSlash(needle); alt != needle {
+		needles = append(needles, alt)
+	}
+	return jsonValueContains(r.Body, needles...)
+}
+
+// jsonValueContains 在已反序列化的请求体里搜子串（字符串已按 JSON 规则还原）。
+func jsonValueContains(v any, needles ...string) bool {
+	switch x := v.(type) {
+	case string:
+		for _, n := range needles {
+			if strings.Contains(x, n) {
+				return true
+			}
+		}
+	case map[string]any:
+		for _, child := range x {
+			if jsonValueContains(child, needles...) {
+				return true
+			}
+		}
+	case []any:
+		for _, child := range x {
+			if jsonValueContains(child, needles...) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func summarize(r testsupport.CapturedRequest) string {

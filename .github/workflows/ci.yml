@@ -43,6 +43,10 @@ jobs:
         with:
           version: v2.13.2
           args: --new-from-rev=HEAD~1
+      # Contract CT-01 读 third_party/eos-core-protocol/schema.json（仓库内锚点）。
+      # 不在此 job 检出完整 eos-core-rs：actions/checkout 的 path 必须在
+      # GITHUB_WORKSPACE 下，而放进 module root 会触发
+      # TestClosedRustCoreSourceIsNotVendored。
       - name: Test
         run: go test ./... -timeout 300s
       - name: Verify packaged and embedded CLI runtime
