@@ -35,9 +35,11 @@ func newHarness(t *testing.T, scripts ...*testsupport.ModelScript) *harness {
 		scripts = []*testsupport.ModelScript{testsupport.NewBackgroundScript()}
 	}
 	model := testsupport.NewModelServer(t, scripts...)
+	// 审批流用例（IT-03/04/06）需要 untrusted：产品语义下 on-request
+	// 对 medium 风险工具（file_mkdir）直接执行，不会产生 approval_required。
 	conn, err := testsupport.StartCore(t, core, env.CoreEnv(map[string]string{
 		"EOS_SANDBOX_MODE":  string(testsupport.SandboxWorkspaceWrite),
-		"EOS_APPROVAL_MODE": "on-request",
+		"EOS_APPROVAL_MODE": "untrusted",
 		"EOS_LOG_LEVEL":     "warn",
 	}))
 	if err != nil {

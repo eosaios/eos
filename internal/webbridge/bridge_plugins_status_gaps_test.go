@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -390,13 +391,16 @@ func TestRunUpdateDownloadLifecycle(t *testing.T) {
 		}
 	}
 
-	t.Run("下载失败走 failed", func(t *testing.T) {
+	// 子测试名用 ASCII：Windows 上 TempDir 路径含中文时偶发 RemoveAll
+	// “directory is not empty”（句柄/杀软占用），与下载逻辑无关。
+	t.Run("download_failed_marks_failed", func(t *testing.T) {
 		s := newDownloadBridge(t)
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "gone", http.StatusNotFound)
 		}))
 		defer server.Close()
-		s.runUpdateDownload(context.Background(), server.Client(), UpdateCheckResult{DownloadURL: server.URL + "/x.zip"}, t.TempDir()+"/x.zip")
+		dest := filepath.Join(t.TempDir(), "x.zip")
+		s.runUpdateDownload(context.Background(), server.Client(), UpdateCheckResult{DownloadURL: server.URL + "/x.zip"}, dest)
 		if state := s.GetUpdateDownloadState(); state.Stage != updateStageFailed || !strings.Contains(state.Error, "下载失败") {
 			t.Fatalf("state = %+v", state)
 		}

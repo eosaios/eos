@@ -18,8 +18,8 @@ jobs:
           # golangci-lint --new-from-rev=HEAD~1 需要至少两个提交的历史
           fetch-depth: 0
           lfs: true
-      # contract 测试（CT-01）需要 eos-core-rs 的 schema.json。
-      # 私有仓经 EOS_CORE_PAT 检出到工作区子目录，并用 EOS_CORE_RS_DIR 告知测试。
+      # contract 测试需要 schema.json。私有仓检出到 $RUNNER_TEMP，
+      # 不得放进 module root（TestClosedRustCoreSourceIsNotVendored）。
       - name: Resolve eos-core-rs repo
         id: core_repo
         env:
@@ -28,41 +28,14 @@ jobs:
           repo="${SECRET_REPO}"
           if [ -z "$repo" ]; then repo="eosaios/eos-core-rs"; fi
           echo "repo=$repo" >> "$GITHUB_OUTPUT"
-      - name: Checkout eos-core-rs (schema + sources)
+          echo "core_dir=$RUNNER_TEMP/eos-core-rs" >> "$GITHUB_OUTPUT"
+      - name: Checkout eos-core-rs (schema)
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.core_repo.outputs.repo }}
           ref: main
           token: ${{ secrets.EOS_CORE_PAT }}
-          path: eos-core-rs
-      - name: Pack core-rs sources for diagnostics
-        if: always()
-        run: |
-          set -euo pipefail
-          test -f eos-core-rs/crates/eos-core-protocol/schema.json
-          mkdir -p /tmp/core-pack/sources
-          cp eos-core-rs/crates/eos-core-protocol/schema.json /tmp/core-pack/schema.json
-          if command -v rg >/dev/null; then
-            rg -l -i 'symlink|canonical|writable_root|file_mkdir|landlock|approval' \
-              eos-core-rs/crates --glob '*.rs' > /tmp/core-pack/filelist.txt || true
-            while IFS= read -r f; do
-              [ -n "$f" ] || continue
-              rel="${f#eos-core-rs/}"
-              mkdir -p "/tmp/core-pack/sources/$(dirname "$rel")"
-              cp "$f" "/tmp/core-pack/sources/$rel"
-            done < /tmp/core-pack/filelist.txt
-          fi
-          if [ -d eos-core-rs/crates/eos-core-sandbox ]; then
-            mkdir -p /tmp/core-pack/sources/crates
-            cp -a eos-core-rs/crates/eos-core-sandbox /tmp/core-pack/sources/crates/
-          fi
-          tar -C /tmp/core-pack -czf "$RUNNER_TEMP/core-rs-sources.tgz" .
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: core-rs-sources
-          path: ${{ runner.temp }}/core-rs-sources.tgz
-          if-no-files-found: warn
+          path: ${{ runner.temp }}/eos-core-rs
       - name: Install system dependencies
         # golang.design/x/clipboard 在 Linux 通过 cgo 绑定 X11 剪贴板，
         # 编译需要 X11 头文件；eos-cli 虽仅 Windows 分发，但 Linux job
@@ -91,7 +64,7 @@ jobs:
       - name: Test
         run: go test ./... -timeout 300s
         env:
-          EOS_CORE_RS_DIR: ${{ github.workspace }}/eos-core-rs
+          EOS_CORE_RS_DIR: ${{ runner.temp }}/eos-core-rs
       - name: Verify packaged and embedded CLI runtime
         shell: bash
         run: |
@@ -144,7 +117,7 @@ jobs:
           repository: ${{ steps.core_repo.outputs.repo }}
           ref: main
           token: ${{ secrets.EOS_CORE_PAT }}
-          path: eos-core-rs
+          path: ${{ runner.temp }}/eos-core-rs
       - uses: actions/setup-go@v6
         with:
           go-version: "1.25"
@@ -154,7 +127,7 @@ jobs:
         shell: bash
         run: go test ./... -timeout 300s
         env:
-          EOS_CORE_RS_DIR: ${{ github.workspace }}/eos-core-rs
+          EOS_CORE_RS_DIR: ${{ runner.temp }}/eos-core-rs
       - name: Verify packaged and embedded CLI runtime (Windows)
         shell: pwsh
         run: |
@@ -164,3 +137,94 @@ jobs:
             --cli "$env:RUNNER_TEMP/eos-runtime-gate/eos.exe" `
             --core-dir pkg/coreapi/sidecar/core/x86_64-pc-windows-gnu
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  # 打补丁重建 Linux/Windows sidecar（SEC-02 symlink canonicalize），签名后上传
+  # artifact，由 agent 下载并 vendored 进本 PR。不直接 push，避免污染 main 同步流。
+  rebuild-patched-sidecar:
+    name: Rebuild patched sidecar (${{ matrix.target }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-latest
+          - target: x86_64-pc-windows-gnu
+            runner: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Resolve eos-core-rs repo
+        id: core_repo
+        shell: bash
+        env:
+          SECRET_REPO: ${{ secrets.EOS_CORE_REPO }}
+        run: |
+          repo="${SECRET_REPO}"
+          if [ -z "$repo" ]; then repo="eosaios/eos-core-rs"; fi
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+      - name: Checkout eos-core-rs
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.core_repo.outputs.repo }}
+          ref: main
+          token: ${{ secrets.EOS_CORE_PAT }}
+          path: eos-core-rs
+      - name: Patch sandbox symlink canonicalize
+        shell: bash
+        run: |
+          python3 scripts/patch_sandbox_symlink_canonicalize.py \
+            eos-core-rs/crates/eos-core-sandbox/src/lib.rs
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.target }}
+      - name: Install Linux system deps (xcap chain)
+        if: contains(matrix.target, 'linux')
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libpipewire-0.3-dev libdrm-dev libgbm-dev libwayland-dev libxdo-dev libegl-dev
+      - name: Build (release)
+        working-directory: eos-core-rs
+        run: cargo build --release --target ${{ matrix.target }} -p eos-core-bin
+      - name: Sign and package
+        shell: pwsh
+        working-directory: eos-core-rs
+        env:
+          EOS_SIGNING_KEY: ${{ secrets.EOS_SIGNING_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:EOS_SIGNING_KEY)) {
+            throw "EOS_SIGNING_KEY secret 未设置"
+          }
+          $exeName = if ("${{ matrix.target }}" -like "*windows*") { "eos-core.exe" } else { "eos-core" }
+          $built = "target/${{ matrix.target }}/release/$exeName"
+          $staged = "target/release/$exeName"
+          New-Item -ItemType Directory -Force -Path (Split-Path $staged) | Out-Null
+          Copy-Item -Force $built $staged
+          New-Item -ItemType Directory -Force -Path scripts | Out-Null
+          [IO.File]::WriteAllText("$PWD/scripts/eos-signing-key.pem", $env:EOS_SIGNING_KEY)
+          & pwsh -NoProfile -File scripts/package-public-artifact.ps1 `
+            -Target "${{ matrix.target }}" `
+            -PrivateKeyPath scripts/eos-signing-key.pem
+      - name: Stage packaged sidecar into eos layout
+        shell: bash
+        run: |
+          set -euo pipefail
+          dest="pkg/coreapi/sidecar/core/${{ matrix.target }}"
+          mkdir -p "$dest"
+          # package-public-artifact writes into eos-core-rs/pkg/... or cwd pkg?
+          # Align with sync-vendored-sidecar: look under eos-core-rs first.
+          src=""
+          for candidate in \
+            "eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.target }}" \
+            "pkg/coreapi/sidecar/core/${{ matrix.target }}"; do
+            if [ -f "$candidate/manifest.json" ]; then src="$candidate"; break; fi
+          done
+          if [ -z "$src" ]; then
+            echo "::error::packaged sidecar not found for ${{ matrix.target }}"
+            find eos-core-rs -name manifest.json | head
+            exit 1
+          fi
+          cp -f "$src"/eos-core* "$dest/" 2>/dev/null || true
+          cp -f "$src/manifest.json" "$dest/"
+          ls -la "$dest"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patched-sidecar-${{ matrix.target }}
+          path: pkg/coreapi/sidecar/core/${{ matrix.target }}/
+          if-no-files-found: error

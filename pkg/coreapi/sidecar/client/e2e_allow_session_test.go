@@ -26,12 +26,14 @@ func TestE2EVendoredFileMkdirAllowSession(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
+	// 见 e2e_mkdir_test：审批流用 untrusted；on-request 下 medium mkdir 直接 ok。
 	client, err := sidecarclient.Start(ctx, sidecarclient.Options{
 		BinaryPath: coreBinary,
 		Env: map[string]string{
 			"EOS_SANDBOX_MODE":           "workspace-write",
 			"EOS_WORKSPACE_ROOT":         tmpDir,
 			"EOS_SANDBOX_WORKSPACE_ROOT": tmpDir,
+			"EOS_APPROVAL_MODE":          "untrusted",
 		},
 	})
 	if err != nil {

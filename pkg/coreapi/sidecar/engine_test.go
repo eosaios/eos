@@ -145,6 +145,19 @@ func TestRemoteEngineSupportedMethodsCallSidecar(t *testing.T) {
 	if _, ok := <-ch; ok {
 		t.Fatalf("Events().Subscribe() channel is still open after cancel")
 	}
+	// Unsubscribe 在 Subscribe 的 ctx 取消后异步发出；Windows 调度下可能
+	// 晚于紧随其后的 Turns().Start，导致 call 顺序断言假阴性。等到
+	// event/unsubscribe 落账再继续。
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		if caller.hasMethod(protocoljsonrpc.MethodEventUnsubscribe) {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for async %s after cancel", protocoljsonrpc.MethodEventUnsubscribe)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
 
 	turn, err := engine.Turns().Start(context.Background(), coreapi.StartTurnRequest{SessionID: "session-1", Input: "hello"})
 	if err != nil {
@@ -555,6 +568,18 @@ func (f *fakeEngineCaller) snapshotCalls() []fakeEngineCall {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return append([]fakeEngineCall(nil), f.calls...)
+}
+
+// hasMethod 报告是否已记录过指定 RPC 方法（供异步 unsubscribe 等待）。
+func (f *fakeEngineCaller) hasMethod(method string) bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, c := range f.calls {
+		if c.method == method {
+			return true
+		}
+	}
+	return false
 }
 
 func TestRemoteEngineEventSubscribeReceivesNotifications(t *testing.T) {

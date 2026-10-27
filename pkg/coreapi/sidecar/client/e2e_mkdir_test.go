@@ -30,12 +30,16 @@ func TestE2EFileMkdirRelativePathApproval(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
+	// 审批流断言必须用 untrusted：产品语义下 on-request/auto 对 medium
+	// 风险（含 file_mkdir）直接执行，不会返回 approval_required
+	// （见 internal/modes 对 auto / on-request 的说明）。
 	client, err := sidecarclient.Start(ctx, sidecarclient.Options{
 		BinaryPath: coreBinary,
 		Env: map[string]string{
 			"EOS_SANDBOX_MODE":           "workspace-write",
 			"EOS_WORKSPACE_ROOT":         tmpDir,
 			"EOS_SANDBOX_WORKSPACE_ROOT": tmpDir,
+			"EOS_APPROVAL_MODE":          "untrusted",
 		},
 	})
 	if err != nil {
@@ -51,11 +55,10 @@ func TestE2EFileMkdirRelativePathApproval(t *testing.T) {
 		t.Fatalf("Sessions().Create() error = %v", err)
 	}
 
-	// Direct tool/execute with a RELATIVE path "test". file_mkdir is medium
-	// risk under the default approval policy, so the first call must return
-	// approval_required and an approval_id (pending inserted, sandbox not yet
-	// checked). workspace_root is supplied so the later approval path can
-	// resolve the relative write path.
+	// Direct tool/execute with a RELATIVE path "test". Under untrusted mode,
+	// file_mkdir (medium / non-read-only) must return approval_required and an
+	// approval_id (pending inserted, sandbox not yet checked). workspace_root
+	// is supplied so the later approval path can resolve the relative write path.
 	var toolResult coreapi.ToolResult
 	if err := client.Process().Call(ctx, jsonrpc.MethodToolExecute, map[string]any{
 		"name":           "file_mkdir",

@@ -50,11 +50,11 @@ func rustSchemaPath(t *testing.T) string {
 	// tests/contract -> 仓库根
 	repoRoot := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", ".."))
 	// 候选顺序：
-	//  1) EOS_CORE_RS_DIR（CI 检出到工作区子目录后显式注入）
-	//  2) 仓库内 eos-core-rs/（CI path: eos-core-rs）
+	//  1) EOS_CORE_RS_DIR（CI 检出到 $RUNNER_TEMP 后显式注入）
+	//  2) 仓库内 third_party 快照（离线/无 PAT 时的契约锚点）
 	//  3) 同级目录 ../eos-core-rs/（本地多仓工作区布局）
 	candidates := []string{
-		filepath.Join(repoRoot, "eos-core-rs", "crates", "eos-core-protocol", "schema.json"),
+		filepath.Join(repoRoot, "third_party", "eos-core-protocol", "schema.json"),
 		filepath.Join(workspaceRoot(t), "eos-core-rs", "crates", "eos-core-protocol", "schema.json"),
 	}
 	if env := os.Getenv("EOS_CORE_RS_DIR"); env != "" {
