@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -80,7 +81,7 @@ func StartProcess(ctx context.Context, opts ProcessOptions) (*ProcessClient, err
 	if opts.Dir != "" {
 		cmd.Dir = opts.Dir
 	}
-	cmd.Env = mergedEnv(os.Environ(), opts.Env)
+	cmd.Env = processEnv(os.Environ(), opts.Env)
 	if opts.Stderr != nil {
 		cmd.Stderr = opts.Stderr
 	} else {
@@ -235,4 +236,13 @@ func mergedEnv(base []string, extra map[string]string) []string {
 		out = append(out, env)
 	}
 	return out
+}
+
+// A frozen older core must not fall back to native Keychain on a cache miss.
+func processEnv(base []string, extra map[string]string) []string {
+	env := mergedEnv(base, extra)
+	if runtime.GOOS == "darwin" {
+		return mergedEnv(env, map[string]string{"EOS_KEYRING": "filevault-only"})
+	}
+	return env
 }
