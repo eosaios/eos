@@ -198,6 +198,9 @@ jobs:
             -o "dist/$STAGE/$BIN" .
           cp "$CORE_EMBED"/eos-core* "dist/$STAGE/core/${{ matrix.triple }}/"
           cp "$CORE_EMBED/manifest.json" "dist/$STAGE/core/${{ matrix.triple }}/"
+          CHANNEL=stable
+          if [[ "$VERSION" == *-beta.* && "$VERSION" != v1.0.0-beta.34 ]]; then CHANNEL=beta; fi
+          printf '{"channel":"%s","method":"archive"}\n' "$CHANNEL" > "dist/$STAGE/eos-install.json"
           # darwin/amd64 is cross-compiled on an arm64 runner; its native
           # runtime acceptance needs an Intel machine.
           if [ "${{ matrix.goos }}/${{ matrix.goarch }}" != "darwin/amd64" ]; then
@@ -251,13 +254,16 @@ jobs:
           VERSION="${{ inputs.version || github.ref_name }}"
           NOTES_FILE=".github/release-notes/$VERSION.md"
           [ -s "$NOTES_FILE" ] || { echo "::error::missing release notes: $NOTES_FILE"; exit 1; }
-          # The supported CLI beta channel is consumed through releases/latest
-          # by install.sh and eos update; do not strand it on beta.30.
+          # Keep prerelease builds out of the default stable install/update entry.
+          release_flags=(--prerelease=false --latest)
+          if [[ "$VERSION" == *-* ]]; then
+            release_flags=(--prerelease --latest=false)
+          fi
           gh release create "$VERSION" dist/* \
             --target "$GITHUB_SHA" \
             --title "EOS CLI $VERSION" \
             --notes-file "$NOTES_FILE" \
-            --prerelease=false --latest \
+            "${release_flags[@]}" \
             --repo "$GITHUB_REPOSITORY"
 
   winget:

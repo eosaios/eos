@@ -625,10 +625,11 @@ var zhText = map[string]string{
 
 	// eos update 子命令
 	"update.short":               "检查并安装最新版本",
+	"update.channel":             "更新渠道: %s\n",
 	"update.current_version":     "当前版本: %s\n",
 	"update.checking":            "正在检查更新...",
 	"update.check_failed":        "检查更新失败: %w",
-	"update.up_to_date":          "已是最新版本 (%s)\n",
+	"update.up_to_date":          "当前渠道没有更新（最新发布: %s）\n",
 	"update.new_version":         "发现新版本: %s\n",
 	"update.no_download_url":     "未找到适合当前平台的下载链接，请手动下载：",
 	"update.downloading":         "正在下载 %s ...\n",
