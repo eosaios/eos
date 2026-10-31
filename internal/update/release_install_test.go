@@ -46,8 +46,8 @@ func releaseFixture(t *testing.T) map[string]string {
 	manifest := fmt.Sprintf(`{"schema_version":"1.0","core_version":"0.1.0","api_version":"v1","target":%q,"binary":%q,"sha256":%q,"source_commit":%q}`, pair.CoreTarget, coreBinary, pair.CoreSHA256, pair.CoreSourceCommit)
 	return map[string]string{
 		binary: "new-binary", releasePairFile: string(pairData),
-		filepath.Join("core", pair.CoreTarget, "manifest.json"): manifest,
-		filepath.Join("core", pair.CoreTarget, coreBinary):      "new-core",
+		"core/" + pair.CoreTarget + "/manifest.json": manifest,
+		"core/" + pair.CoreTarget + "/" + coreBinary: "new-core",
 	}
 }
 
@@ -111,7 +111,7 @@ func readFixture(t *testing.T, dir string) map[string]string {
 			return err
 		}
 		rel, err := filepath.Rel(dir, path)
-		files[rel] = string(data)
+		files[filepath.ToSlash(rel)] = string(data)
 		return err
 	})
 	if err != nil {
