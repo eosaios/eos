@@ -664,7 +664,7 @@ var enText = map[string]string{
 	// Welcome card
 	"welcome.tagline": "AI navigation, helping you ride the waves",
 	"welcome.tip":     "● Tip  Run /help for help  Run /config to configure the model",
-	"welcome.hotkeys": "tab switch mode  / commands  ? help",
+	"welcome.hotkeys": "F2 AI/Bash  Tab thinking/accept suggestion  / commands  ? help",
 
 	// Slash hint / path hint
 	"hint.no_command_match": "(no matching command)",
@@ -721,4 +721,33 @@ var enText = map[string]string{
 	"memory.footer.browse":  "Tab switch file · 1/2 global/project · A add note · R refresh · Esc back",
 	"lsp.footer.detail":     "Esc back · R refresh",
 	"lsp.footer.list":       "Enter details · R refresh · Esc back",
+
+	"cli.flag.print":                        "Run a single query in headless mode and print the result",
+	"cli.flag.output-format":                "Output format for print mode: text, json, stream-json",
+	"cli.flag.continue":                     "Continue the most recent conversation",
+	"cli.flag.resume":                       "Resume a specific conversation by session ID",
+	"cli.flag.model":                        "Override the model for this session",
+	"cli.flag.max-turns":                    "Maximum number of turns (0=unlimited)",
+	"cli.flag.allowed-tools":                "Comma-separated list of allowed tools",
+	"cli.flag.disallowed-tools":             "Comma-separated list of disallowed tools",
+	"cli.flag.access-mode":                  "Sandbox access mode: read-only, workspace-write, or danger-full-access",
+	"cli.flag.approval-mode":                "Approval mode: untrusted, on-request, or never (on-failure is an alias of on-request)",
+	"cli.flag.sandbox-mode":                 "Alias of --access-mode (workspace=workspace-write, full_access=danger-full-access)",
+	"cli.flag.dangerously-skip-permissions": "Full-access preset: --access-mode danger-full-access --approval-mode never",
+	"cli.flag.default":                      "Use the default workspace (~/.eos/workspace)",
+	"cli.flag.version":                      "Print the EOS version and exit",
+	"cli.flag.help":                         "Help for eos",
+
+	"cli.command.bridge":     "IDE and host integration helpers",
+	"cli.command.completion": "Generate the autocompletion script for the specified shell",
+	"cli.command.config":     "Inspect and edit global configuration",
+	"cli.command.doc":        "Read, generate and convert DOCX/XLSX/PDF documents",
+	"cli.command.doctor":     "Diagnose the local installation, configuration and core runtime",
+	"cli.command.exec":       "Run a single prompt in headless mode",
+	"cli.command.help":       "Help about any command",
+	"cli.command.mcp":        "Run an MCP server or manage MCP integrations",
+	"cli.command.serve":      "Run a local tool service (stdio JSON-RPC)",
+	"cli.command.update":     "Check for and install the latest version",
+	"cli.command.version":    "Print version information",
+	"cli.command.web":        "Run the EOS workbench in a local browser",
 }

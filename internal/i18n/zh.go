@@ -664,7 +664,7 @@ var zhText = map[string]string{
 	// 欢迎卡片
 	"welcome.tagline": "AI 领航，助你破浪前行",
 	"welcome.tip":     "● 提示  运行 /help 查看帮助  运行 /config 配置模型",
-	"welcome.hotkeys": "tab 切换模式  / 命令提示  ? 帮助",
+	"welcome.hotkeys": "F2 切换 AI/Bash  Tab 切换思考/接受建议  / 命令提示  ? 帮助",
 
 	// 斜杠提示 / 路径提示
 	"hint.no_command_match": "(无匹配命令)",
@@ -721,4 +721,33 @@ var zhText = map[string]string{
 	"memory.footer.browse":  "Tab 切换文件 · 1/2 切换全局/项目 · A 添加笔记 · R 刷新 · Esc 返回",
 	"lsp.footer.detail":     "Esc 返回 · R 刷新",
 	"lsp.footer.list":       "Enter 详情 · R 刷新 · Esc 返回",
+
+	"cli.flag.print":                        "执行一次无界面查询并输出结果",
+	"cli.flag.output-format":                "查询结果格式：text、json、stream-json",
+	"cli.flag.continue":                     "继续最近一次会话",
+	"cli.flag.resume":                       "通过会话 ID 恢复指定会话",
+	"cli.flag.model":                        "为当前会话指定模型",
+	"cli.flag.max-turns":                    "最大轮数（0 表示不限）",
+	"cli.flag.allowed-tools":                "允许使用的工具，多个名称以逗号分隔",
+	"cli.flag.disallowed-tools":             "禁止使用的工具，多个名称以逗号分隔",
+	"cli.flag.access-mode":                  "访问模式：read-only、workspace-write、danger-full-access",
+	"cli.flag.approval-mode":                "审批模式：untrusted、on-request、never（on-failure 是 on-request 的别名）",
+	"cli.flag.sandbox-mode":                 "--access-mode 的别名（workspace=workspace-write，full_access=danger-full-access）",
+	"cli.flag.dangerously-skip-permissions": "完全访问预设：--access-mode danger-full-access --approval-mode never",
+	"cli.flag.default":                      "使用默认工作区（~/.eos/workspace）",
+	"cli.flag.version":                      "显示 EOS 版本后退出",
+	"cli.flag.help":                         "显示 eos 帮助",
+
+	"cli.command.bridge":     "IDE 与宿主集成工具",
+	"cli.command.completion": "生成指定 Shell 的命令补全脚本",
+	"cli.command.config":     "查看和修改全局配置",
+	"cli.command.doc":        "读取、生成和转换 DOCX/XLSX/PDF 文档",
+	"cli.command.doctor":     "诊断本地安装、配置与内核分发状态",
+	"cli.command.exec":       "以无界面方式执行一次请求",
+	"cli.command.help":       "查看命令帮助",
+	"cli.command.mcp":        "运行 MCP 服务或管理 MCP 集成",
+	"cli.command.serve":      "运行本地工具服务（stdio JSON-RPC）",
+	"cli.command.update":     "检查并安装最新版本",
+	"cli.command.version":    "显示版本信息",
+	"cli.command.web":        "在本地浏览器中运行 EOS 工作台",
 }

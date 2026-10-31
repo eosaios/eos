@@ -137,6 +137,7 @@ var rootCmd = &cobra.Command{
 // Execute 执行根命令入口（由 main 调用）。
 func Execute() error {
 	slog.Info("cli.execute")
+	configureRootHelp(rootCmd)
 	return rootCmd.Execute()
 }
 
