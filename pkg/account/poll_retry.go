@@ -12,6 +12,11 @@ func retryableFlowPoll(err error) bool {
 	return errors.Is(err, errNetwork) || (errors.As(err, &apiErr) && apiErr.Status == 429)
 }
 
+func retryableProfileSync(err error) bool {
+	var apiErr *apiError
+	return retryableFlowPoll(err) || (errors.As(err, &apiErr) && apiErr.Status >= 500)
+}
+
 func flowPollDelay(f *flow, err error) time.Duration {
 	var apiErr *apiError
 	if !errors.As(err, &apiErr) || apiErr.Status != 429 {
