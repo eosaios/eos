@@ -4,8 +4,8 @@
   "api_version": "v1",
   "target": "aarch64-apple-darwin",
   "binary": "eos-core",
-  "sha256": "sha256:92fe81cad5bebd08035c4c80fc0dec9af7b50d66f0f28637cdc2f9c748cc2f15",
-  "signature": "ed25519:koZpMxI/nH8l1ORSvCFq/8FqwK/V/zU2YW+ZWePlmsQZc9YJqRSIkFCaDMndTvH+YEqRYejun2sqTRYlA0AuBw==",
+  "sha256": "sha256:47aae2c4dce1b3d853e47426b18ca2ed7484047d64f74c7fc1a82a1d32b6017d",
+  "signature": "ed25519:QWFOuUiTJG4rfKm2SGc8FRM89lIRRl+JL8hZVo7J1CVFg8gec6E47OaudwxKVccLwb8KG4RKfpWN5G20uKdAAw==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "initialize",
@@ -134,6 +134,7 @@
     "runtime/execution_mode/set",
     "runtime/sandbox_mode/set",
     "runtime/reasoning_level/set",
+    "model/connections",
     "model/list",
     "model/catalog",
     "model/bundled_mcp",
