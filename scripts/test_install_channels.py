@@ -52,7 +52,7 @@ else: sys.stdout.buffer.write(p.read_bytes())
             self.write(tag+'.json', release(tag, pre))
 
     def write(self, name, data):
-        (self.fixtures/name).write_text(json.dumps(data))
+        (self.fixtures/name).write_text(json.dumps(data,ensure_ascii=False))
 
     def run_script(self, *args, success=True):
         result = subprocess.run(['bash',str(SCRIPT),*args],env=self.env,text=True,capture_output=True)
@@ -83,6 +83,17 @@ else: sys.stdout.buffer.write(p.read_bytes())
         item=release('v1.0.0-beta.36');item.update(author={'name':'tag_name','nested':{'draft':True}},body='Quoted "tag_name": "v99.0.0-beta.99" \\ path\n新版本')
         self.write('page1.json',[item])
         self.assertEqual(self.run_script('--channel','beta','--resolve-only').strip(),'v1.0.0-beta.36 beta')
+        self.write('v1.0.0-beta.36.json',item)
+        self.assertEqual(self.run_script('--version','v1.0.0-beta.36','--resolve-only').strip(),'v1.0.0-beta.36 beta')
+
+    def test_literal_unicode_under_utf8_locale(self):
+        locales=subprocess.check_output(['locale','-a'],text=True).splitlines()
+        utf8=next((x for x in locales if 'utf' in x.lower()),None)
+        if not utf8:
+            self.skipTest('no UTF-8 locale available')
+        self.env['LC_ALL']=utf8
+        item=release('v1.0.0-beta.36')
+        item['body']='中文发布说明和 emoji 🐼：修复持续升级；路径 /tmp/测试'
         self.write('v1.0.0-beta.36.json',item)
         self.assertEqual(self.run_script('--version','v1.0.0-beta.36','--resolve-only').strip(),'v1.0.0-beta.36 beta')
 

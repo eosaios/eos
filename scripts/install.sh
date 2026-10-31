@@ -62,7 +62,9 @@ SHA_CMD="sha256sum"; command -v sha256sum >/dev/null 2>&1 || SHA_CMD="shasum -a 
 
 # The selector is embedded so curl | bash remains a single-file installer.
 release_json() {
-  awk -v channel="$1" -v want="$2" -v best="$3" -v mode="${4:-release}" '
+  # JSON syntax and version identifiers are ASCII; byte-oriented scanning also
+  # accepts literal UTF-8 release notes under macOS multibyte locales.
+  LC_ALL=C awk -v channel="$1" -v want="$2" -v best="$3" -v mode="${4:-release}" '
 # Strict JSON reader: only top-level release objects supply selection fields.
 # No jq/Python/Node dependency is required by the standalone Bash installer.
 function fail() { bad=1; exit 1 }

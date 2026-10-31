@@ -97,7 +97,7 @@ irm https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.ps1 | iex
 
 
 渠道规则：`v1.0.0-beta.34` 是历史正式渠道版本；真正 Beta 从 `.35` 起与正式渠道隔离。
-`beta.35` 用户需要按 [beta.36 发布说明](https://github.com/eosaios/eos/releases/tag/v1.0.0-beta.36) 显式安装一次修复版，此后 `eos update` 只更新 Beta。
+`beta.35` 用户需要按 [beta.37 发布说明](https://github.com/eosaios/eos/releases/tag/v1.0.0-beta.37) 显式安装一次修复版，此后 `eos update` 只更新 Beta。
 新版安装脚本支持 `--channel beta`（PowerShell 为 `-Channel beta`）、指定版本，以及 `--resolve-only` / `-ResolveOnly`；渠道记录保存在每个安装目录的 `eos-install.json`。
 默认新安装仍是正式渠道，历史 `.34` 用户等待后续正式版本即可。包管理器安装应由对应包管理器更新；自定义安装请保留目录参数。
 这里的更新指手动 `eos update`，不代表 TUI 启动时会自动检查或安装。
