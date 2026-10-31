@@ -324,7 +324,8 @@ func TestApplyWithClientFullSuccess(t *testing.T) {
 	})
 
 	outcome, err := ApplyWithClient(context.Background(), &CheckResult{
-		DownloadURL: srv.URL + "/archive", AssetName: assetName,
+		LatestVersion: "v9.9.9-beta.1",
+		DownloadURL:   srv.URL + "/archive", AssetName: assetName,
 		ChecksumURL: srv.URL + "/sums",
 	}, nil, srv.Client())
 	if err != nil {

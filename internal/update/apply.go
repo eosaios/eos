@@ -21,6 +21,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/eosaios/eos/internal/version"
 )
 
 // ProgressFn 进度回调：done/total 为字节数，total<=0 表示未知。
@@ -50,6 +52,13 @@ func ApplyWithClient(ctx context.Context, res *CheckResult, progress ProgressFn,
 		return nil, err
 	}
 	installDir := filepath.Dir(exePath)
+	install, err := ReadInstallation(exePath, version.AppVersion)
+	if err != nil {
+		return nil, err
+	}
+	if ManagedInstallation(exePath, install) {
+		return nil, errors.New("installation is managed by a package manager; use that package manager to update")
+	}
 
 	tmpDir, err := os.MkdirTemp("", "eos-update-")
 	if err != nil {
@@ -94,6 +103,13 @@ func ApplyWithClient(ctx context.Context, res *CheckResult, progress ProgressFn,
 	if _, err := os.Stat(newBinary); err != nil {
 		return nil, fmt.Errorf("binary %s not found in archive: %w", binaryName, err)
 	}
+	targetInstall, err := ReadInstallation(newBinary, res.LatestVersion)
+	if err != nil {
+		return nil, err
+	}
+	if targetInstall.Channel != install.Channel {
+		return nil, errors.New("cross-channel self update is not allowed; explicitly reinstall the desired channel")
+	}
 
 	// 5. 替换二进制（Windows 运行中自替换需先改名让位）
 	if err := replaceBinary(newBinary, exePath); err != nil {
@@ -112,6 +128,9 @@ func ApplyWithClient(ctx context.Context, res *CheckResult, progress ProgressFn,
 	}
 
 	cleanupStaleCores(installDir)
+	if err := WriteInstallation(exePath, install); err != nil {
+		return nil, fmt.Errorf("persist installation channel: %w", err)
+	}
 	return outcome, nil
 }
 
