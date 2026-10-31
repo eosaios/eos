@@ -18,16 +18,19 @@ import (
 
 // State deliberately contains no credentials or subscription state.
 type State struct {
-	LoggedIn    bool   `json:"loggedIn"`
-	UserID      string `json:"userId"`
-	Email       string `json:"email"`
-	DisplayName string `json:"displayName"`
+	LoggedIn     bool   `json:"loggedIn"`
+	UserID       string `json:"userId"`
+	Email        string `json:"email"`
+	DisplayName  string `json:"displayName"`
+	ProfileError string `json:"profileError,omitempty"`
+	AvatarURL    string `json:"avatarUrl,omitempty"`
 }
 type session struct {
 	Access    string    `json:"access_token"`
 	Refresh   string    `json:"refresh_token"`
 	ExpiresIn int64     `json:"access_token_expires_in"`
 	ExpiresAt time.Time `json:"expires_at"`
+	Email     string    `json:"email,omitempty"`
 }
 type flow struct {
 	ID          string
@@ -202,7 +205,12 @@ func (m *Manager) Status(ctx context.Context) (State, error) {
 		if err = m.refresh(ctx, &sess); err != nil {
 			return State{}, err
 		}
-		return m.profile(ctx, sess.Access)
+		state, err = m.profile(ctx, sess.Access)
+	}
+	if err != nil && retryableProfileSync(err) {
+		// Ticket exchange already established and persisted this session. As in
+		// Todo, a profile network failure is a visible sync issue, not sign-out.
+		return State{LoggedIn: true, Email: sess.Email, ProfileError: "ACCOUNT_PROFILE_SYNC_FAILED"}, nil
 	}
 	return state, err
 }
@@ -218,6 +226,7 @@ func (m *Manager) refresh(ctx context.Context, s *session) error {
 		}
 		return err
 	}
+	next.Email = s.Email
 	if err = m.persist(next); err != nil {
 		return err
 	}
@@ -226,9 +235,10 @@ func (m *Manager) refresh(ctx context.Context, s *session) error {
 }
 func (m *Manager) profile(ctx context.Context, token string) (State, error) {
 	var p struct {
-		ID    string `json:"user_id"`
-		Email string `json:"email"`
-		Name  string `json:"display_name"`
+		ID     string `json:"user_id"`
+		Email  string `json:"email"`
+		Name   string `json:"display_name"`
+		Avatar string `json:"avatar_url"`
 	}
 	if err := m.client.call(ctx, "GET", "/api/v1/auth/me", nil, token, &p); err != nil {
 		return State{}, err
@@ -236,7 +246,10 @@ func (m *Manager) profile(ctx context.Context, token string) (State, error) {
 	if p.ID == "" {
 		return State{}, errors.New("ACCOUNT_PROFILE_INVALID")
 	}
-	return State{true, p.ID, p.Email, p.Name}, nil
+	if len(p.Avatar) > 0 && p.Avatar[0] == '/' {
+		p.Avatar = m.client.base + p.Avatar
+	}
+	return State{LoggedIn: true, UserID: p.ID, Email: p.Email, DisplayName: p.Name, AvatarURL: p.Avatar}, nil
 }
 
 // Logout cancels pending login and removes the local credentials.

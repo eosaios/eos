@@ -93,7 +93,7 @@ func TestLoginRestoreLogoutWithoutCommerce(t *testing.T) {
 	}
 	restored := &Manager{client: m.client, name: m.name, store: store}
 	got, err := restored.Status(ctx)
-	want := State{true, "user1", "fixture@example.com", "Fixture"}
+	want := State{LoggedIn: true, UserID: "user1", Email: "fixture@example.com", DisplayName: "Fixture"}
 	if err != nil || got != want {
 		t.Fatalf("status=%+v %v", got, err)
 	}
