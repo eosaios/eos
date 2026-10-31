@@ -34,12 +34,8 @@ type ApplyOutcome struct {
 	CoreUpdated bool   // 是否同步替换了 exe 同级的 core/ 目录
 }
 
-// ApplyWithClient 下载 CheckResult 选中的平台归档，校验 SHA256，解压并原地替换：
-//   - 二进制：Windows 下先把旧文件改名 .bak 再换新（运行中的 exe 不可删除、
-//     可改名），其余平台直接原子 rename；
-//   - core/：Release 归档自带 sidecar（eos + core/<triple>/）。无论当前是
-//     Release 布局（exe 旁有 core/）还是 go install 布局（无 core/），都把
-//     新 core/ 落到 exe 同级——resolver 优先读 exe 同级，内核随之升级。
+// ApplyWithClient 校验发布归档及配套关系，将二进制、Core、配套清单和
+// 安装渠道一起落盘；替换失败时恢复已经替换的组件。
 //
 // 允许注入显式代理客户端（nil = 默认）。
 func ApplyWithClient(ctx context.Context, res *CheckResult, progress ProgressFn, client *http.Client) (*ApplyOutcome, error) {
@@ -51,6 +47,10 @@ func ApplyWithClient(ctx context.Context, res *CheckResult, progress ProgressFn,
 	if err != nil {
 		return nil, err
 	}
+	return applyToInstallation(ctx, res, progress, client, exePath)
+}
+
+func applyToInstallation(ctx context.Context, res *CheckResult, progress ProgressFn, client *http.Client, exePath string) (*ApplyOutcome, error) {
 	installDir := filepath.Dir(exePath)
 	install, err := ReadInstallation(exePath, version.AppVersion)
 	if err != nil {
@@ -111,27 +111,15 @@ func ApplyWithClient(ctx context.Context, res *CheckResult, progress ProgressFn,
 		return nil, errors.New("cross-channel self update is not allowed; explicitly reinstall the desired channel")
 	}
 
-	// 5. 替换二进制（Windows 运行中自替换需先改名让位）
-	if err := replaceBinary(newBinary, exePath); err != nil {
+	// 5. 配套清单必须与目标版本和归档中的实际 Core 完全一致。
+	if err := validateReleasePair(stageRoot, res.LatestVersion); err != nil {
 		return nil, err
 	}
-
-	// 6. 同步 core/（存在则整目录换新；Windows 下旧 core 里的 eos-core.exe
-	// 可能仍在运行，改名目录通常可行、删除失败则留待下次清理）
-	outcome := &ApplyOutcome{BinaryPath: exePath}
-	stageCore := filepath.Join(stageRoot, "core")
-	if info, err := os.Stat(stageCore); err == nil && info.IsDir() {
-		if err := swapCoreDir(stageCore, filepath.Join(installDir, "core")); err != nil {
-			return nil, fmt.Errorf("swap core dir: %w", err)
-		}
-		outcome.CoreUpdated = true
+	if err := installRelease(stageRoot, newBinary, exePath, install); err != nil {
+		return nil, err
 	}
-
 	cleanupStaleCores(installDir)
-	if err := WriteInstallation(exePath, install); err != nil {
-		return nil, fmt.Errorf("persist installation channel: %w", err)
-	}
-	return outcome, nil
+	return &ApplyOutcome{BinaryPath: exePath, CoreUpdated: true}, nil
 }
 
 func currentExecutable() (string, error) {
@@ -406,35 +394,6 @@ func singleRootDir(extractDir string) (string, error) {
 	return extractDir, nil
 }
 
-func replaceBinary(newBinary, exePath string) error {
-	incoming := exePath + ".eos-new"
-	if err := copyExecutable(newBinary, incoming); err != nil {
-		return fmt.Errorf("stage new binary: %w", err)
-	}
-
-	if runtime.GOOS == "windows" {
-		// 运行中的 exe 不能删除但可以改名：旧 → .bak，新 → 目标名。
-		backup := exePath + ".bak"
-		_ = os.Remove(backup)
-		if err := os.Rename(exePath, backup); err != nil {
-			os.Remove(incoming)
-			return fmt.Errorf("backup current binary: %w", err)
-		}
-		if err := os.Rename(incoming, exePath); err != nil {
-			os.Rename(backup, exePath)
-			return fmt.Errorf("move new binary in place: %w", err)
-		}
-		_ = os.Remove(backup) // 运行中删除可能失败，残留由 cleanupStaleCores 兜底不了，留 .bak 无害
-		return nil
-	}
-
-	if err := os.Rename(incoming, exePath); err != nil {
-		os.Remove(incoming)
-		return fmt.Errorf("replace binary: %w", err)
-	}
-	return nil
-}
-
 func copyExecutable(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
@@ -445,28 +404,8 @@ func copyExecutable(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
 	_, err = io.Copy(out, in)
-	return err
-}
-
-func swapCoreDir(stageCore, targetCore string) error {
-	if err := os.MkdirAll(filepath.Dir(targetCore), 0o755); err != nil {
-		return err
-	}
-	if _, err := os.Stat(targetCore); err == nil {
-		stale := fmt.Sprintf("%s.old-%d", targetCore, time.Now().Unix())
-		if err := os.Rename(targetCore, stale); err != nil {
-			// Windows 下旧 core/eos-core.exe 仍在运行时改名目录通常可行；
-			// 真失败则放弃换新（内核沿用旧版，二进制已更新，resolver 兼容旧 sidecar）。
-			return fmt.Errorf("rotate old core dir: %w", err)
-		}
-	}
-	// 跨设备移动：copy 兜底
-	if err := os.Rename(stageCore, targetCore); err != nil {
-		return copyDir(stageCore, targetCore)
-	}
-	return nil
+	return errors.Join(err, out.Close())
 }
 
 func copyDir(src, dst string) error {
@@ -491,9 +430,8 @@ func copyDir(src, dst string) error {
 		if err != nil {
 			return err
 		}
-		defer out.Close()
 		_, err = io.Copy(out, in)
-		return err
+		return errors.Join(err, out.Close())
 	})
 }
 

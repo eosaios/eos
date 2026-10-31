@@ -77,7 +77,7 @@ jobs:
       - name: Test Bash installation channels
         run: python3 scripts/test_install_channels.py
       - name: Test native CLI contracts and runtime
-        run: go test ./pkg/coreapi/sidecar ./internal/headless ./internal/ui/adapter ./pkg/attachments -timeout 300s
+        run: go test ./internal/update ./pkg/coreapi/sidecar ./internal/headless ./internal/ui/adapter ./pkg/attachments -timeout 300s
       - name: Verify packaged and embedded CLI runtime (macOS)
         run: |
           go build -trimpath -o "$RUNNER_TEMP/eos-runtime-gate/eos" .

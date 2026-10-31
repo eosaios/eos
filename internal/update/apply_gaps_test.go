@@ -21,7 +21,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -298,56 +300,58 @@ func sha256hex(data []byte) string {
 	return fmt.Sprintf("%x", sum)
 }
 
-// TestApplyWithClientFullSuccess 完整成功链：临时测试二进制被替换是
-// 预期副作用（unix 上 rename 交换不影响运行中进程；windows 跳过——
-// 运行中自替换语义不同）。core/ 落在测试二进制旁的临时构建目录。
+// TestApplyWithClientFullSuccess 在独立子进程中替换正在运行的测试程序，
+// 同时覆盖 Windows rename 与 Unix 语义，不改动主测试程序及其相邻文件。
 func TestApplyWithClientFullSuccess(t *testing.T) {
+	if url := os.Getenv("EOS_UPDATE_TEST_URL"); url != "" {
+		outcome, err := ApplyWithClient(context.Background(), &CheckResult{
+			LatestVersion: testReleaseVersion, DownloadURL: url + "/release.tar.gz",
+			AssetName: "release.tar.gz", ChecksumURL: url + "/SHA256SUMS.txt",
+		}, nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if outcome == nil || !outcome.CoreUpdated {
+			t.Fatalf("outcome=%+v", outcome)
+		}
+		return
+	}
+	files := releaseFixture(t)
+	server := fixtureServer(t, files)
+	dir := t.TempDir()
+	binary := "eos"
 	if runtime.GOOS == "windows" {
-		t.Skip("windows rename-in-place semantics differ")
+		binary += ".exe"
 	}
-	tmp := t.TempDir()
-	archivePath, assetName, wantSum := buildTestArchive(t, tmp, "eos", "eos-cli_v9.9.9_full")
-	archiveBytes, err := os.ReadFile(archivePath)
+	original, err := os.Executable()
 	if err != nil {
 		t.Fatal(err)
 	}
-	sums := wantSum + "  " + assetName + "\n"
-
-	mux := http.NewServeMux()
-	srv := httptest.NewServer(mux)
-	defer srv.Close()
-	mux.HandleFunc("GET /archive", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write(archiveBytes)
-	})
-	mux.HandleFunc("GET /sums", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(sums))
-	})
-
-	outcome, err := ApplyWithClient(context.Background(), &CheckResult{
-		LatestVersion: "v9.9.9-beta.1",
-		DownloadURL:   srv.URL + "/archive", AssetName: assetName,
-		ChecksumURL: srv.URL + "/sums",
-	}, nil, srv.Client())
-	if err != nil {
-		t.Fatalf("成功链: %v", err)
+	path := filepath.Join(dir, binary)
+	if err := copyExecutable(original, path); err != nil {
+		t.Fatal(err)
 	}
-	if outcome == nil || outcome.BinaryPath == "" || !outcome.CoreUpdated {
-		t.Fatalf("outcome = %+v", outcome)
+	if err := WriteInstallation(path, Installation{Channel: Beta, Method: "script"}); err != nil {
+		t.Fatal(err)
 	}
-	// 新 core 已落测试二进制旁。
-	exePath, err := currentExecutable()
+	child := exec.Command(path, "-test.run=^TestApplyWithClientFullSuccess$", "-test.v")
+	child.Env = append(os.Environ(), "EOS_UPDATE_TEST_URL="+server.URL)
+	if output, err := child.CombinedOutput(); err != nil {
+		t.Fatalf("self update: %v\n%s", err, output)
+	}
+	// Windows 上运行中的备份可能保留；子进程退出后即可清理。
+	entries, err := filepath.Glob(filepath.Join(dir, ".eos-update-*"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	newCore := filepath.Join(filepath.Dir(exePath), "core", "aarch64-test-triple", "eos-core")
-	got, err := os.ReadFile(newCore)
-	if err != nil || string(got) != "new-core" {
-		t.Fatalf("core 未更新: %v %q", err, got)
+	for _, entry := range entries {
+		if err := os.RemoveAll(entry); err != nil {
+			t.Fatal(err)
+		}
 	}
-	// 二进制本体被替换为新内容。
-	gotBin, err := os.ReadFile(exePath)
-	if err != nil || string(gotBin) != "new-binary" {
-		t.Fatalf("二进制未替换: %v", err)
+	files[InstallationFile] = "{\"channel\":\"beta\",\"method\":\"script\"}\n"
+	if got := readFixture(t, dir); !reflect.DeepEqual(got, files) {
+		t.Fatalf("self update left mixed package: %v", got)
 	}
 }
 

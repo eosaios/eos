@@ -42,7 +42,7 @@ func TestSingleRootDir(t *testing.T) {
 	}
 }
 
-func TestCopyDirAndSwapCoreDir(t *testing.T) {
+func TestCopyDirAndCleanupStaleCores(t *testing.T) {
 	src := t.TempDir()
 	dst := filepath.Join(t.TempDir(), "out")
 	if err := os.MkdirAll(filepath.Join(src, "a", "b"), 0o755); err != nil {
@@ -59,26 +59,7 @@ func TestCopyDirAndSwapCoreDir(t *testing.T) {
 		t.Fatalf("copied = %q %v", data, err)
 	}
 
-	// swapCoreDir 新目标
-	stage := t.TempDir()
 	target := filepath.Join(t.TempDir(), "core")
-	if err := os.WriteFile(filepath.Join(stage, "eos-core"), []byte("bin"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := swapCoreDir(stage, target); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(filepath.Join(target, "eos-core")); err != nil {
-		t.Fatal(err)
-	}
-	// 二次 swap 旋转旧目录
-	stage2 := t.TempDir()
-	if err := os.WriteFile(filepath.Join(stage2, "eos-core"), []byte("new"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := swapCoreDir(stage2, target); err != nil {
-		t.Fatal(err)
-	}
 	// cleanupStaleCores 清理 core.old-*
 	old := filepath.Join(filepath.Dir(target), "core.old-123")
 	if err := os.MkdirAll(old, 0o755); err != nil {
@@ -92,7 +73,7 @@ func TestCopyDirAndSwapCoreDir(t *testing.T) {
 	cleanupStaleCores(filepath.Join(t.TempDir(), "nope"))
 }
 
-func TestReplaceBinaryAndCurrentExecutable(t *testing.T) {
+func TestCopyExecutableAndCurrentExecutable(t *testing.T) {
 	dir := t.TempDir()
 	exe := filepath.Join(dir, "app")
 	if err := os.WriteFile(exe, []byte("old"), 0o755); err != nil {
@@ -102,7 +83,7 @@ func TestReplaceBinaryAndCurrentExecutable(t *testing.T) {
 	if err := os.WriteFile(newBin, []byte("newbin"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := replaceBinary(newBin, exe); err != nil {
+	if err := copyExecutable(newBin, exe); err != nil {
 		t.Fatal(err)
 	}
 	data, err := os.ReadFile(exe)
@@ -111,7 +92,7 @@ func TestReplaceBinaryAndCurrentExecutable(t *testing.T) {
 	}
 
 	// 缺失源
-	if err := replaceBinary(filepath.Join(dir, "nope"), exe); err == nil {
+	if err := copyExecutable(filepath.Join(dir, "nope"), exe); err == nil {
 		t.Fatal("missing source")
 	}
 
