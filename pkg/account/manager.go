@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/eosaios/eos/pkg/credentials"
 	"github.com/zalando/go-keyring"
 )
 
@@ -28,8 +30,10 @@ type session struct {
 	ExpiresAt time.Time `json:"expires_at"`
 }
 type flow struct {
-	ID       string
-	Deadline time.Time
+	ID          string
+	Deadline    time.Time
+	nextPoll    time.Time
+	rateStrikes int
 }
 type secretStore interface {
 	Get() (string, error)
@@ -39,15 +43,15 @@ type secretStore interface {
 type systemStore struct{ service string }
 
 func (s systemStore) Get() (string, error) {
-	v, e := keyring.Get(s.service, "session")
+	v, e := credentials.Get(s.service, "session")
 	if errors.Is(e, keyring.ErrNotFound) {
 		return "", nil
 	}
 	return v, e
 }
-func (s systemStore) Set(v string) error { return keyring.Set(s.service, "session", v) }
+func (s systemStore) Set(v string) error { return credentials.Set(s.service, "session", v) }
 func (s systemStore) Delete() error {
-	e := keyring.Delete(s.service, "session")
+	e := credentials.Delete(s.service, "session")
 	if errors.Is(e, keyring.ErrNotFound) {
 		return nil
 	}
@@ -64,7 +68,7 @@ type Manager struct {
 }
 
 func New(name string) (*Manager, error) {
-	if name != "eos-desktop" && name != "eos-cli" {
+	if name != "eos-desktop" && name != "eos-desktop-beta" && name != "eos-desktop-dev" && name != "eos-cli" {
 		return nil, errors.New("ACCOUNT_CLIENT_INVALID")
 	}
 	c, err := newClient(os.Getenv("EOS_ACCOUNT_BASE_URL"))
@@ -73,6 +77,13 @@ func New(name string) (*Manager, error) {
 	}
 	hash := sha256.Sum256([]byte(c.base))
 	return &Manager{client: c, name: name, store: systemStore{fmt.Sprintf("com.eosaios.%s.account.%x", name, hash[:8])}}, nil
+}
+
+// SetHTTPTransport connects account requests to the owning app's live network policy.
+func (m *Manager) SetHTTPTransport(transport http.RoundTripper) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.client.http.Transport = transport
 }
 
 // Start creates a browser flow. Only the latest flow may establish a session.
@@ -92,7 +103,7 @@ func (m *Manager) Start(ctx context.Context) (string, error) {
 	if err != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || out.ID == "" || out.TTL <= 0 {
 		return "", errors.New("ACCOUNT_FLOW_INVALID")
 	}
-	m.flow = &flow{out.ID, time.Now().Add(time.Duration(out.TTL) * time.Second)}
+	m.flow = &flow{ID: out.ID, Deadline: time.Now().Add(time.Duration(out.TTL) * time.Second)}
 	return out.URL, nil
 }
 
@@ -108,14 +119,24 @@ func (m *Manager) Poll(ctx context.Context) (bool, error) {
 		m.flow = nil
 		return false, errors.New("ACCOUNT_LOGIN_EXPIRED")
 	}
+	if time.Now().Before(f.nextPoll) {
+		return false, nil
+	}
 	var out struct {
 		Status string `json:"status"`
 		Ticket string `json:"ticket"`
 		Client string `json:"client"`
 	}
 	if err := m.client.call(ctx, "GET", "/api/v1/auth/desktop/flows/"+url.PathEscape(f.ID), nil, "", &out); err != nil {
+		if retryableFlowPoll(err) {
+			f.nextPoll = time.Now().Add(flowPollDelay(f, err))
+			return false, nil
+		}
+		m.flow = nil
 		return false, err
 	}
+	f.rateStrikes = 0
+	f.nextPoll = time.Now().Add(2 * time.Second)
 	if out.Client != "" && out.Client != m.name {
 		m.flow = nil
 		return false, errors.New("ACCOUNT_FLOW_INVALID")
@@ -136,7 +157,7 @@ func (m *Manager) Poll(ctx context.Context) (bool, error) {
 		return false, err
 	}
 	if err := m.persist(sess); err != nil {
-		return false, err
+		return false, errors.New("ACCOUNT_STORAGE_ERROR")
 	}
 	return true, nil
 }
@@ -158,7 +179,7 @@ func (m *Manager) Status(ctx context.Context) (State, error) {
 	defer m.mu.Unlock()
 	raw, err := m.store.Get()
 	if err != nil {
-		return State{}, err
+		return State{}, errors.New("ACCOUNT_STORAGE_ERROR")
 	}
 	if raw == "" {
 		return State{}, nil

@@ -16,6 +16,8 @@ import (
 
 const ProductionURL = "https://api.eosaios.com"
 
+var errNetwork = errors.New("ACCOUNT_NETWORK_ERROR")
+
 type apiError struct {
 	Status int
 	Code   string
@@ -65,7 +67,7 @@ func (c *client) call(ctx context.Context, method, path string, body any, token 
 	}
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return errors.New("ACCOUNT_NETWORK_ERROR")
+		return errNetwork
 	}
 	defer resp.Body.Close()
 	var env struct {

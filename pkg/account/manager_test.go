@@ -184,7 +184,7 @@ func TestPendingExpiredAndMismatchedFlow(t *testing.T) {
 				}
 				reply(w, map[string]string{"status": status, "client": client})
 			})
-			m.flow = &flow{"f", time.Now().Add(time.Minute)}
+			m.flow = &flow{ID: "f", Deadline: time.Now().Add(time.Minute)}
 			done, err := m.Poll(context.Background())
 			if done || s.value != "" {
 				t.Fatal("unexpected session")
@@ -198,7 +198,7 @@ func TestPendingExpiredAndMismatchedFlow(t *testing.T) {
 func TestKeychainFailureAndInvalidEndpoint(t *testing.T) {
 	m, s := fixture(t, func(w http.ResponseWriter, r *http.Request) { t.Error("network called") })
 	s.fail = errors.New("keychain locked")
-	if _, err := m.Status(context.Background()); !errors.Is(err, s.fail) {
+	if _, err := m.Status(context.Background()); err == nil || err.Error() != "ACCOUNT_STORAGE_ERROR" {
 		t.Fatal(err)
 	}
 	if err := m.persist(session{Access: "a", Refresh: "r", ExpiresIn: 60}); !errors.Is(err, s.fail) {
