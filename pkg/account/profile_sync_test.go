@@ -28,7 +28,9 @@ func TestEstablishedSessionSurvivesProfileNetworkFailure(t *testing.T) {
 func TestInvalidSessionIsNotPresentedAsProfileSyncFailure(t *testing.T) {
 	m, store := fixture(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)
-		w.Write([]byte(`{"error":{"code":"AUTH_INVALID_TOKEN"}}`))
+		if _, err := w.Write([]byte(`{"error":{"code":"AUTH_INVALID_TOKEN"}}`)); err != nil {
+			t.Error(err)
+		}
 	})
 	if err := m.persist(session{Access: "revoked", Refresh: "revoked-refresh", ExpiresIn: 3600}); err != nil {
 		t.Fatal(err)

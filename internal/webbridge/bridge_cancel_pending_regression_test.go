@@ -14,10 +14,13 @@ import (
 func TestCancelSessionWithdrawsPendingItems(t *testing.T) {
 	for _, mode := range []string{"active_stream", "no_stream", "interrupt_failure"} {
 		t.Run(mode, func(t *testing.T) {
+			// Register the workspace cleanup before the bridge's cleanup: Close
+			// persists this session and must finish before TempDir removes it.
+			workspace := t.TempDir()
 			s, _ := newRustStdioBridgeWithMockForTest(t)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			session := &sessionState{ID: "cancel-fixture", WorkspacePath: t.TempDir(), Running: true, NeedsAttention: true,
+			session := &sessionState{ID: "cancel-fixture", WorkspacePath: workspace, Running: true, NeedsAttention: true,
 				Messages: []ChatMessage{{ID: "assistant-fixture", Role: "assistant", State: "waiting", Items: []ThreadItem{
 					{ID: "pending-call", Kind: "tool_call", Status: "waiting", Approval: &ItemApprovalState{ApprovalID: "pending-approval", Kind: "approval", State: "pending"}},
 					{ID: "pending-question", Kind: "tool_call", Status: "waiting", Approval: &ItemApprovalState{ApprovalID: "pending-inquiry", Kind: "request_user_input", State: "pending"}},
