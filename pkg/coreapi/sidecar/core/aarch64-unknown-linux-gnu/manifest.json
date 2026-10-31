@@ -4,8 +4,8 @@
   "api_version": "v1",
   "target": "aarch64-unknown-linux-gnu",
   "binary": "eos-core",
-  "sha256": "sha256:2083ad552f41535e1c91bcf8bb8c6a319f393f5c1b511c3ff5584e7dbc3083d0",
-  "signature": "ed25519:vgGpyH7pWMbTRA/fToFvNBIwFqDdPHs7hGqSwLay5G0odoOzi/7dyo7faqC3DA0XbbEO4a7hlGo0lVwfeedJDQ==",
+  "sha256": "sha256:aed75ec2aec9295113636f375cfd12dec2c541126a365fe9b4dab127ce3e2662",
+  "signature": "ed25519:1AuSMNoCdKlQyswajOc3CnrqjW0k3e9MnW572Vpi02URZCh725uVwVfCGXoCdk6aoBllGwLpm8xXf6DfEJ5ODg==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "initialize",

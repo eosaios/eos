@@ -70,7 +70,8 @@ func TestDarwinInstallChainWithFakeBins(t *testing.T) {
 	// relaunch 调度：1s 后经 PATH 命中假 open。
 	bundle := filepath.Join(t.TempDir(), "EOS.app")
 	scheduleMacOSRelaunch(bundle)
-	deadline := time.Now().Add(4 * time.Second)
+	// Include system validation of the fresh fake open after the 1s schedule.
+	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
 		if data, err := os.ReadFile(openCalls); err == nil && strings.Contains(string(data), bundle) {
 			return

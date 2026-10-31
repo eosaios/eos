@@ -1013,6 +1013,114 @@ func TestArchiveSessionArms(t *testing.T) {
 	})
 }
 
+func TestArchiveWorkspaceSessions(t *testing.T) {
+	t.Run("整组归档跳过运行中且不动其他 workspace", func(t *testing.T) {
+		gateway := &chatSessionsGatewayStub{}
+		s, svc, _ := newChatSessionsTestBridge(t, gateway)
+		workspace := t.TempDir()
+		other := t.TempDir()
+		s.stateMu.Lock()
+		s.sessions["ws-1"] = &sessionState{ID: "ws-1", WorkspacePath: workspace}
+		s.sessions["ws-2"] = &sessionState{ID: "ws-2", WorkspacePath: workspace, Running: true}
+		s.sessions["ws-3"] = &sessionState{ID: "ws-3", WorkspacePath: strings.ToUpper(workspace)}
+		s.sessions["other-1"] = &sessionState{ID: "other-1", WorkspacePath: other}
+		s.stateMu.Unlock()
+
+		if _, err := svc.ArchiveWorkspaceSessions(workspace, true); err != nil {
+			t.Fatalf("ArchiveWorkspaceSessions error = %v", err)
+		}
+		if gateway.archivedIDs["ws-1"] != true || gateway.archivedIDs["ws-3"] != true {
+			t.Fatalf("archivedIDs = %v, want ws-1/ws-3 archived", gateway.archivedIDs)
+		}
+		if _, running := gateway.archivedIDs["ws-2"]; running {
+			t.Fatalf("running session ws-2 should be skipped, archivedIDs = %v", gateway.archivedIDs)
+		}
+		if _, touched := gateway.archivedIDs["other-1"]; touched {
+			t.Fatalf("other workspace session should not be touched, archivedIDs = %v", gateway.archivedIDs)
+		}
+		s.stateMu.RLock()
+		_, stillWs1 := s.sessions["ws-1"]
+		_, stillWs2 := s.sessions["ws-2"]
+		_, stillOther := s.sessions["other-1"]
+		s.stateMu.RUnlock()
+		if stillWs1 {
+			t.Fatal("archived ws-1 still in active map")
+		}
+		if !stillWs2 || !stillOther {
+			t.Fatal("running/other sessions must stay in active map")
+		}
+	})
+
+	t.Run("归档当前工作区全部后切到其他工作区最新", func(t *testing.T) {
+		gateway := &chatSessionsGatewayStub{}
+		s, svc, _ := newChatSessionsTestBridge(t, gateway)
+		workspace := t.TempDir()
+		other := t.TempDir()
+		s.stateMu.Lock()
+		s.sessions["cur"] = &sessionState{ID: "cur", WorkspacePath: workspace, UpdatedAt: time.Now()}
+		s.sessions["fallback"] = &sessionState{ID: "fallback", WorkspacePath: other, UpdatedAt: time.Now().Add(-time.Hour)}
+		s.currentSessionID = "cur"
+		s.stateMu.Unlock()
+		state, err := svc.ArchiveWorkspaceSessions(workspace, true)
+		if err != nil {
+			t.Fatalf("ArchiveWorkspaceSessions error = %v", err)
+		}
+		if state.CurrentSessionID != "fallback" {
+			t.Fatalf("CurrentSessionID = %q, want fallback after archiving whole workspace", state.CurrentSessionID)
+		}
+	})
+
+	t.Run("恢复方向按 workspace 过滤归档列表", func(t *testing.T) {
+		gateway := &chatSessionsGatewayStub{
+			archivedSessions: []coreapi.Session{
+				{ID: "a1", WorkspaceRoot: "/proj/x"},
+				{ID: "a2", WorkspaceRoot: "/proj/x"},
+				{ID: "a3", WorkspaceRoot: "/proj/y"},
+			},
+		}
+		_, svc, _ := newChatSessionsTestBridge(t, gateway)
+		if _, err := svc.ArchiveWorkspaceSessions("/proj/x", false); err != nil {
+			t.Fatalf("ArchiveWorkspaceSessions(unarchive) error = %v", err)
+		}
+		if gateway.archivedIDs["a1"] != false || gateway.archivedIDs["a2"] != false {
+			t.Fatalf("archivedIDs = %v, want a1/a2 unarchived", gateway.archivedIDs)
+		}
+		if _, touched := gateway.archivedIDs["a3"]; touched {
+			t.Fatalf("a3 (other workspace) should not be touched, archivedIDs = %v", gateway.archivedIDs)
+		}
+	})
+
+	t.Run("无目标直接返回", func(t *testing.T) {
+		gateway := &chatSessionsGatewayStub{}
+		_, svc, _ := newChatSessionsTestBridge(t, gateway)
+		if _, err := svc.ArchiveWorkspaceSessions(t.TempDir(), true); err != nil {
+			t.Fatalf("ArchiveWorkspaceSessions(no targets) error = %v", err)
+		}
+		if len(gateway.archivedIDs) != 0 {
+			t.Fatalf("archivedIDs = %v, want empty", gateway.archivedIDs)
+		}
+	})
+
+	t.Run("全部失败时错误上抛", func(t *testing.T) {
+		gateway := &chatSessionsGatewayStub{archiveErr: errors.New("archive denied")}
+		s, svc, _ := newChatSessionsTestBridge(t, gateway)
+		workspace := t.TempDir()
+		s.stateMu.Lock()
+		s.sessions["ws-1"] = &sessionState{ID: "ws-1", WorkspacePath: workspace}
+		s.currentSessionID = "ws-1"
+		s.stateMu.Unlock()
+		if _, err := svc.ArchiveWorkspaceSessions(workspace, true); err == nil || !strings.Contains(err.Error(), "archive denied") {
+			t.Fatalf("ArchiveWorkspaceSessions error = %v, want archive denied", err)
+		}
+		s.stateMu.RLock()
+		_, still := s.sessions["ws-1"]
+		s.stateMu.RUnlock()
+		if !still {
+			t.Fatal("failed session must stay in active map")
+		}
+	})
+}
+
 func TestPredictAndRefineForwarding(t *testing.T) {
 	t.Run("predict 成功与失败", func(t *testing.T) {
 		gateway := &chatSessionsGatewayStub{predictText: "下一个问题", predictErr: nil}

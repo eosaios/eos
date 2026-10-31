@@ -129,6 +129,7 @@ const (
 	MethodRuntimeExecutionModeSet       = "runtime/execution_mode/set"
 	MethodRuntimeSandboxModeSet         = "runtime/sandbox_mode/set"
 	MethodRuntimeReasoningLevelSet      = "runtime/reasoning_level/set"
+	MethodModelConnections              = "model/connections"
 	MethodModelList                     = "model/list"
 	MethodModelCatalog                  = "model/catalog"
 	MethodModelBundledMCP               = "model/bundled_mcp"
@@ -330,6 +331,7 @@ func CoreMethods() []string {
 		MethodRuntimeExecutionModeSet,
 		MethodRuntimeSandboxModeSet,
 		MethodRuntimeReasoningLevelSet,
+		MethodModelConnections,
 		MethodModelList,
 		MethodModelCatalog,
 		MethodModelBundledMCP,
@@ -546,6 +548,7 @@ func MethodGroups() map[string][]string {
 			MethodMemoryRebuildIndex,
 		},
 		"model": {
+			MethodModelConnections,
 			MethodModelList,
 			MethodModelCatalog,
 			MethodModelBundledMCP,

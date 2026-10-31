@@ -4,8 +4,8 @@
   "api_version": "v1",
   "target": "aarch64-apple-darwin",
   "binary": "eos-core",
-  "sha256": "sha256:0c1a669127631b3d4f99797bcfd6249e25b4603aa2e1c6507fae3b1ee0d1d8f6",
-  "signature": "ed25519:6LOjZv3rdMqSULpzmfwWzoKzA37AAVUvsDbZ8h8uFX59FXnRS3Ruk8dohU555vkVTEzVLe3bMdP6GHp5hib+Bg==",
+  "sha256": "sha256:47aae2c4dce1b3d853e47426b18ca2ed7484047d64f74c7fc1a82a1d32b6017d",
+  "signature": "ed25519:QWFOuUiTJG4rfKm2SGc8FRM89lIRRl+JL8hZVo7J1CVFg8gec6E47OaudwxKVccLwb8KG4RKfpWN5G20uKdAAw==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "initialize",
@@ -134,6 +134,7 @@
     "runtime/execution_mode/set",
     "runtime/sandbox_mode/set",
     "runtime/reasoning_level/set",
+    "model/connections",
     "model/list",
     "model/catalog",
     "model/bundled_mcp",
@@ -206,5 +207,6 @@
     "agent/control",
     "diagnostics/startup"
   ],
-  "signature_algorithm": "ed25519"
+  "signature_algorithm": "ed25519",
+  "source_commit": "a7def3fd3716782b91063c9f907436a74984fc6c"
 }

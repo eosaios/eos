@@ -15,10 +15,10 @@ import (
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/eosaios/eos/internal/ui/panels"
 	"github.com/eosaios/eos/internal/ui/views/setup"
 	"github.com/eosaios/eos/pkg/coreapi"
-	tea "charm.land/bubbletea/v2"
 )
 
 func mcpServerFixture() []coreapi.MCPServer {

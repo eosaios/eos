@@ -1,0 +1,6041 @@
+{
+  "methods": [
+    {
+      "group": "system",
+      "name": "initialize"
+    },
+    {
+      "group": "system",
+      "name": "shutdown"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/list"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/default"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/last"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/resolve_foreground"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/remember"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/forget"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/add"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/remove"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/use"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/set_foreground"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/trust"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/worktree/list"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/worktree/create"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/worktree/remove"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/changes"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/rollback/build"
+    },
+    {
+      "group": "workspace",
+      "name": "workspace/rollback/apply"
+    },
+    {
+      "group": "session",
+      "name": "session/create"
+    },
+    {
+      "group": "session",
+      "name": "session/resume"
+    },
+    {
+      "group": "session",
+      "name": "session/list"
+    },
+    {
+      "group": "session",
+      "name": "session/current"
+    },
+    {
+      "group": "session",
+      "name": "session/set_current"
+    },
+    {
+      "group": "session",
+      "name": "session/delete"
+    },
+    {
+      "group": "session",
+      "name": "session/rename"
+    },
+    {
+      "group": "session",
+      "name": "session/set_meta"
+    },
+    {
+      "group": "session",
+      "name": "session/messages/load"
+    },
+    {
+      "group": "session",
+      "name": "session/messages/save"
+    },
+    {
+      "group": "session",
+      "name": "session/search"
+    },
+    {
+      "group": "mcp",
+      "name": "mcp/list"
+    },
+    {
+      "group": "mcp",
+      "name": "mcp/upsert"
+    },
+    {
+      "group": "mcp",
+      "name": "mcp/import_json"
+    },
+    {
+      "group": "mcp",
+      "name": "mcp/delete"
+    },
+    {
+      "group": "mcp",
+      "name": "mcp/set_enabled"
+    },
+    {
+      "group": "lsp",
+      "name": "lsp/list"
+    },
+    {
+      "group": "lsp",
+      "name": "lsp/detect"
+    },
+    {
+      "group": "lsp",
+      "name": "lsp/start"
+    },
+    {
+      "group": "lsp",
+      "name": "lsp/install"
+    },
+    {
+      "group": "lsp",
+      "name": "lsp/diagnostics"
+    },
+    {
+      "group": "lsp",
+      "name": "lsp/diagnostics/summary"
+    },
+    {
+      "group": "config",
+      "name": "config/rules/get"
+    },
+    {
+      "group": "config",
+      "name": "config/rules/snapshot"
+    },
+    {
+      "group": "config",
+      "name": "config/rules/save"
+    },
+    {
+      "group": "config",
+      "name": "config/rules/reset"
+    },
+    {
+      "group": "config",
+      "name": "config/settings/get"
+    },
+    {
+      "group": "config",
+      "name": "config/settings/save"
+    },
+    {
+      "group": "permission",
+      "name": "permission/snapshot"
+    },
+    {
+      "group": "permission",
+      "name": "permission/pending_review"
+    },
+    {
+      "group": "permission",
+      "name": "permission/clear_pending_review"
+    },
+    {
+      "group": "permission",
+      "name": "permission/access_mode/set"
+    },
+    {
+      "group": "permission",
+      "name": "permission/approval_mode/set"
+    },
+    {
+      "group": "permission",
+      "name": "permission/enter_full_access"
+    },
+    {
+      "group": "extensions",
+      "name": "extensions/skills/list"
+    },
+    {
+      "group": "extensions",
+      "name": "extensions/skills/reload"
+    },
+    {
+      "group": "extensions",
+      "name": "extensions/skill/set_enabled"
+    },
+    {
+      "group": "extensions",
+      "name": "extensions/skill/invoke"
+    },
+    {
+      "group": "extensions",
+      "name": "extensions/plugins/list"
+    },
+    {
+      "group": "extensions",
+      "name": "extensions/plugin/set_enabled"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/status"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/launch"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/close"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/tabs"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/profiles"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/profile_upsert"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/credentials_import"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/control_takeover"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/control_confirm"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/control_resume"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/pick_start"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/pick_stop"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/upload_provide"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/focus"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/set_default_profile"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/navigate"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/tab_new"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/tab_switch"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/tab_close"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/live_start"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/live_stop"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/input"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/history"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/copy_selection"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/host_register"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/host_respond"
+    },
+    {
+      "group": "extensions",
+      "name": "browser/host_state"
+    },
+    {
+      "group": "desktop",
+      "name": "desktop/host/status"
+    },
+    {
+      "group": "desktop",
+      "name": "desktop/host/register"
+    },
+    {
+      "group": "desktop",
+      "name": "desktop/host/unregister"
+    },
+    {
+      "group": "desktop",
+      "name": "desktop/host/respond"
+    },
+    {
+      "group": "context",
+      "name": "context/preview"
+    },
+    {
+      "group": "context",
+      "name": "context/stats"
+    },
+    {
+      "group": "context",
+      "name": "context/window"
+    },
+    {
+      "group": "context",
+      "name": "context/pin"
+    },
+    {
+      "group": "context",
+      "name": "context/compact"
+    },
+    {
+      "group": "context",
+      "name": "context/clear"
+    },
+    {
+      "group": "context",
+      "name": "context/export"
+    },
+    {
+      "group": "usage",
+      "name": "usage/summary"
+    },
+    {
+      "group": "usage",
+      "name": "usage/cost_summary"
+    },
+    {
+      "group": "usage",
+      "name": "usage/cost_items"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/install"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/list"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/remove"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/search"
+    },
+    {
+      "group": "other",
+      "name": "network/list"
+    },
+    {
+      "group": "other",
+      "name": "network/get"
+    },
+    {
+      "group": "other",
+      "name": "network/clear"
+    },
+    {
+      "group": "versions",
+      "name": "versions/list"
+    },
+    {
+      "group": "versions",
+      "name": "versions/rollback"
+    },
+    {
+      "group": "versions",
+      "name": "versions/delete"
+    },
+    {
+      "group": "versions",
+      "name": "versions/delete_file"
+    },
+    {
+      "group": "versions",
+      "name": "versions/clear"
+    },
+    {
+      "group": "task",
+      "name": "task/list"
+    },
+    {
+      "group": "task",
+      "name": "task/todos"
+    },
+    {
+      "group": "task",
+      "name": "task/tail"
+    },
+    {
+      "group": "task",
+      "name": "task/kill"
+    },
+    {
+      "group": "task",
+      "name": "task/cleanup"
+    },
+    {
+      "group": "goal",
+      "name": "goal/set"
+    },
+    {
+      "group": "goal",
+      "name": "goal/get"
+    },
+    {
+      "group": "goal",
+      "name": "goal/pause"
+    },
+    {
+      "group": "goal",
+      "name": "goal/resume"
+    },
+    {
+      "group": "goal",
+      "name": "goal/clear"
+    },
+    {
+      "group": "runtime",
+      "name": "runtime/modes/get"
+    },
+    {
+      "group": "runtime",
+      "name": "runtime/execution_mode/set"
+    },
+    {
+      "group": "runtime",
+      "name": "runtime/sandbox_mode/set"
+    },
+    {
+      "group": "runtime",
+      "name": "runtime/reasoning_level/set"
+    },
+    {
+      "group": "model",
+      "name": "model/connections"
+    },
+    {
+      "group": "model",
+      "name": "model/list"
+    },
+    {
+      "group": "model",
+      "name": "model/catalog"
+    },
+    {
+      "group": "model",
+      "name": "model/bundled_mcp"
+    },
+    {
+      "group": "model",
+      "name": "model/upsert"
+    },
+    {
+      "group": "model",
+      "name": "model/save"
+    },
+    {
+      "group": "model",
+      "name": "model/verify"
+    },
+    {
+      "group": "model",
+      "name": "model/delete"
+    },
+    {
+      "group": "model",
+      "name": "model/activate"
+    },
+    {
+      "group": "model",
+      "name": "model/sync_env"
+    },
+    {
+      "group": "model",
+      "name": "model/reload"
+    },
+    {
+      "group": "model",
+      "name": "model/context"
+    },
+    {
+      "group": "model",
+      "name": "model/workspace/set"
+    },
+    {
+      "group": "model",
+      "name": "model/workspace/clear"
+    },
+    {
+      "group": "model",
+      "name": "model/session/set"
+    },
+    {
+      "group": "model",
+      "name": "model/session/clear"
+    },
+    {
+      "group": "remote_workspace",
+      "name": "remote_workspace/list"
+    },
+    {
+      "group": "remote_workspace",
+      "name": "remote_workspace/open"
+    },
+    {
+      "group": "remote_workspace",
+      "name": "remote_workspace/forget"
+    },
+    {
+      "group": "remote_workspace",
+      "name": "remote_workspace/clear_cache"
+    },
+    {
+      "group": "remote_workspace",
+      "name": "remote_repo/current"
+    },
+    {
+      "group": "git",
+      "name": "git/status"
+    },
+    {
+      "group": "git",
+      "name": "git/summary"
+    },
+    {
+      "group": "git",
+      "name": "git/diff"
+    },
+    {
+      "group": "git",
+      "name": "git/branches"
+    },
+    {
+      "group": "git",
+      "name": "git/log"
+    },
+    {
+      "group": "git",
+      "name": "git/show"
+    },
+    {
+      "group": "git",
+      "name": "git/repos"
+    },
+    {
+      "group": "git",
+      "name": "git/stage"
+    },
+    {
+      "group": "git",
+      "name": "git/commit"
+    },
+    {
+      "group": "git",
+      "name": "git/push"
+    },
+    {
+      "group": "git",
+      "name": "git/merge_abort"
+    },
+    {
+      "group": "git",
+      "name": "git/suggest_message"
+    },
+    {
+      "group": "insight",
+      "name": "insight/predict_next_user_message"
+    },
+    {
+      "group": "insight",
+      "name": "insight/refine_input"
+    },
+    {
+      "group": "insight",
+      "name": "insight/plan_snapshot"
+    },
+    {
+      "group": "memory",
+      "name": "memory/snapshot"
+    },
+    {
+      "group": "memory",
+      "name": "memory/save"
+    },
+    {
+      "group": "memory",
+      "name": "memory/rebuild_index"
+    },
+    {
+      "group": "captures",
+      "name": "captures/list"
+    },
+    {
+      "group": "captures",
+      "name": "captures/save"
+    },
+    {
+      "group": "captures",
+      "name": "captures/delete"
+    },
+    {
+      "group": "role",
+      "name": "role/list"
+    },
+    {
+      "group": "role",
+      "name": "role/resolve"
+    },
+    {
+      "group": "agent",
+      "name": "agent/spawn"
+    },
+    {
+      "group": "agent",
+      "name": "agent/input"
+    },
+    {
+      "group": "agent",
+      "name": "agent/wait"
+    },
+    {
+      "group": "agent",
+      "name": "agent/run"
+    },
+    {
+      "group": "agent",
+      "name": "agent/tool/execute"
+    },
+    {
+      "group": "agent",
+      "name": "agent/list"
+    },
+    {
+      "group": "agent",
+      "name": "agent/close"
+    },
+    {
+      "group": "event",
+      "name": "event/subscribe"
+    },
+    {
+      "group": "event",
+      "name": "event/unsubscribe"
+    },
+    {
+      "group": "turn",
+      "name": "turn/start"
+    },
+    {
+      "group": "turn",
+      "name": "turn/interrupt"
+    },
+    {
+      "group": "turn",
+      "name": "turn/resume"
+    },
+    {
+      "group": "tool",
+      "name": "tool/catalog"
+    },
+    {
+      "group": "tool",
+      "name": "tool/execute"
+    },
+    {
+      "group": "tool",
+      "name": "tool/traces"
+    },
+    {
+      "group": "tool",
+      "name": "tool/stats"
+    },
+    {
+      "group": "approval",
+      "name": "approval/list"
+    },
+    {
+      "group": "approval",
+      "name": "approval/respond"
+    },
+    {
+      "group": "approval",
+      "name": "approval/preview"
+    },
+    {
+      "group": "inquiry",
+      "name": "inquiry/respond"
+    },
+    {
+      "group": "state",
+      "name": "state/snapshot"
+    },
+    {
+      "group": "sandbox",
+      "name": "sandbox/policy"
+    },
+    {
+      "group": "sandbox",
+      "name": "sandbox/set_policy"
+    },
+    {
+      "group": "sandbox",
+      "name": "sandbox/derive_policy"
+    },
+    {
+      "group": "sandbox",
+      "name": "sandbox/backend_status"
+    },
+    {
+      "group": "config",
+      "name": "config/reload"
+    },
+    {
+      "group": "agent",
+      "name": "agent/control"
+    },
+    {
+      "group": "diagnostics",
+      "name": "diagnostics/startup"
+    }
+  ],
+  "types": [
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "server_name"
+        },
+        {
+          "go": "string",
+          "json": "protocol_version"
+        },
+        {
+          "go": "[]string",
+          "json": "methods"
+        },
+        {
+          "go": "map[string]any",
+          "json": "capabilities",
+          "o": 1
+        }
+      ],
+      "name": "InitializeResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "foreground_workspace",
+          "o": 1
+        },
+        {
+          "go": "[WorkspaceSnapshot]",
+          "json": "workspaces",
+          "o": 1
+        },
+        {
+          "go": "[SessionSnapshot]",
+          "json": "sessions",
+          "o": 1
+        },
+        {
+          "go": "*SessionSnapshot",
+          "json": "current_session",
+          "o": 1
+        },
+        {
+          "go": "[SessionMessage]",
+          "json": "messages",
+          "o": 1
+        },
+        {
+          "go": "[TaskSnapshot]",
+          "json": "tasks",
+          "o": 1
+        },
+        {
+          "go": "[Agent]",
+          "json": "agents",
+          "o": 1
+        }
+      ],
+      "name": "StateSnapshot"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "path"
+        },
+        {
+          "go": "bool",
+          "json": "trusted"
+        },
+        {
+          "go": "bool",
+          "json": "active"
+        }
+      ],
+      "name": "Workspace"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "path"
+        }
+      ],
+      "name": "WorkspacePathRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "path"
+        },
+        {
+          "go": "bool",
+          "json": "foreground"
+        }
+      ],
+      "name": "RememberWorkspaceRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "preferred",
+          "o": 1
+        }
+      ],
+      "name": "ResolveForegroundWorkspaceRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "path"
+        },
+        {
+          "go": "string",
+          "json": "name",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "trusted"
+        },
+        {
+          "go": "bool",
+          "json": "active"
+        },
+        {
+          "go": "int",
+          "json": "session_count"
+        },
+        {
+          "go": "string",
+          "json": "current_session_id",
+          "o": 1
+        }
+      ],
+      "name": "WorkspaceSnapshot"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        }
+      ],
+      "name": "CreateWorktreeRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "path"
+        },
+        {
+          "go": "bool",
+          "json": "force"
+        }
+      ],
+      "name": "RemoveWorktreeRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "path"
+        },
+        {
+          "go": "string",
+          "json": "branch",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "head",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "active"
+        },
+        {
+          "go": "bool",
+          "json": "removable"
+        }
+      ],
+      "name": "Worktree"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        },
+        {
+          "go": "string",
+          "json": "workspace_path",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "title",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "preview",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "updated_at"
+        },
+        {
+          "go": "bool",
+          "json": "running"
+        },
+        {
+          "go": "bool",
+          "json": "needs_attention"
+        },
+        {
+          "go": "int",
+          "json": "message_count"
+        },
+        {
+          "go": "int",
+          "json": "pending_prompts"
+        },
+        {
+          "go": "bool",
+          "json": "active"
+        }
+      ],
+      "name": "SessionSnapshot"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "role"
+        },
+        {
+          "go": "string",
+          "json": "type",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "content",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "time",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "image_paths",
+          "o": 1
+        },
+        {
+          "go": "map[string]any",
+          "json": "metadata",
+          "o": 1
+        },
+        {
+          "go": "*MessageChangeSet",
+          "json": "change_set",
+          "o": 1
+        },
+        {
+          "go": "*TurnRollback",
+          "json": "rollback",
+          "o": 1
+        }
+      ],
+      "name": "SessionMessage"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        },
+        {
+          "go": "string",
+          "json": "kind",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "status"
+        },
+        {
+          "go": "string",
+          "json": "started_at"
+        },
+        {
+          "go": "string",
+          "json": "updated_at",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "label",
+          "o": 1
+        }
+      ],
+      "name": "TaskSnapshot"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        },
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "map[string]any",
+          "json": "metadata",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "created_at"
+        },
+        {
+          "go": "string",
+          "json": "updated_at"
+        }
+      ],
+      "name": "Session"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "title",
+          "o": 1
+        },
+        {
+          "go": "[SessionMessage]",
+          "json": "messages",
+          "o": 1
+        },
+        {
+          "go": "map[string]any",
+          "json": "metadata",
+          "o": 1
+        }
+      ],
+      "name": "CreateSessionRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id"
+        },
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "ResumeSessionRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "ListSessionsRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "CurrentSessionRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id"
+        },
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "SetCurrentSessionRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id"
+        },
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "DeleteSessionRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id"
+        },
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "title"
+        }
+      ],
+      "name": "RenameSessionRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id"
+        },
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "LoadSessionMessagesRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "[SessionMessage]",
+          "json": "messages",
+          "o": 1
+        }
+      ],
+      "name": "SaveSessionMessagesRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id"
+        },
+        {
+          "go": "string",
+          "json": "turn_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "input"
+        },
+        {
+          "go": "[]string",
+          "json": "image_paths",
+          "o": 1
+        },
+        {
+          "go": "[Attachment]",
+          "json": "attachments",
+          "o": 1
+        },
+        {
+          "go": "json.RawMessage",
+          "json": "options",
+          "o": 1
+        }
+      ],
+      "name": "StartTurnRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "path"
+        },
+        {
+          "go": "string",
+          "json": "mime",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "kind",
+          "o": 1
+        }
+      ],
+      "name": "Attachment"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id"
+        },
+        {
+          "go": "string",
+          "json": "turn_id"
+        }
+      ],
+      "name": "TurnRef"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        },
+        {
+          "go": "string",
+          "json": "session_id"
+        },
+        {
+          "go": "string",
+          "json": "status"
+        },
+        {
+          "go": "string",
+          "json": "started_at"
+        },
+        {
+          "go": "string",
+          "json": "updated_at"
+        }
+      ],
+      "name": "Turn"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        },
+        {
+          "go": "string",
+          "json": "parent_agent_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "role_id"
+        },
+        {
+          "go": "string",
+          "json": "task",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "status"
+        },
+        {
+          "go": "string",
+          "json": "created_at"
+        },
+        {
+          "go": "string",
+          "json": "updated_at"
+        }
+      ],
+      "name": "Agent"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        },
+        {
+          "go": "string",
+          "json": "description",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "system_prompt",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "prompt_file",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "allowed_tools",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "context_strategy",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "model",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "reasoning_effort",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "legacy_aliases",
+          "o": 1
+        }
+      ],
+      "name": "RoleConfig"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "parent_agent_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "role_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "task"
+        },
+        {
+          "go": "string",
+          "json": "fork_context_mode",
+          "o": 1
+        },
+        {
+          "go": "json.RawMessage",
+          "json": "options",
+          "o": 1
+        }
+      ],
+      "name": "SpawnAgentRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "agent_id"
+        },
+        {
+          "go": "string",
+          "json": "input"
+        }
+      ],
+      "name": "AgentInput"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "agent_id"
+        }
+      ],
+      "name": "AgentRef"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "agent_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "action"
+        },
+        {
+          "go": "string",
+          "json": "role_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "parent_agent_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "task",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "reason",
+          "o": 1
+        },
+        {
+          "go": "map[string]any",
+          "json": "metadata",
+          "o": 1
+        }
+      ],
+      "name": "AgentControlRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "agent_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "status",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "previous_status",
+          "o": 1
+        },
+        {
+          "go": "[Agent]",
+          "json": "agents",
+          "o": 1
+        }
+      ],
+      "name": "AgentControlResponse"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "agent_id"
+        },
+        {
+          "go": "string",
+          "json": "input"
+        },
+        {
+          "go": "string",
+          "json": "from_agent_id",
+          "o": 1
+        },
+        {
+          "go": "map[string]any",
+          "json": "metadata",
+          "o": 1
+        }
+      ],
+      "name": "AgentInputRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "bool",
+          "json": "ok"
+        }
+      ],
+      "name": "AgentInputResponse"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "agent_id"
+        },
+        {
+          "go": "string",
+          "json": "session_id",
+          "o": 1
+        },
+        {
+          "go": "json.RawMessage",
+          "json": "options",
+          "o": 1
+        }
+      ],
+      "name": "AgentRunRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "Agent",
+          "json": "agent"
+        },
+        {
+          "go": "string",
+          "json": "output",
+          "o": 1
+        },
+        {
+          "go": "[AgentMailboxEntry]",
+          "json": "messages",
+          "o": 1
+        },
+        {
+          "go": "RoleConfig",
+          "json": "role",
+          "o": 1
+        }
+      ],
+      "name": "AgentRunResponse"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "from_agent_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "body",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "created_at",
+          "o": 1
+        }
+      ],
+      "name": "AgentMailboxEntry"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "agent_id"
+        },
+        {
+          "go": "string",
+          "json": "session_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "turn_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "json.RawMessage",
+          "json": "args",
+          "o": 1
+        }
+      ],
+      "name": "AgentToolRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "display",
+          "o": 1
+        },
+        {
+          "go": "json.RawMessage",
+          "json": "output",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "error",
+          "o": 1
+        }
+      ],
+      "name": "AgentToolResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id",
+          "o": 1
+        }
+      ],
+      "name": "ListAgentsRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "turn_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "request_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "agent_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "json.RawMessage",
+          "json": "args",
+          "o": 1
+        },
+        {
+          "go": "*int64",
+          "json": "timeout_ms",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "ToolRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "request_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "status",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "display",
+          "o": 1
+        },
+        {
+          "go": "json.RawMessage",
+          "json": "output",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "error",
+          "o": 1
+        },
+        {
+          "go": "*int64",
+          "json": "duration_ms",
+          "o": 1
+        },
+        {
+          "go": "map[string]any",
+          "json": "metadata",
+          "o": 1
+        }
+      ],
+      "name": "ToolResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "include_tools",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "allowed_tools",
+          "o": 1
+        }
+      ],
+      "name": "ListToolCatalogRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "description",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "risk_level",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "source",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "category",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "read_only"
+        },
+        {
+          "go": "bool",
+          "json": "invocable"
+        },
+        {
+          "go": "bool",
+          "json": "requires_full_access"
+        },
+        {
+          "go": "[]string",
+          "json": "tags",
+          "o": 1
+        },
+        {
+          "go": "json.RawMessage",
+          "json": "params_schema",
+          "o": 1
+        },
+        {
+          "go": "map[string]any",
+          "json": "metadata",
+          "o": 1
+        }
+      ],
+      "name": "ToolDefinition"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "event_type"
+        },
+        {
+          "go": "string",
+          "json": "request_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "source",
+          "o": 1
+        },
+        {
+          "go": "json.RawMessage",
+          "json": "payload",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "session_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "turn_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "agent_id",
+          "o": 1
+        }
+      ],
+      "name": "Envelope"
+    },
+    {
+      "fields": [
+        {
+          "go": "[]string",
+          "json": "event_types",
+          "o": 1
+        },
+        {
+          "go": "*string",
+          "json": "session_id",
+          "o": 1
+        },
+        {
+          "go": "*string",
+          "json": "turn_id",
+          "o": 1
+        },
+        {
+          "go": "*string",
+          "json": "agent_id",
+          "o": 1
+        }
+      ],
+      "name": "EventFilter"
+    },
+    {
+      "fields": [
+        {
+          "go": "[]string",
+          "json": "event_types",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "session_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "turn_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "agent_id",
+          "o": 1
+        },
+        {
+          "go": "json.RawMessage",
+          "json": "filter",
+          "o": 1
+        }
+      ],
+      "name": "EventSubscribeRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "subscription_id"
+        },
+        {
+          "go": "[]string",
+          "json": "event_types",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "active"
+        },
+        {
+          "go": "string",
+          "json": "created_at",
+          "o": 1
+        }
+      ],
+      "name": "EventSubscription"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "subscription_id"
+        }
+      ],
+      "name": "EventUnsubscribeRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "approval_id"
+        },
+        {
+          "go": "string",
+          "json": "decision"
+        },
+        {
+          "go": "string",
+          "json": "reason",
+          "o": 1
+        },
+        {
+          "go": "map[string]any",
+          "json": "metadata",
+          "o": 1
+        }
+      ],
+      "name": "ApprovalResponse"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "kind"
+        },
+        {
+          "go": "string",
+          "json": "tool_name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "subject",
+          "o": 1
+        },
+        {
+          "go": "map[string]any",
+          "json": "input",
+          "o": 1
+        }
+      ],
+      "name": "ApprovalPreviewRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "subject"
+        },
+        {
+          "go": "string",
+          "json": "level"
+        },
+        {
+          "go": "[]string",
+          "json": "tags",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "reason",
+          "o": 1
+        }
+      ],
+      "name": "ApprovalPreviewCandidate"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "kind"
+        },
+        {
+          "go": "string",
+          "json": "level"
+        },
+        {
+          "go": "string",
+          "json": "decision"
+        },
+        {
+          "go": "bool",
+          "json": "requires_approval"
+        },
+        {
+          "go": "[]string",
+          "json": "tags",
+          "o": 1
+        },
+        {
+          "go": "[]ApprovalPreviewCandidate",
+          "json": "candidates",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "reason",
+          "o": 1
+        }
+      ],
+      "name": "ApprovalPreviewResponse"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "mode"
+        },
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "DeriveSandboxPolicyRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "EnterFullAccessRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "inquiry_id"
+        },
+        {
+          "go": "string",
+          "json": "option",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "text",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "response",
+          "o": 1
+        },
+        {
+          "go": "map[string]any",
+          "json": "metadata",
+          "o": 1
+        }
+      ],
+      "name": "InquiryResponse"
+    },
+    {
+      "fields": [
+        {
+          "go": "[]string",
+          "json": "paths",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "dry_run"
+        }
+      ],
+      "name": "ConfigReloadRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "[]string",
+          "json": "reloaded",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "errors",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "dry_run"
+        }
+      ],
+      "name": "ConfigReloadResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "plan_prompt_style",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "plan_bubble",
+          "o": 1
+        },
+        {
+          "go": "*bool",
+          "json": "auto_context",
+          "o": 1
+        },
+        {
+          "go": "*bool",
+          "json": "desktop_notifications",
+          "o": 1
+        },
+        {
+          "go": "*bool",
+          "json": "git_commit_reminder",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "max_inject_kb"
+        },
+        {
+          "go": "string",
+          "json": "watch_mode",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "watch_debounce_ms"
+        },
+        {
+          "go": "int64",
+          "json": "poll_interval_sec"
+        },
+        {
+          "go": "string",
+          "json": "language",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "theme",
+          "o": 1
+        },
+        {
+          "go": "*bool",
+          "json": "trusted",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "max_turn_tokens"
+        },
+        {
+          "go": "int64",
+          "json": "max_session_tokens"
+        },
+        {
+          "go": "bool",
+          "json": "mid_risk_confirm"
+        }
+      ],
+      "name": "Settings"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "scope",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "path",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "content",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "exists"
+        },
+        {
+          "go": "string",
+          "json": "updated_at",
+          "o": 1
+        }
+      ],
+      "name": "RuleDocument"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "active_root",
+          "o": 1
+        },
+        {
+          "go": "[RuleDocument]",
+          "json": "documents",
+          "o": 1
+        }
+      ],
+      "name": "RulesSnapshot"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "scope",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "content"
+        }
+      ],
+      "name": "SaveRulesRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "type",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "target",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "command",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "args",
+          "o": 1
+        },
+        {
+          "go": "map[string]string",
+          "json": "envs",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "base_url",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "transport",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "enabled"
+        },
+        {
+          "go": "*McpAuth",
+          "json": "auth",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "approval_mode",
+          "o": 1
+        },
+        {
+          "go": "map[string]string",
+          "json": "tool_approval_override",
+          "o": 1
+        }
+      ],
+      "name": "McpServerConfig"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "type",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "token",
+          "o": 1
+        },
+        {
+          "go": "map[string]string",
+          "json": "headers",
+          "o": 1
+        },
+        {
+          "go": "map[string]string",
+          "json": "headers_env",
+          "o": 1
+        }
+      ],
+      "name": "McpAuth"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "type",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "target",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "command",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "args",
+          "o": 1
+        },
+        {
+          "go": "map[string]string",
+          "json": "envs",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "base_url",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "transport",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "enabled"
+        },
+        {
+          "go": "*McpAuth",
+          "json": "auth",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "approval_mode",
+          "o": 1
+        },
+        {
+          "go": "map[string]string",
+          "json": "tool_approval_override",
+          "o": 1
+        }
+      ],
+      "name": "UpsertMcpRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "raw"
+        }
+      ],
+      "name": "ImportMcpJsonRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        }
+      ],
+      "name": "McpNameRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "McpServerConfig",
+          "json": "config"
+        },
+        {
+          "go": "string",
+          "json": "api_key_env",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "api_key_present"
+        }
+      ],
+      "name": "BundledMcpInfo"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "bool",
+          "json": "enabled"
+        }
+      ],
+      "name": "SetMcpEnabledRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "language"
+        },
+        {
+          "go": "string",
+          "json": "status",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "command",
+          "o": 1
+        }
+      ],
+      "name": "LspServer"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "language",
+          "o": 1
+        }
+      ],
+      "name": "LspLanguageRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "file"
+        },
+        {
+          "go": "int64",
+          "json": "line"
+        },
+        {
+          "go": "int64",
+          "json": "end_line"
+        },
+        {
+          "go": "string",
+          "json": "severity"
+        },
+        {
+          "go": "string",
+          "json": "message"
+        },
+        {
+          "go": "string",
+          "json": "source",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "code",
+          "o": 1
+        }
+      ],
+      "name": "LspDiagnosticItem"
+    },
+    {
+      "fields": [
+        {
+          "go": "int",
+          "json": "files"
+        },
+        {
+          "go": "int",
+          "json": "errors"
+        },
+        {
+          "go": "int",
+          "json": "warnings"
+        },
+        {
+          "go": "int",
+          "json": "infos"
+        },
+        {
+          "go": "[LspDiagnosticItem]",
+          "json": "items",
+          "o": 1
+        }
+      ],
+      "name": "LspDiagnosticsSummary"
+    },
+    {
+      "fields": [
+        {
+          "go": "int64",
+          "json": "line"
+        },
+        {
+          "go": "int64",
+          "json": "character"
+        }
+      ],
+      "name": "Position"
+    },
+    {
+      "fields": [
+        {
+          "go": "Position",
+          "json": "start"
+        },
+        {
+          "go": "Position",
+          "json": "end"
+        }
+      ],
+      "name": "Range"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "uri"
+        },
+        {
+          "go": "Range",
+          "json": "range"
+        }
+      ],
+      "name": "Location"
+    },
+    {
+      "fields": [
+        {
+          "go": "Range",
+          "json": "range"
+        },
+        {
+          "go": "int64",
+          "json": "severity",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "message"
+        },
+        {
+          "go": "string",
+          "json": "source",
+          "o": 1
+        },
+        {
+          "go": "json.RawMessage",
+          "json": "code",
+          "o": 1
+        }
+      ],
+      "name": "Diagnostic"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "uri"
+        },
+        {
+          "go": "[Diagnostic]",
+          "json": "diagnostics"
+        }
+      ],
+      "name": "PublishDiagnosticsParams"
+    },
+    {
+      "fields": [
+        {
+          "go": "[Location]",
+          "json": "definitions"
+        }
+      ],
+      "name": "GotoDefinitionResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "[Location]",
+          "json": "references"
+        }
+      ],
+      "name": "ReferencesResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "content",
+          "o": 1
+        },
+        {
+          "go": "Range",
+          "json": "range",
+          "o": 1
+        }
+      ],
+      "name": "HoverResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "Range",
+          "json": "range"
+        },
+        {
+          "go": "string",
+          "json": "newText"
+        }
+      ],
+      "name": "TextEdit"
+    },
+    {
+      "fields": [
+        {
+          "go": "map[string][]TextEdit",
+          "json": "changes",
+          "o": 1
+        }
+      ],
+      "name": "WorkspaceEdit"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "label"
+        },
+        {
+          "go": "int64",
+          "json": "kind",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "detail",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "documentation",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "insertText",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "insertTextFormat",
+          "o": 1
+        }
+      ],
+      "name": "CompletionItem"
+    },
+    {
+      "fields": [
+        {
+          "go": "[CompletionItem]",
+          "json": "items"
+        },
+        {
+          "go": "bool",
+          "json": "isIncomplete"
+        }
+      ],
+      "name": "CompletionResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "int64",
+          "json": "kind"
+        },
+        {
+          "go": "Range",
+          "json": "range"
+        },
+        {
+          "go": "Range",
+          "json": "selectionRange"
+        },
+        {
+          "go": "string",
+          "json": "detail",
+          "o": 1
+        },
+        {
+          "go": "[DocumentSymbol]",
+          "json": "children",
+          "o": 1
+        }
+      ],
+      "name": "DocumentSymbol"
+    },
+    {
+      "fields": [
+        {
+          "go": "[DocumentSymbol]",
+          "json": "symbols"
+        }
+      ],
+      "name": "DocumentSymbolResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "int64",
+          "json": "kind"
+        },
+        {
+          "go": "Location",
+          "json": "location"
+        },
+        {
+          "go": "string",
+          "json": "containerName",
+          "o": 1
+        }
+      ],
+      "name": "WorkspaceSymbol"
+    },
+    {
+      "fields": [
+        {
+          "go": "[WorkspaceSymbol]",
+          "json": "symbols"
+        }
+      ],
+      "name": "WorkspaceSymbolResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "WorkspaceEdit",
+          "json": "edits"
+        }
+      ],
+      "name": "RenameResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "title"
+        },
+        {
+          "go": "string",
+          "json": "kind",
+          "o": 1
+        },
+        {
+          "go": "WorkspaceEdit",
+          "json": "edit",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "isPreferred",
+          "o": 1
+        }
+      ],
+      "name": "CodeAction"
+    },
+    {
+      "fields": [
+        {
+          "go": "[CodeAction]",
+          "json": "actions"
+        }
+      ],
+      "name": "CodeActionResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "execution_mode",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "access_mode",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "approval_mode",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "sandbox_mode",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "allow_all"
+        },
+        {
+          "go": "[]string",
+          "json": "allowed_categories",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "has_pending_diff"
+        },
+        {
+          "go": "string",
+          "json": "pending_diff_path",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "last_authorization",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "last_authorization_at",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "last_authorization_kind",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "last_authorization_note",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "last_authorization_target",
+          "o": 1
+        }
+      ],
+      "name": "PermissionSnapshot"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "path",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "diff",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "has_diff"
+        }
+      ],
+      "name": "PendingReview"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "description",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "source",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "argument_hint",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "location",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "base_dir",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "allowed_tools",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "enabled"
+        },
+        {
+          "go": "bool",
+          "json": "active"
+        },
+        {
+          "go": "bool",
+          "json": "disable_model_invocation"
+        },
+        {
+          "go": "bool",
+          "json": "user_invocable"
+        },
+        {
+          "go": "bool",
+          "json": "user_invocable_defined"
+        }
+      ],
+      "name": "SkillInfo"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "arguments",
+          "o": 1
+        }
+      ],
+      "name": "InvokeSkillRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "invoked"
+        }
+      ],
+      "name": "InvokeSkillResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "description",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "source",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "command",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "enabled"
+        }
+      ],
+      "name": "PluginInfo"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "bool",
+          "json": "enabled"
+        }
+      ],
+      "name": "SetExtensionEnabledRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "server_name",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "configured"
+        },
+        {
+          "go": "bool",
+          "json": "enabled"
+        },
+        {
+          "go": "bool",
+          "json": "loaded"
+        },
+        {
+          "go": "int",
+          "json": "tools"
+        },
+        {
+          "go": "string",
+          "json": "last_error",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "command",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "install_hint",
+          "o": 1
+        }
+      ],
+      "name": "BrowserStatus"
+    },
+    {
+      "fields": [
+        {
+          "go": "bool",
+          "json": "headless"
+        },
+        {
+          "go": "string",
+          "json": "download_dir",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "default_profile"
+        },
+        {
+          "go": "int",
+          "json": "window_width"
+        },
+        {
+          "go": "int",
+          "json": "window_height"
+        },
+        {
+          "go": "bool",
+          "json": "action_highlight"
+        },
+        {
+          "go": "int",
+          "json": "preview_fps"
+        },
+        {
+          "go": "string",
+          "json": "dialog_policy"
+        }
+      ],
+      "name": "BrowserConfig"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "dir"
+        },
+        {
+          "go": "int64",
+          "json": "created_at"
+        },
+        {
+          "go": "string",
+          "json": "note",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "headless",
+          "o": 1
+        }
+      ],
+      "name": "BrowserProfileRecord"
+    },
+    {
+      "fields": [
+        {
+          "go": "bool",
+          "json": "running"
+        },
+        {
+          "go": "bool",
+          "json": "headless"
+        },
+        {
+          "go": "string",
+          "json": "browser_kind",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "browser_version",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "profile",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "profile_dir",
+          "o": 1
+        },
+        {
+          "go": "[]BrowserTabInfo",
+          "json": "tabs"
+        },
+        {
+          "go": "string",
+          "json": "current_url",
+          "o": 1
+        },
+        {
+          "go": "BrowserControlState",
+          "json": "control"
+        },
+        {
+          "go": "string",
+          "json": "last_error",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "backend",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "phase",
+          "o": 1
+        }
+      ],
+      "name": "BrowserRuntimeStatus"
+    },
+    {
+      "fields": [
+        {
+          "go": "int",
+          "json": "index"
+        },
+        {
+          "go": "string",
+          "json": "url"
+        },
+        {
+          "go": "string",
+          "json": "title"
+        },
+        {
+          "go": "bool",
+          "json": "active"
+        }
+      ],
+      "name": "BrowserTabInfo"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "mode"
+        },
+        {
+          "go": "string",
+          "json": "reason",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "note",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "deadline_ms",
+          "o": 1
+        }
+      ],
+      "name": "BrowserControlState"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "profile",
+          "o": 1
+        }
+      ],
+      "name": "BrowserLaunchRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "profile",
+          "o": 1
+        }
+      ],
+      "name": "BrowserCloseRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "reason",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "note",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "timeout_ms",
+          "o": 1
+        }
+      ],
+      "name": "BrowserControlTakeoverRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "result",
+          "o": 1
+        }
+      ],
+      "name": "BrowserControlResumeRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "request_id"
+        },
+        {
+          "go": "[]string",
+          "json": "paths"
+        }
+      ],
+      "name": "BrowserUploadProvideRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "profile"
+        }
+      ],
+      "name": "BrowserSetDefaultProfileRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "url"
+        }
+      ],
+      "name": "BrowserNavigateRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "url",
+          "o": 1
+        }
+      ],
+      "name": "BrowserTabNewRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "uint64",
+          "json": "index"
+        }
+      ],
+      "name": "BrowserTabSwitchRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "uint64",
+          "json": "index",
+          "o": 1
+        }
+      ],
+      "name": "BrowserTabCloseRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "uint32",
+          "json": "max_width",
+          "o": 1
+        },
+        {
+          "go": "uint32",
+          "json": "max_height",
+          "o": 1
+        },
+        {
+          "go": "uint32",
+          "json": "quality",
+          "o": 1
+        }
+      ],
+      "name": "BrowserLiveStartRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "kind"
+        },
+        {
+          "go": "string",
+          "json": "action",
+          "o": 1
+        },
+        {
+          "go": "float64",
+          "json": "x"
+        },
+        {
+          "go": "float64",
+          "json": "y"
+        },
+        {
+          "go": "string",
+          "json": "button",
+          "o": 1
+        },
+        {
+          "go": "uint32",
+          "json": "click_count",
+          "o": 1
+        },
+        {
+          "go": "float64",
+          "json": "delta_x"
+        },
+        {
+          "go": "float64",
+          "json": "delta_y"
+        },
+        {
+          "go": "string",
+          "json": "key",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "code",
+          "o": 1
+        },
+        {
+          "go": "uint32",
+          "json": "key_code"
+        },
+        {
+          "go": "string",
+          "json": "text",
+          "o": 1
+        },
+        {
+          "go": "uint32",
+          "json": "modifiers"
+        },
+        {
+          "go": "string",
+          "json": "value",
+          "o": 1
+        },
+        {
+          "go": "uint32",
+          "json": "selection_start",
+          "o": 1
+        },
+        {
+          "go": "uint32",
+          "json": "selection_end",
+          "o": 1
+        }
+      ],
+      "name": "BrowserInputRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "action"
+        }
+      ],
+      "name": "BrowserHistoryRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "text"
+        }
+      ],
+      "name": "BrowserCopySelectionResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "profile",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "backend",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "capabilities",
+          "o": 1
+        }
+      ],
+      "name": "BrowserHostRegisterRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "request_id"
+        },
+        {
+          "go": "bool",
+          "json": "ok"
+        },
+        {
+          "go": "map[string]any",
+          "json": "result",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "error",
+          "o": 1
+        }
+      ],
+      "name": "BrowserHostRespondRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "profile",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "running"
+        },
+        {
+          "go": "string",
+          "json": "backend",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "phase",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "url",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "title",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "error",
+          "o": 1
+        },
+        {
+          "go": "[]BrowserTabInfo",
+          "json": "tabs"
+        },
+        {
+          "go": "string",
+          "json": "active_tab_id",
+          "o": 1
+        }
+      ],
+      "name": "BrowserHostStateRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "request_id"
+        },
+        {
+          "go": "string",
+          "json": "action"
+        },
+        {
+          "go": "string",
+          "json": "session",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "tab_id",
+          "o": 1
+        },
+        {
+          "go": "map[string]any",
+          "json": "args",
+          "o": 1
+        }
+      ],
+      "name": "BrowserHostCommand"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "url",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "profile",
+          "o": 1
+        }
+      ],
+      "name": "BrowserFocusRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "bool",
+          "json": "headless",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "note",
+          "o": 1
+        }
+      ],
+      "name": "BrowserProfileUpsertRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "endpoint",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "profile",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "domains",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "dry_run",
+          "o": 1
+        }
+      ],
+      "name": "BrowserCredentialsImportRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "uint64",
+          "json": "imported"
+        },
+        {
+          "go": "uint64",
+          "json": "skipped"
+        },
+        {
+          "go": "uint64",
+          "json": "total"
+        },
+        {
+          "go": "string",
+          "json": "source"
+        },
+        {
+          "go": "bool",
+          "json": "dry_run"
+        }
+      ],
+      "name": "BrowserCredentialsImportResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "ref",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "selector",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "role",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "text",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "url",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "ts"
+        }
+      ],
+      "name": "ElementPick"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "action"
+        },
+        {
+          "go": "string",
+          "json": "target",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "result"
+        },
+        {
+          "go": "int64",
+          "json": "ts"
+        }
+      ],
+      "name": "BrowserAction"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "guid",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "url",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "filename",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "path",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "received_bytes"
+        },
+        {
+          "go": "int64",
+          "json": "total_bytes"
+        },
+        {
+          "go": "string",
+          "json": "state"
+        },
+        {
+          "go": "int64",
+          "json": "ts"
+        }
+      ],
+      "name": "BrowserDownloadEvent"
+    },
+    {
+      "fields": [
+        {
+          "go": "int64",
+          "json": "message_count"
+        },
+        {
+          "go": "int64",
+          "json": "estimated"
+        }
+      ],
+      "name": "ContextStats"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        },
+        {
+          "go": "string",
+          "json": "content"
+        },
+        {
+          "go": "int64",
+          "json": "token_budget"
+        }
+      ],
+      "name": "PinDocumentRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "path"
+        }
+      ],
+      "name": "ExportContextRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "int64",
+          "json": "rounds"
+        },
+        {
+          "go": "*int64",
+          "json": "input_tokens",
+          "o": 1
+        },
+        {
+          "go": "*int64",
+          "json": "reply_tokens",
+          "o": 1
+        },
+        {
+          "go": "*int64",
+          "json": "cached_input_tokens",
+          "o": 1
+        },
+        {
+          "go": "*int64",
+          "json": "total_tokens",
+          "o": 1
+        },
+        {
+          "go": "*float64",
+          "json": "cost_usd",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "unknown_usage_rounds"
+        },
+        {
+          "go": "int64",
+          "json": "unknown_cost_rounds"
+        }
+      ],
+      "name": "UsageSummary"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "time",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "model",
+          "o": 1
+        },
+        {
+          "go": "*int64",
+          "json": "input_tokens",
+          "o": 1
+        },
+        {
+          "go": "*int64",
+          "json": "reply_tokens",
+          "o": 1
+        },
+        {
+          "go": "*int64",
+          "json": "cached_input_tokens",
+          "o": 1
+        },
+        {
+          "go": "*int64",
+          "json": "total_tokens",
+          "o": 1
+        },
+        {
+          "go": "*float64",
+          "json": "cost_usd",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "usage_known"
+        },
+        {
+          "go": "bool",
+          "json": "cost_known"
+        }
+      ],
+      "name": "CostItem"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "value"
+        }
+      ],
+      "name": "NetworkHeader"
+    },
+    {
+      "fields": [
+        {
+          "go": "[PluginMeta]",
+          "json": "plugin"
+        }
+      ],
+      "name": "PluginManifest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "version",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "description",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "author",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "permissions",
+          "o": 1
+        }
+      ],
+      "name": "PluginMeta"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "version"
+        },
+        {
+          "go": "bool",
+          "json": "installed"
+        },
+        {
+          "go": "bool",
+          "json": "mcp_registered"
+        },
+        {
+          "go": "[]string",
+          "json": "skills_installed"
+        },
+        {
+          "go": "string",
+          "json": "path"
+        }
+      ],
+      "name": "PluginInstallResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "description",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "version",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "author",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "permissions",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "enabled"
+        },
+        {
+          "go": "string",
+          "json": "source",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "path",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "mcp_server_name",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "skills",
+          "o": 1
+        }
+      ],
+      "name": "PluginDetail"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "description",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "version",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "author",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "source",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "permissions",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "tags",
+          "o": 1
+        },
+        {
+          "go": "*uint64",
+          "json": "stars",
+          "o": 1
+        }
+      ],
+      "name": "PluginIndexEntry"
+    },
+    {
+      "fields": [
+        {
+          "go": "[PluginIndexEntry]",
+          "json": "results"
+        },
+        {
+          "go": "int",
+          "json": "total"
+        },
+        {
+          "go": "string",
+          "json": "index_url"
+        }
+      ],
+      "name": "PluginSearchResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "uint64",
+          "json": "id"
+        },
+        {
+          "go": "string",
+          "json": "started_at"
+        },
+        {
+          "go": "uint64",
+          "json": "duration_ms"
+        },
+        {
+          "go": "string",
+          "json": "method"
+        },
+        {
+          "go": "string",
+          "json": "url"
+        },
+        {
+          "go": "bool",
+          "json": "streaming"
+        },
+        {
+          "go": "*uint16",
+          "json": "status",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "error",
+          "o": 1
+        },
+        {
+          "go": "[NetworkHeader]",
+          "json": "request_headers"
+        },
+        {
+          "go": "string",
+          "json": "request_body"
+        },
+        {
+          "go": "string",
+          "json": "response_body"
+        },
+        {
+          "go": "*uint64",
+          "json": "stream_blocks",
+          "o": 1
+        }
+      ],
+      "name": "NetworkRecord"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        },
+        {
+          "go": "string",
+          "json": "file",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "created_at",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "summary",
+          "o": 1
+        }
+      ],
+      "name": "VersionItem"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        }
+      ],
+      "name": "VersionIDRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "file"
+        }
+      ],
+      "name": "VersionFileRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "content",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "status",
+          "o": 1
+        },
+        {
+          "go": "json.RawMessage",
+          "json": "priority",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "updated_at",
+          "o": 1
+        }
+      ],
+      "name": "TodoItem"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "task_id"
+        }
+      ],
+      "name": "TaskIDRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "execution_mode",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "sandbox_mode",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "reasoning_level",
+          "o": 1
+        }
+      ],
+      "name": "ModeSnapshot"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "mode"
+        }
+      ],
+      "name": "SetModeRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "api_base",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "api_key_masked",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "model",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "source",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "active"
+        },
+        {
+          "go": "bool",
+          "json": "supports_reasoning_effort"
+        },
+        {
+          "go": "bool",
+          "json": "supports_vision"
+        },
+        {
+          "go": "bool",
+          "json": "supports_tools"
+        },
+        {
+          "go": "[]string",
+          "json": "reasoning_levels"
+        },
+        {
+          "go": "string",
+          "json": "provider_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "format",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "preset_id",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "context_window",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "edit_kind",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "can_edit"
+        },
+        {
+          "go": "bool",
+          "json": "can_delete"
+        }
+      ],
+      "name": "ModelConfig"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        },
+        {
+          "go": "string",
+          "json": "name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "website",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "api_key_env",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "default_api_base",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "code_plan_api_base",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "claude_api_base",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "has_code_plan"
+        },
+        {
+          "go": "bool",
+          "json": "has_claude_code"
+        },
+        {
+          "go": "[]string",
+          "json": "default_models",
+          "o": 1
+        }
+      ],
+      "name": "ModelProviderOption"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        },
+        {
+          "go": "string",
+          "json": "name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "provider_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "model_name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "plan",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "format",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "api_type",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "context_window"
+        },
+        {
+          "go": "[]string",
+          "json": "tags",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "description",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "supports_reasoning_effort"
+        },
+        {
+          "go": "bool",
+          "json": "supports_vision"
+        },
+        {
+          "go": "bool",
+          "json": "supports_image_generation"
+        },
+        {
+          "go": "bool",
+          "json": "supports_video_generation"
+        },
+        {
+          "go": "bool",
+          "json": "supports_speech_synthesis"
+        },
+        {
+          "go": "bool",
+          "json": "supports_tools"
+        },
+        {
+          "go": "[]string",
+          "json": "reasoning_levels",
+          "o": 1
+        },
+        {
+          "go": "[PlanModel]",
+          "json": "plan_models",
+          "o": 1
+        },
+        {
+          "go": "[McpServerConfig]",
+          "json": "bundled_mcp",
+          "o": 1
+        }
+      ],
+      "name": "ModelPresetOption"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "model_id"
+        },
+        {
+          "go": "string",
+          "json": "label"
+        },
+        {
+          "go": "int64",
+          "json": "context_window"
+        },
+        {
+          "go": "bool",
+          "json": "supports_reasoning_effort",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "supports_vision",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "supports_tools",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "reasoning_levels",
+          "o": 1
+        }
+      ],
+      "name": "PlanModel"
+    },
+    {
+      "fields": [
+        {
+          "go": "[ModelProviderOption]",
+          "json": "providers",
+          "o": 1
+        },
+        {
+          "go": "[ModelPresetOption]",
+          "json": "presets",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "allow_custom_provider"
+        },
+        {
+          "go": "bool",
+          "json": "allow_custom_model"
+        }
+      ],
+      "name": "ModelCatalogState"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        },
+        {
+          "go": "string",
+          "json": "api_base",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "api_key",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "model"
+        }
+      ],
+      "name": "UpsertModelRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "original_name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "mode"
+        },
+        {
+          "go": "string",
+          "json": "provider_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "preset_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "api_key",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "api_base",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "model",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "supports_reasoning_effort",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "supports_vision",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "supports_tools",
+          "o": 1
+        }
+      ],
+      "name": "ModelSaveRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "name"
+        }
+      ],
+      "name": "ModelNameRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "bool",
+          "json": "ok"
+        },
+        {
+          "go": "uint64",
+          "json": "latency_ms"
+        },
+        {
+          "go": "string",
+          "json": "message",
+          "o": 1
+        }
+      ],
+      "name": "ModelVerifyResponse"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "session_id",
+          "o": 1
+        }
+      ],
+      "name": "ModelContextRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "session_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "global_default_name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "workspace_model_name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "session_model_name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "resolved_model_name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "resolved_scope",
+          "o": 1
+        }
+      ],
+      "name": "ModelContextSnapshot"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root"
+        },
+        {
+          "go": "string",
+          "json": "model_name"
+        }
+      ],
+      "name": "SetWorkspaceModelRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root"
+        }
+      ],
+      "name": "ClearWorkspaceModelRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id"
+        },
+        {
+          "go": "string",
+          "json": "model_name"
+        }
+      ],
+      "name": "SetSessionModelRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id"
+        }
+      ],
+      "name": "ClearSessionModelRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        },
+        {
+          "go": "string",
+          "json": "kind",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "platform",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "repo_url",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "owner",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "repo",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "default_branch",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "branch",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "account",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "local_path",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "active"
+        },
+        {
+          "go": "bool",
+          "json": "exists"
+        },
+        {
+          "go": "string",
+          "json": "last_used_at",
+          "o": 1
+        }
+      ],
+      "name": "RemoteWorkspace"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id_or_path"
+        }
+      ],
+      "name": "RemoteWorkspaceRef"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "mode",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "platform",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "repo_url",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "owner",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "repo",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "default_branch",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "working_branch",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "local_path",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "account_login",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "account_name",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "updated_at",
+          "o": 1
+        }
+      ],
+      "name": "RemoteRepoState"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "GitStatusRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "GitSummaryRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "branch",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "upstream",
+          "o": 1
+        },
+        {
+          "go": "uint32",
+          "json": "ahead"
+        },
+        {
+          "go": "uint32",
+          "json": "behind"
+        },
+        {
+          "go": "[GitChange]",
+          "json": "changes",
+          "o": 1
+        }
+      ],
+      "name": "GitSummaryResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "path"
+        },
+        {
+          "go": "string",
+          "json": "state"
+        },
+        {
+          "go": "bool",
+          "json": "staged"
+        }
+      ],
+      "name": "GitChange"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "path",
+          "o": 1
+        }
+      ],
+      "name": "GitDiffRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "text"
+        }
+      ],
+      "name": "GitTextResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "GitBranchesRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "current",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "branches",
+          "o": 1
+        }
+      ],
+      "name": "GitBranchesResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "limit"
+        },
+        {
+          "go": "bool",
+          "json": "oneline"
+        },
+        {
+          "go": "bool",
+          "json": "graph"
+        },
+        {
+          "go": "bool",
+          "json": "all"
+        },
+        {
+          "go": "string",
+          "json": "path",
+          "o": 1
+        }
+      ],
+      "name": "GitLogRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "hash",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "message",
+          "o": 1
+        }
+      ],
+      "name": "GitLogEntry"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "branch",
+          "o": 1
+        },
+        {
+          "go": "[GitLogEntry]",
+          "json": "entries",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "text"
+        }
+      ],
+      "name": "GitLogResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "revision",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "path",
+          "o": 1
+        }
+      ],
+      "name": "GitShowRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "branch",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "revision",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "text"
+        }
+      ],
+      "name": "GitShowResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "GitReposRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "[GitRepoSummary]",
+          "json": "repos",
+          "o": 1
+        }
+      ],
+      "name": "GitReposResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "root"
+        },
+        {
+          "go": "string",
+          "json": "name",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "primary"
+        },
+        {
+          "go": "GitSummaryResult",
+          "json": "summary"
+        }
+      ],
+      "name": "GitRepoSummary"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "paths",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "all"
+        },
+        {
+          "go": "bool",
+          "json": "unstage"
+        }
+      ],
+      "name": "GitStageRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "message",
+          "o": 1
+        }
+      ],
+      "name": "GitCommitRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "hash",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "branch",
+          "o": 1
+        }
+      ],
+      "name": "GitCommitResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "GitPushRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "status",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "branch",
+          "o": 1
+        },
+        {
+          "go": "[]string",
+          "json": "conflicts",
+          "o": 1
+        }
+      ],
+      "name": "GitPushResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "GitAbortMergeRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "GitSuggestMessageRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "message",
+          "o": 1
+        }
+      ],
+      "name": "GitSuggestMessageResult"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "path"
+        },
+        {
+          "go": "string",
+          "json": "status",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "additions"
+        },
+        {
+          "go": "int64",
+          "json": "deletions"
+        },
+        {
+          "go": "string",
+          "json": "diff"
+        },
+        {
+          "go": "bool",
+          "json": "truncated"
+        }
+      ],
+      "name": "ChangedFile"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "workspace_path",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "created_at",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "summary",
+          "o": 1
+        },
+        {
+          "go": "int64",
+          "json": "additions"
+        },
+        {
+          "go": "int64",
+          "json": "deletions"
+        },
+        {
+          "go": "bool",
+          "json": "truncated"
+        },
+        {
+          "go": "[ChangedFile]",
+          "json": "files",
+          "o": 1
+        }
+      ],
+      "name": "MessageChangeSet"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "path"
+        },
+        {
+          "go": "bool",
+          "json": "existed_before"
+        },
+        {
+          "go": "string",
+          "json": "content_base64",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "content_hash",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "post_hash",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "unsupported_reason",
+          "o": 1
+        }
+      ],
+      "name": "RollbackFileSnapshot"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "user_message_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "assistant_message_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "workspace_path",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "created_at",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "unsupported"
+        },
+        {
+          "go": "string",
+          "json": "unsupported_reason",
+          "o": 1
+        },
+        {
+          "go": "[RollbackFileSnapshot]",
+          "json": "files",
+          "o": 1
+        }
+      ],
+      "name": "TurnRollback"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_path",
+          "o": 1
+        },
+        {
+          "go": "map[string]any",
+          "json": "baseline_file_snapshots",
+          "o": 1
+        }
+      ],
+      "name": "RunningBaseline"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        }
+      ],
+      "name": "WorkspaceChangesRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "user_message_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "assistant_message_id",
+          "o": 1
+        },
+        {
+          "go": "MessageChangeSet",
+          "json": "change_set"
+        },
+        {
+          "go": "*RunningBaseline",
+          "json": "running_baseline",
+          "o": 1
+        }
+      ],
+      "name": "BuildRollbackRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "workspace_root",
+          "o": 1
+        },
+        {
+          "go": "[TurnRollback]",
+          "json": "rollbacks"
+        }
+      ],
+      "name": "ApplyRollbackRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "draft",
+          "o": 1
+        }
+      ],
+      "name": "PredictNextUserMessageRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "draft",
+          "o": 1
+        }
+      ],
+      "name": "RefineInputRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "bool",
+          "json": "has_plan"
+        },
+        {
+          "go": "string",
+          "json": "content",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "workspace_current",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "user_latest",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "user_snapshot",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "updated_at",
+          "o": 1
+        }
+      ],
+      "name": "PlanSnapshot"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "scope",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "path",
+          "o": 1
+        },
+        {
+          "go": "bool",
+          "json": "exists"
+        },
+        {
+          "go": "string",
+          "json": "content",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "summary",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "updated_at",
+          "o": 1
+        }
+      ],
+      "name": "MemoryDocument"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "key",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "root",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "name",
+          "o": 1
+        },
+        {
+          "go": "[MemoryDocument]",
+          "json": "documents"
+        }
+      ],
+      "name": "ProjectMemorySummary"
+    },
+    {
+      "fields": [
+        {
+          "go": "[MemoryDocument]",
+          "json": "documents",
+          "o": 1
+        },
+        {
+          "go": "[ProjectMemorySummary]",
+          "json": "projects",
+          "o": 1
+        }
+      ],
+      "name": "MemorySnapshot"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "scope",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "content"
+        }
+      ],
+      "name": "SaveMemoryRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "title",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "content",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "source_session_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "source_message_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "source_session_title",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "workspace_path",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "created_at",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "updated_at",
+          "o": 1
+        }
+      ],
+      "name": "CaptureEntry"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "title"
+        },
+        {
+          "go": "string",
+          "json": "content"
+        },
+        {
+          "go": "string",
+          "json": "source_session_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "source_message_id",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "source_session_title",
+          "o": 1
+        },
+        {
+          "go": "string",
+          "json": "workspace_path",
+          "o": 1
+        }
+      ],
+      "name": "CaptureSaveRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        }
+      ],
+      "name": "CaptureDeleteRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "id"
+        }
+      ],
+      "name": "RoleRef"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "session_id",
+          "o": 1
+        }
+      ],
+      "name": "SessionRef"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "host_id"
+        },
+        {
+          "go": "string",
+          "json": "epoch"
+        },
+        {
+          "go": "string",
+          "json": "chat_session_id"
+        },
+        {
+          "go": "string",
+          "json": "desktop_session_id"
+        },
+        {
+          "go": "string",
+          "json": "mode"
+        },
+        {
+          "go": "[]string",
+          "json": "capabilities"
+        }
+      ],
+      "name": "DesktopHostRegisterRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "host_id"
+        },
+        {
+          "go": "string",
+          "json": "epoch"
+        }
+      ],
+      "name": "DesktopHostUnregisterRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "host_id"
+        },
+        {
+          "go": "string",
+          "json": "epoch"
+        },
+        {
+          "go": "string",
+          "json": "chat_session_id"
+        },
+        {
+          "go": "string",
+          "json": "desktop_session_id"
+        }
+      ],
+      "name": "DesktopHostStatusRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "bool",
+          "json": "enabled"
+        }
+      ],
+      "name": "DesktopHostStatus"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "request_id"
+        },
+        {
+          "go": "string",
+          "json": "host_id"
+        },
+        {
+          "go": "string",
+          "json": "epoch"
+        },
+        {
+          "go": "string",
+          "json": "chat_session_id"
+        },
+        {
+          "go": "string",
+          "json": "turn_id"
+        },
+        {
+          "go": "string",
+          "json": "desktop_session_id"
+        },
+        {
+          "go": "string",
+          "json": "action"
+        },
+        {
+          "go": "map[string]any",
+          "json": "args"
+        },
+        {
+          "go": "uint64",
+          "json": "deadline_unix_ms"
+        }
+      ],
+      "name": "DesktopHostCommand"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "request_id"
+        },
+        {
+          "go": "string",
+          "json": "host_id"
+        },
+        {
+          "go": "string",
+          "json": "epoch"
+        },
+        {
+          "go": "string",
+          "json": "chat_session_id"
+        },
+        {
+          "go": "string",
+          "json": "turn_id"
+        },
+        {
+          "go": "string",
+          "json": "desktop_session_id"
+        },
+        {
+          "go": "bool",
+          "json": "ok"
+        },
+        {
+          "go": "any",
+          "json": "result"
+        },
+        {
+          "go": "string",
+          "json": "error"
+        }
+      ],
+      "name": "DesktopHostRespondRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "request_id"
+        },
+        {
+          "go": "string",
+          "json": "host_id"
+        },
+        {
+          "go": "string",
+          "json": "epoch"
+        },
+        {
+          "go": "string",
+          "json": "chat_session_id"
+        },
+        {
+          "go": "string",
+          "json": "turn_id"
+        },
+        {
+          "go": "string",
+          "json": "desktop_session_id"
+        },
+        {
+          "go": "string",
+          "json": "reason"
+        }
+      ],
+      "name": "DesktopHostCancel"
+    }
+  ],
+  "version": 1
+}

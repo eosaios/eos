@@ -1981,8 +1981,9 @@ func stdioNewTurnID() string {
 }
 
 func stdioIsTerminalCoreTurnEvent(event Event) bool {
-	switch event.Kind() {
-	case "request.completed", "request.failed":
+	// Normalize the terminal predicate only; forwarded events stay unchanged.
+	switch protocol.NormalizeEventType(protocol.EventType(event.Kind())) {
+	case protocol.EventTypeRequestDone, protocol.EventTypeRequestFailed, "request.done":
 		return true
 	default:
 		return false

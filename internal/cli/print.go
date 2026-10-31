@@ -16,11 +16,13 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,6 +36,25 @@ import (
 )
 
 const rustCoreStoreDirEnv = "EOS_CORE_STORE_DIR"
+
+// printTurnTimeoutEnv 允许测试/运维收紧单 turn 等待上限（秒）。
+// 默认 45s：够正常模型往返，又比 E2E 的 120s 子进程预算短，保证超时诊断
+// 能经 defer writePrintError 落盘，而不是被外部 kill 成空输出。
+const printTurnTimeoutEnv = "EOS_PRINT_TURN_TIMEOUT_SEC"
+
+func printTurnTimeout() time.Duration {
+	// 默认值刻意短于外层 10 分钟总预算：专治模型故障无终态挂死。
+	const defaultTimeout = 45 * time.Second
+	raw := strings.TrimSpace(os.Getenv(printTurnTimeoutEnv))
+	if raw == "" {
+		return defaultTimeout
+	}
+	sec, err := strconv.Atoi(raw)
+	if err != nil || sec <= 0 {
+		return defaultTimeout
+	}
+	return time.Duration(sec) * time.Second
+}
 
 // PrintOptions holds options for headless print mode
 type PrintOptions struct {
@@ -63,10 +84,17 @@ type PrintResult struct {
 // Production path: starts an eos-core sidecar via engineprovider.Select (ModeAuto
 // → Rust-only). On Rust startup failure or missing required methods, returns
 // an error; does NOT silently fall back to Go sharedcore.
-func RunPrintMode(opts PrintOptions) error {
+func RunPrintMode(opts PrintOptions) (runErr error) {
 	if opts.OutputFormat == "" {
 		opts.OutputFormat = "text"
 	}
+	// Every failure, including resolution and startup failures, uses the same
+	// output contract. Return the error as well so the CLI entry owns exit status.
+	defer func() {
+		if runErr != nil {
+			writePrintError(opts.OutputFormat, runErr)
+		}
+	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -83,20 +111,30 @@ func RunPrintMode(opts PrintOptions) error {
 		return applyErr
 	}
 
+	// 单 turn 预算：内核若在模型 5xx/断流时不发终态，AwaitTurn 会挂死到
+	// 外层 10 分钟。这里单独收紧，超时后走 writePrintError，避免用户
+	// （和 E2E）只看到被外部 SIGKILL 的空 stdout/stderr。
+	turnCtx, turnCancel := context.WithTimeout(ctx, printTurnTimeout())
+	defer turnCancel()
+
 	// stream-json 走真增量流式：订阅 turn 事件流，每个 item.* / 生命周期事件
 	// 原样吐出一行 JSONL（exec --json 的 JSONL 契约），
 	// 不走 runSingleTurn 的"累积完整内容后统一输出"伪流。
 	if strings.EqualFold(strings.TrimSpace(opts.OutputFormat), "stream-json") {
-		if err := runStreamJSONTurn(ctx, engine, opts.Query, startedAt, opts.ModelOverride); err != nil {
-			writePrintError(opts.OutputFormat, err)
+		if err := runStreamJSONTurn(turnCtx, engine, opts.Query, startedAt, opts.ModelOverride); err != nil {
+			if errors.Is(err, context.DeadlineExceeded) {
+				return fmt.Errorf("turn timed out after %s waiting for model/core terminal event", printTurnTimeout())
+			}
 			return err
 		}
 		return nil
 	}
 
-	content, err := runSingleTurn(ctx, engine, opts.Query, opts.OutputFormat, opts.ModelOverride)
+	content, err := runSingleTurn(turnCtx, engine, opts.Query, opts.OutputFormat, opts.ModelOverride)
 	if err != nil {
-		writePrintError(opts.OutputFormat, err)
+		if errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("turn timed out after %s waiting for model/core terminal event", printTurnTimeout())
+		}
 		return err
 	}
 

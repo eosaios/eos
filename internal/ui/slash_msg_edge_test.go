@@ -52,15 +52,15 @@ func TestModeInputValidators(t *testing.T) {
 
 func TestNormalizePlanPromptStyle(t *testing.T) {
 	cases := map[string]string{
-		"":           "concise",
-		"  ":         "concise",
-		"CONCISE":    "concise",
-		"detailed":   "detailed",
-		"custom:x":   "custom:x",
-		"custom:":    "concise",
-		"custom:  ":  "concise",
-		"whatever":   "custom:whatever",
-		"My Style":   "custom:My Style",
+		"":          "concise",
+		"  ":        "concise",
+		"CONCISE":   "concise",
+		"detailed":  "detailed",
+		"custom:x":  "custom:x",
+		"custom:":   "concise",
+		"custom:  ": "concise",
+		"whatever":  "custom:whatever",
+		"My Style":  "custom:My Style",
 	}
 	for in, want := range cases {
 		if got := normalizePlanPromptStyle(in); got != want {
@@ -384,14 +384,14 @@ func TestEventHelpers(t *testing.T) {
 
 func TestAgentEventKind(t *testing.T) {
 	cases := map[string]string{
-		"agent.task":                "dispatch",
+		"agent.task":                             "dispatch",
 		string(protocol.EventTypeAgentStarted):   "dispatch",
 		string(protocol.EventTypeAgentProgress):  "update",
-		"agent.final":               "result",
+		"agent.final":                            "result",
 		string(protocol.EventTypeAgentDone):      "result",
 		string(protocol.EventTypeAgentFailed):    "failed",
 		string(protocol.EventTypeAgentCancelled): "cancelled",
-		"unknown":                   "",
+		"unknown":                                "",
 	}
 	for in, want := range cases {
 		if got := agentEventKind(in); got != want {

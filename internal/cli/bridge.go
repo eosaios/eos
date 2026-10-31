@@ -67,12 +67,12 @@ type bridgeManifestOptions struct {
 // BridgeManifest 是 eos bridge manifest 的 JSON 输出结构。
 // 字段语义见 internal/docs/serve/IDE_BRIDGE.md。
 type BridgeManifest struct {
-	Command         string         `json:"command"`
-	Transport       string         `json:"transport"`
-	ProtocolVersion string         `json:"protocol_version"`
-	ServerName      string         `json:"server_name"`
-	Methods         []string       `json:"methods"`
-	Capabilities    map[string]any `json:"capabilities,omitempty"`
+	Command         string            `json:"command"`
+	Transport       string            `json:"transport"`
+	ProtocolVersion string            `json:"protocol_version"`
+	ServerName      string            `json:"server_name"`
+	Methods         []string          `json:"methods"`
+	Capabilities    map[string]any    `json:"capabilities,omitempty"`
 	Defaults        map[string]string `json:"defaults"`
 }
 

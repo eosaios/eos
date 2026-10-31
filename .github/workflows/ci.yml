@@ -17,6 +17,7 @@ jobs:
         with:
           # golangci-lint --new-from-rev=HEAD~1 需要至少两个提交的历史
           fetch-depth: 0
+          lfs: true
       - name: Install system dependencies
         # golang.design/x/clipboard 在 Linux 通过 cgo 绑定 X11 剪贴板，
         # 编译需要 X11 头文件；eos-cli 虽仅 Windows 分发，但 Linux job
@@ -42,6 +43,10 @@ jobs:
         with:
           version: v2.13.2
           args: --new-from-rev=HEAD~1
+      # Contract CT-01 读 third_party/eos-core-protocol/schema.json（仓库内锚点）。
+      # 不在此 job 检出完整 eos-core-rs：actions/checkout 的 path 必须在
+      # GITHUB_WORKSPACE 下，而放进 module root 会触发
+      # TestClosedRustCoreSourceIsNotVendored。
       - name: Test
         run: go test ./... -timeout 300s
       - name: Verify packaged and embedded CLI runtime
@@ -58,6 +63,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # aarch64-apple-darwin/eos-core 走 Git LFS；默认 checkout 只留下
+          # pointer，go:embed / VerifyBinary 会对上错误的 sha256。
+          lfs: true
       - uses: actions/setup-go@v6
         with:
           go-version: "1.25"
@@ -75,6 +84,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          lfs: true
       - uses: actions/setup-go@v6
         with:
           go-version: "1.25"

@@ -33,7 +33,7 @@ func TestAwaitTurn(t *testing.T) {
 		t.Fatal("start err")
 	}
 
-	// events closed after start done → nil
+	// events closed without a terminal → explicit error
 	start3 := make(chan TurnStartResult, 1)
 	start3 <- TurnStartResult{}
 	events3 := make(chan protocol.Envelope)
@@ -44,12 +44,11 @@ func TestAwaitTurn(t *testing.T) {
 	}()
 	select {
 	case err := <-done3:
-		if err != nil {
-			t.Fatal(err)
+		if err == nil {
+			t.Fatal("closed stream without terminal was reported successful")
 		}
 	case <-time.After(2 * time.Second):
-		// 先消费 start 再关 events 可正常结束；此处只要求不永久挂死
-		t.Log("AwaitTurn with closed events may busy-wait if start not consumed first")
+		t.Fatal("closed events and completed start must not hang")
 	}
 
 	// sink stop
