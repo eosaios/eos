@@ -221,23 +221,31 @@ func (m *Manager) Status(ctx context.Context) (State, error) {
 	}
 	if time.Now().Add(30 * time.Second).After(sess.ExpiresAt) {
 		if err := m.refresh(ctx, &sess); err != nil {
-			return State{}, err
+			return identitySyncFailure(sess, err)
 		}
 	}
 	state, err := m.profile(ctx, sess.Access)
 	var apiErr *apiError
 	if errors.As(err, &apiErr) && apiErr.Status == 401 {
 		if err = m.refresh(ctx, &sess); err != nil {
-			return State{}, err
+			return identitySyncFailure(sess, err)
 		}
 		state, err = m.profile(ctx, sess.Access)
 	}
-	if err != nil && retryableProfileSync(err) {
-		// Ticket exchange already established and persisted this session. As in
-		// Todo, a profile network failure is a visible sync issue, not sign-out.
+	if err != nil {
+		return identitySyncFailure(sess, err)
+	}
+	return state, nil
+}
+
+// Cached identity is not an authorization grant. Only a definitive refresh
+// rejection removes the stored session; a network outage must not look like
+// sign-out after relaunch merely because the access token needs rotation.
+func identitySyncFailure(sess session, err error) (State, error) {
+	if retryableProfileSync(err) {
 		return State{LoggedIn: true, Email: sess.Email, ProfileError: "ACCOUNT_PROFILE_SYNC_FAILED"}, nil
 	}
-	return state, err
+	return State{}, err
 }
 func (m *Manager) refresh(ctx context.Context, s *session) error {
 	var next session

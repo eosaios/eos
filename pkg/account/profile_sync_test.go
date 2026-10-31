@@ -2,9 +2,11 @@ package account
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"testing"
+	"time"
 )
 
 func TestEstablishedSessionSurvivesProfileNetworkFailure(t *testing.T) {
@@ -22,6 +24,58 @@ func TestEstablishedSessionSurvivesProfileNetworkFailure(t *testing.T) {
 		if err != nil || state != want || store.value != before {
 			t.Fatalf("lost established session: %+v %v", state, err)
 		}
+	}
+}
+
+func TestRelaunchRetainsExpiredIdentityDuringTransientRefreshFailure(t *testing.T) {
+	for _, expired := range []bool{false, true} {
+		t.Run(map[bool]string{false: "profile-401", true: "expired-before-relaunch"}[expired], func(t *testing.T) {
+			offline := true
+			m, store := fixture(t, func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/api/v1/auth/refresh" {
+					if offline {
+						w.WriteHeader(503)
+						reply(w, nil)
+						return
+					}
+					reply(w, map[string]any{"access_token": "rotated", "refresh_token": "rotated-refresh", "access_token_expires_in": 3600})
+					return
+				}
+				if r.Header.Get("Authorization") != "Bearer rotated" {
+					w.WriteHeader(401)
+					reply(w, nil)
+					return
+				}
+				reply(w, map[string]string{"user_id": "user", "email": "fixture@example.com", "display_name": "Fixture"})
+			})
+			if err := m.persist(session{Access: "old", Refresh: "refresh", ExpiresIn: 3600, Email: "fixture@example.com"}); err != nil {
+				t.Fatal(err)
+			}
+			if expired {
+				var s session
+				if err := json.Unmarshal([]byte(store.value), &s); err != nil {
+					t.Fatal(err)
+				}
+				s.ExpiresAt = time.Now().Add(-time.Hour)
+				raw, err := json.Marshal(s)
+				if err != nil {
+					t.Fatal(err)
+				}
+				store.value = string(raw)
+			}
+			before := store.value
+			restored := &Manager{client: m.client, name: m.name, store: store}
+			state, err := restored.Status(context.Background())
+			want := State{LoggedIn: true, Email: "fixture@example.com", ProfileError: "ACCOUNT_PROFILE_SYNC_FAILED"}
+			if err != nil || state != want || store.value != before {
+				t.Fatalf("offline relaunch: %+v %v", state, err)
+			}
+			offline = false
+			state, err = restored.Status(context.Background())
+			if err != nil || state != (State{LoggedIn: true, UserID: "user", Email: "fixture@example.com", DisplayName: "Fixture"}) || store.value == before {
+				t.Fatalf("reconnected: %+v %v", state, err)
+			}
+		})
 	}
 }
 

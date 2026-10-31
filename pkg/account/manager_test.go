@@ -159,6 +159,10 @@ func TestRefreshRotationAndFailure(t *testing.T) {
 				if s.Refresh != "new-refresh" {
 					t.Fatal("rotation not persisted")
 				}
+			} else if mode == "network" {
+				if err != nil || state != (State{LoggedIn: true, ProfileError: "ACCOUNT_PROFILE_SYNC_FAILED"}) || store.value != before {
+					t.Fatalf("transient refresh lost stored identity: %+v %v", state, err)
+				}
 			} else {
 				if err == nil {
 					t.Fatal("expected failure")
