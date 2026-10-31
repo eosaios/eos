@@ -47,7 +47,7 @@ func (r release) channel() (Channel, error) {
 	return channel, nil
 }
 
-func readReleaseJSON(ctx context.Context, endpoint string, client *http.Client, dest any) error {
+func readReleaseJSON(ctx context.Context, endpoint string, client *http.Client, dest any) (resultErr error) {
 	ctx, cancel := context.WithTimeout(ctx, checkTimeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
@@ -63,7 +63,11 @@ func readReleaseJSON(ctx context.Context, endpoint string, client *http.Client, 
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil && resultErr == nil {
+			resultErr = err
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("release metadata HTTP %d (GitHub rate limits or connectivity may prevent checking)", resp.StatusCode)
 	}

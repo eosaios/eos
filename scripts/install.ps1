@@ -79,7 +79,7 @@ try {
         } else {
             $best = $null
             for ($page = 1; $page -le 100; $page++) {
-                $releases = @(Get-ReleaseMetadata "${api}?per_page=100&page=$page")
+                $releases = Get-ReleaseMetadata "${api}?per_page=100&page=$page"
                 if ($releases.Count -eq 1 -and $releases[0] -and -not $releases[0].tag_name) { throw 'Beta 发布信息不是有效的发布列表' }
                 foreach ($release in $releases) {
                     if ((Get-PublishedChannel $release) -ne 'beta') { continue }
