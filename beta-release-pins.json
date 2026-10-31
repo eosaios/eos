@@ -1,0 +1,14 @@
+{
+  "channel": "beta",
+  "version": "v1.0.0-beta.38",
+  "core_source_commit": "a7def3fd3716782b91063c9f907436a74984fc6c",
+  "core_beta_commit": "c3c2b859354c2d21a48e9afab4b2fa21567be323",
+  "signed_sidecar_run": 41160051689,
+  "core_sha256": {
+    "aarch64-apple-darwin": "47aae2c4dce1b3d853e47426b18ca2ed7484047d64f74c7fc1a82a1d32b6017d",
+    "aarch64-unknown-linux-gnu": "3d6ddbefbfaf3dda3cb18975dabb1c5ccee6ca2b36adb6e19655dbc2e4401294",
+    "x86_64-apple-darwin": "50828e8c9557cf8f17f5c4e2aee3e1abf05ce26562a5ce71c07efe01c60a8d1f",
+    "x86_64-pc-windows-gnu": "5e6f9b56c31c882e2275444398c55c6873bda73b4761009db2fd50b641b39906",
+    "x86_64-unknown-linux-gnu": "0187095a1873cd132d3d800c2575c8385477a8d5f88fc4cefca1c47723070ede"
+  }
+}

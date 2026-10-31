@@ -20,11 +20,11 @@ on:
         required: true
         default: ""
       core_ref:
-        description: "eos-core-rs 构建 ref（默认 main）"
+        description: "内核提交；Beta 从冻结清单读取，正式默认 main"
         required: false
-        default: "main"
+        default: ""
       sidecar_run_id:
-        description: "复用本仓成功构建并签名的 sidecar 运行 ID（留空重新构建）"
+        description: "复用签名 sidecar 运行 ID（Beta 默认冻结清单，正式留空重建）"
         required: false
         default: ""
   push:
@@ -64,20 +64,25 @@ jobs:
           lfs: true
 
       - name: Validate release notes before building
+        id: release
         shell: bash
         env:
           RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
+          INPUT_CORE_REF: ${{ inputs.core_ref }}
+          INPUT_SIDECAR_RUN_ID: ${{ inputs.sidecar_run_id }}
         run: |
           set -euo pipefail
           [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]] || { echo "::error::invalid version"; exit 1; }
           test -s ".github/release-notes/$RELEASE_VERSION.md"
+          python3 scripts/verify_release_core.py --version "$RELEASE_VERSION" \
+            --core-ref "$INPUT_CORE_REF" --sidecar-run-id "$INPUT_SIDECAR_RUN_ID" >> "$GITHUB_OUTPUT"
 
       - name: Checkout eos-core-rs (private)
-        if: ${{ !inputs.sidecar_run_id }}
+        if: ${{ !steps.release.outputs.sidecar_run_id }}
         uses: actions/checkout@v4
         with:
           repository: eosaios/eos-core-rs
-          ref: ${{ inputs.core_ref || 'main' }}
+          ref: ${{ steps.release.outputs.core_ref }}
           token: ${{ secrets.EOS_CORE_PAT }}
           path: eos-core-rs
 
@@ -86,7 +91,7 @@ jobs:
           go-version: "1.25"
 
       - name: Install Rust target
-        if: ${{ !inputs.sidecar_run_id }}
+        if: ${{ !steps.release.outputs.sidecar_run_id }}
         run: rustup target add ${{ matrix.triple }}
 
       # X11 供 CLI Go 侧剪贴板；pipewire/drm/gbm/wayland/xdo 供内核 xcap
@@ -98,18 +103,18 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libx11-dev pkg-config libpipewire-0.3-dev libdrm-dev libgbm-dev libwayland-dev libxdo-dev libegl-dev
 
       - uses: Swatinem/rust-cache@v2
-        if: ${{ !inputs.sidecar_run_id }}
+        if: ${{ !steps.release.outputs.sidecar_run_id }}
         with:
           workspaces: eos-core-rs
           key: ${{ matrix.triple }}
 
       - name: Build sidecar (release)
-        if: ${{ !inputs.sidecar_run_id }}
+        if: ${{ !steps.release.outputs.sidecar_run_id }}
         working-directory: eos-core-rs
         run: cargo build --release --target ${{ matrix.triple }} -p eos-core-bin
 
       - name: Sign and package sidecar
-        if: ${{ !inputs.sidecar_run_id }}
+        if: ${{ !steps.release.outputs.sidecar_run_id }}
         shell: pwsh
         working-directory: eos-core-rs
         env:
@@ -132,11 +137,11 @@ jobs:
             -PrivateKeyPath scripts/eos-signing-key.pem
 
       - name: Verify reusable sidecar run
-        if: ${{ inputs.sidecar_run_id }}
+        if: ${{ steps.release.outputs.sidecar_run_id }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          SIDECAR_RUN_ID: ${{ inputs.sidecar_run_id }}
+          SIDECAR_RUN_ID: ${{ steps.release.outputs.sidecar_run_id }}
         run: |
           set -euo pipefail
           [[ "$SIDECAR_RUN_ID" =~ ^[0-9]+$ ]]
@@ -144,10 +149,10 @@ jobs:
           [ "$result" = success ] || { echo "::error::sidecar run did not succeed"; exit 1; }
 
       - name: Download signed sidecar
-        if: ${{ inputs.sidecar_run_id }}
+        if: ${{ steps.release.outputs.sidecar_run_id }}
         uses: actions/download-artifact@v4
         with:
-          run-id: ${{ inputs.sidecar_run_id }}
+          run-id: ${{ steps.release.outputs.sidecar_run_id }}
           github-token: ${{ github.token }}
           name: sidecar-${{ matrix.triple }}
           path: eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}
@@ -181,6 +186,9 @@ jobs:
           BIN="eos"; [ "$GOOS_T" = "windows" ] && BIN="eos.exe"
           STAGE="eos-cli_${VERSION}_${{ matrix.goos }}-${{ matrix.goarch }}"
           mkdir -p "dist/$STAGE/core/${{ matrix.triple }}"
+          python3 scripts/verify_release_core.py --version "$VERSION" \
+            --core-dir "eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}" \
+            --cli-commit "$COMMIT" --write-pair "dist/$STAGE/release-pair.json"
           # 目标三元组显式下发（native runner 上与宿主一致；darwin/amd64 为交叉）。
           export CGO_ENABLED=1 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }}
           if [ "${{ matrix.goos }}/${{ matrix.goarch }}" = "darwin/amd64" ]; then
