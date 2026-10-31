@@ -27,6 +27,8 @@ class Model(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        if hasattr(self.server, "models_seen"):
+            self.server.models_seen.append(request.get("model"))
         if self.path != "/v1/chat/completions":
             self.send_error(404)
             return
@@ -62,6 +64,7 @@ def verify(cli, core_dir):
     if hashlib.sha256((core_dir / manifest["binary"]).read_bytes()).hexdigest() != expected_hash:
         raise RuntimeError("archive core does not match its manifest")
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Model)
+    server.models_seen = []
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
@@ -122,7 +125,33 @@ def verify(cli, core_dir):
                     output = json.loads(run(executable, args, workspace, env))
                     if output.get("content") != ANSWER or "error" in output:
                         raise RuntimeError(f"{name}: wrong conversation result: {output}")
-                print(f"PASS {name}: sha256={expected_hash} exec/print explicit-null conversation", flush=True)
+                models = [{"name": entry, "model": wire, "provider": "custom",
+                           "api_base": env["EOS_API_BASE"], "api_key": "loopback-fixture-only",
+                           "format": "openai_chat", "enabled": True}
+                          for entry, wire in [("default", "default-wire"), ("requested", "requested-wire")]]
+                config = state / "model-config.json"
+                config.write_text(json.dumps({"models": models, "active_model": "default"}))
+                env["EOS_CONFIG_PATH"] = str(config)
+                (home / ".eos.json").write_text(config.read_text())
+                # Reuse one workspace/session: metadata must follow its override,
+                # and an explicit exec override must replace a previous print one.
+                for mode, entry in [("print", "requested"), ("exec", "default"), ("exec", "requested")]:
+                    server.models_seen.clear()
+                    args = (["--print", "hello", "--output-format", "json"] if mode == "print"
+                            else ["exec", "hello", "--output", "json", "--timeout", "30s"])
+                    output = json.loads(run(executable, args + ["--model", entry], workspace, env))
+                    expected_model = entry + "-wire"
+                    if (server.models_seen, output.get("model"), output.get("content")) != ([expected_model], expected_model, ANSWER):
+                        raise RuntimeError(f"{name} {mode} --model {entry}: wire={server.models_seen}, output={output}")
+                server.models_seen.clear()
+                events = [json.loads(line) for line in run(executable, ["exec", "hello", "--model", "default", "--output", "stream-json"], workspace, env).splitlines()]
+                if server.models_seen != ["default-wire"] or events[-1].get("type") != "turn.completed":
+                    raise RuntimeError(f"{name}: streaming exec ignored model override")
+                server.models_seen.clear()
+                rejected = subprocess.run([str(executable), "exec", "hello", "--model", "missing-model", "--output", "json"], cwd=workspace, env=env, capture_output=True, text=True, timeout=45)
+                if rejected.returncode == 0 or server.models_seen or not json.loads(rejected.stdout).get("error"):
+                    raise RuntimeError(f"{name}: unknown model did not fail before calling a provider")
+                print(f"PASS {name}: sha256={expected_hash} exec/print explicit-null and model override/metadata", flush=True)
     finally:
         server.shutdown()
         server.server_close()

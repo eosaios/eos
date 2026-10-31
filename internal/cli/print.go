@@ -142,7 +142,10 @@ func RunPrintMode(opts PrintOptions) (runErr error) {
 	if err != nil {
 		usage = coreapi.UsageSummary{}
 	}
-	modelName, _ := headless.ResolveActiveModelName(ctx, engine)
+	modelName, err := headless.ResolveCurrentModelName(ctx, engine)
+	if err != nil {
+		return err
+	}
 
 	result := PrintResult{
 		Content:     content,

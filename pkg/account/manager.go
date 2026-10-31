@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -37,6 +38,7 @@ type flow struct {
 	Deadline    time.Time
 	nextPoll    time.Time
 	rateStrikes int
+	ticket      string
 }
 type secretStore interface {
 	Get() (string, error)
@@ -125,6 +127,9 @@ func (m *Manager) Poll(ctx context.Context) (bool, error) {
 	if time.Now().Before(f.nextPoll) {
 		return false, nil
 	}
+	if f.ticket != "" {
+		return m.exchange(ctx, f)
+	}
 	var out struct {
 		Status string `json:"status"`
 		Ticket string `json:"ticket"`
@@ -147,21 +152,41 @@ func (m *Manager) Poll(ctx context.Context) (bool, error) {
 	if out.Status == "pending" {
 		return false, nil
 	}
-	m.flow = nil
 	if out.Status != "completed" || out.Ticket == "" {
+		m.flow = nil
 		return false, errors.New("ACCOUNT_LOGIN_EXPIRED")
 	}
+	f.ticket = out.Ticket
+	return m.exchange(ctx, f)
+}
+
+func (m *Manager) exchange(ctx context.Context, f *flow) (bool, error) {
+	// A slow status request must not spend the one-use ticket with only a
+	// fraction of the HTTP timeout left. The next poll has a fresh bridge
+	// budget and exchanges the retained ticket without another status GET.
+	// Check again for retained tickets: waiting on another account operation
+	// can also spend the caller's budget before it acquires the manager lock.
+	if deadline, ok := ctx.Deadline(); ok && time.Until(deadline) < m.client.http.Timeout {
+		slog.Info("account.login.exchange_deferred", "client", m.name)
+		return false, nil
+	}
+	// Never replay an exchange: the server may have consumed the ticket even
+	// when its response is lost. Surface a retryable-login action to the user.
+	m.flow = nil
 	host, err := os.Hostname()
 	if err != nil {
 		return false, err
 	}
 	var sess session
-	if err := m.client.call(ctx, "POST", "/api/v1/auth/desktop/ticket-exchange", map[string]string{"flow_id": f.ID, "ticket": out.Ticket, "device_name": m.name + " / " + host}, "", &sess); err != nil {
+	if err := m.client.call(ctx, "POST", "/api/v1/auth/desktop/ticket-exchange", map[string]string{"flow_id": f.ID, "ticket": f.ticket, "device_name": m.name + " / " + host}, "", &sess); err != nil {
+		slog.Warn("account.login.exchange_failed", "client", m.name, "error", err)
 		return false, err
 	}
 	if err := m.persist(sess); err != nil {
+		slog.Warn("account.login.persist_failed", "client", m.name)
 		return false, errors.New("ACCOUNT_STORAGE_ERROR")
 	}
+	slog.Info("account.login.completed", "client", m.name)
 	return true, nil
 }
 func (m *Manager) persist(s session) error {

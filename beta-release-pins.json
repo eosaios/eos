@@ -1,6 +1,6 @@
 {
   "channel": "beta",
-  "version": "v1.0.0-beta.38",
+  "version": "v1.0.0-beta.39",
   "core_source_commit": "a7def3fd3716782b91063c9f907436a74984fc6c",
   "core_beta_commit": "c3c2b859354c2d21a48e9afab4b2fa21567be323",
   "signed_sidecar_run": 41160051689,

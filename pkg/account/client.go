@@ -76,15 +76,16 @@ func (c *client) call(ctx context.Context, method, path string, body any, token 
 			Code string `json:"code"`
 		} `json:"error"`
 	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&env); err != nil {
-		return errors.New("ACCOUNT_RESPONSE_INVALID")
-	}
+	decodeErr := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&env)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 || env.Error != nil {
 		code := "ACCOUNT_REQUEST_FAILED"
 		if env.Error != nil {
 			code = env.Error.Code
 		}
 		return &apiError{resp.StatusCode, code}
+	}
+	if decodeErr != nil {
+		return errors.New("ACCOUNT_RESPONSE_INVALID")
 	}
 	if out == nil {
 		return nil

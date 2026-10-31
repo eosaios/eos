@@ -9,7 +9,7 @@ import (
 // waiting, not a terminal sign-in failure. Ticket exchange is never replayed.
 func retryableFlowPoll(err error) bool {
 	var apiErr *apiError
-	return errors.Is(err, errNetwork) || (errors.As(err, &apiErr) && apiErr.Status == 429)
+	return errors.Is(err, errNetwork) || (errors.As(err, &apiErr) && (apiErr.Status == 429 || apiErr.Status >= 500))
 }
 
 func retryableProfileSync(err error) bool {
