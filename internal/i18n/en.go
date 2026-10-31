@@ -625,10 +625,11 @@ var enText = map[string]string{
 
 	// eos update subcommand
 	"update.short":               "Check and install the latest version",
+	"update.channel":             "Update channel: %s\n",
 	"update.current_version":     "Current version: %s\n",
 	"update.checking":            "Checking for updates...",
 	"update.check_failed":        "Update check failed: %w",
-	"update.up_to_date":          "Already up to date (%s)\n",
+	"update.up_to_date":          "No newer release in this channel (latest published: %s)\n",
 	"update.new_version":         "New version found: %s\n",
 	"update.no_download_url":     "No download link for the current platform. Please download manually:",
 	"update.downloading":         "Downloading %s ...\n",

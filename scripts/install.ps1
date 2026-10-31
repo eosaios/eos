@@ -11,6 +11,9 @@
 
 param(
     [string]$Version = "",
+    [ValidateSet("", "stable", "beta")][string]$Channel = "",
+    [switch]$ResolveOnly,
+    [switch]$NoPathUpdate,
     [string]$InstallDir = ""
 )
 
@@ -28,25 +31,73 @@ $Arch = switch ($env:PROCESSOR_ARCHITECTURE) {
     default { "amd64" }
 }
 
+function Get-EosChannel([string]$Tag) {
+    if ($Tag -notmatch '^v?[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$') { throw "不支持的版本: $Tag" }
+    if ($Tag.TrimStart('v') -eq '1.0.0-beta.34' -or $Tag -notmatch '-beta\.') { return 'stable' }
+    return 'beta'
+}
+function Get-PublishedChannel($Release) {
+    if ($Release.draft -isnot [bool] -or $Release.prerelease -isnot [bool] -or $Release.draft) { return '' }
+    try { $actual = Get-EosChannel $Release.tag_name } catch { return '' }
+    if ($Release.prerelease -ne ($actual -eq 'beta')) { return '' }
+    return $actual
+}
+function Get-ReleaseMetadata([string]$Url) {
+    return Invoke-RestMethod -Uri $Url -Headers @{ 'User-Agent' = 'EOS-Install'; 'Accept' = 'application/vnd.github+json' } -TimeoutSec 30
+}
+
 try {
-    if (-not $Version) {
-        Write-Host "正在获取最新版本..."
-        # 不走 api.github.com：未认证 API 限流 60 次/小时/IP，国内共享出口
-        # 极易触发「rate limit exceeded」。releases/latest 网页会 302 到
-        # releases/tag/<版本>，从 Location 解析 tag，不占 API 配额。
-        # HttpWebRequest 方式兼容 Windows PowerShell 5.1 与 PowerShell 7。
-        try { [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 } catch {}
-        $req = [System.Net.HttpWebRequest]::Create("https://github.com/$Repo/releases/latest")
-        $req.AllowAutoRedirect = $false
-        $req.UserAgent = "EOS-Install"
-        $resp = $req.GetResponse()
-        $location = $resp.Headers["Location"]
-        $resp.Close()
-        if (-not $location) { throw "无法获取最新版本号（releases/latest 未返回重定向）" }
-        $Version = ($location -split '/tag/')[-1]
-        if (-not $Version -or $Version -eq $location) { throw "无法从重定向解析版本号: $location" }
+    if ($InstallDir.Replace('\', '/').ToLower() -match '/(cellar|homebrew/caskroom|scoop/apps|chocolatey|nix/store|snap)/') {
+        throw '此目录由包管理器维护，请使用原包管理器更新'
     }
-    Write-Host "目标版本: $Version (windows/$Arch)"
+    $markerPath = Join-Path $InstallDir 'eos-install.json'
+    if (Test-Path $markerPath) {
+        $installed = Get-Content $markerPath -Raw | ConvertFrom-Json
+        if ($installed.channel -notin @('stable', 'beta') -or $installed.method -notin @('script', 'archive', 'package-manager')) { throw '安装渠道记录无效' }
+        if ($installed.method -eq 'package-manager') { throw '此安装由包管理器维护，请使用原包管理器更新' }
+        if (-not $Channel -and -not $Version) { $Channel = $installed.channel }
+    }
+    $installedExe = Join-Path $InstallDir 'eos.exe'
+    if (-not $Channel -and -not $Version -and (Test-Path $installedExe)) {
+        $installedVersion = (& $installedExe version | Select-Object -First 1) -split '\s+'
+        if ($LASTEXITCODE -ne 0 -or $installedVersion.Count -lt 2 -or $installedVersion[0] -ne 'eos') { throw '无法识别现有安装，请指定 -Channel 或 -Version' }
+        $Channel = Get-EosChannel $installedVersion[1]
+    }
+    $api = "https://api.github.com/repos/$Repo/releases"
+    if ($Version) {
+        $Version = 'v' + $Version.TrimStart('v')
+        $release = Get-ReleaseMetadata "$api/tags/$Version"
+        $actual = Get-PublishedChannel $release
+        if (-not $actual -or $release.tag_name -ne $Version -or ($Channel -and $Channel -ne $actual)) { throw '指定版本不存在、不是公开发布或与渠道不一致' }
+        $Channel = $actual
+    } else {
+        if (-not $Channel) { $Channel = 'stable' }
+        if ($Channel -eq 'stable') {
+            $release = Get-ReleaseMetadata "$api/latest"
+            if ((Get-PublishedChannel $release) -ne 'stable') { throw 'latest 不是公开正式发布，拒绝跨渠道安装' }
+            $Version = $release.tag_name
+        } else {
+            $best = $null
+            for ($page = 1; $page -le 100; $page++) {
+                $releases = @(Get-ReleaseMetadata "${api}?per_page=100&page=$page")
+                if ($releases.Count -eq 1 -and $releases[0] -and -not $releases[0].tag_name) { throw 'Beta 发布信息不是有效的发布列表' }
+                foreach ($release in $releases) {
+                    if ((Get-PublishedChannel $release) -ne 'beta') { continue }
+                    $base = [version](($release.tag_name.TrimStart('v') -split '-beta\.')[0])
+                    $number = [uint64](($release.tag_name -split '-beta\.')[1])
+                    if (-not $best -or $base -gt $best.Base -or ($base -eq $best.Base -and $number -gt $best.Number)) {
+                        $best = @{ Tag = $release.tag_name; Base = $base; Number = $number }
+                    }
+                }
+                if ($releases.Count -lt 100) { break }
+                if ($page -eq 100) { throw '发布分页超出上限' }
+            }
+            if (-not $best) { throw '没有已发布的 Beta 版本' }
+            $Version = $best.Tag
+        }
+    }
+    if ($ResolveOnly) { Write-Output "$Version $Channel"; return }
+    Write-Host "目标版本: $Version (windows/$Arch), 渠道: $Channel"
 
     $verNum = $Version.TrimStart("v")
     $asset = "eos-cli_v${verNum}_windows-${Arch}.zip"
@@ -87,12 +138,14 @@ try {
     }
     New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
     Copy-Item -Path (Join-Path $stageRoot "*") -Destination $InstallDir -Recurse -Force
+    $marker = @{ channel = $Channel; method = "script" } | ConvertTo-Json -Compress
+    [IO.File]::WriteAllText((Join-Path $InstallDir "eos-install.json"), $marker + "`n", [Text.UTF8Encoding]::new($false))
     Get-ChildItem -Path (Split-Path -Parent $InstallDir) -Filter "eos.old-*" -Directory -ErrorAction SilentlyContinue |
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
     # 用户 PATH 追加安装目录
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-    if ($userPath -notlike "*$InstallDir*") {
+    if (-not $NoPathUpdate -and $userPath -notlike "*$InstallDir*") {
         [Environment]::SetEnvironmentVariable("Path", "$userPath;$InstallDir", "User")
         Write-Host "已将 $InstallDir 加入用户 PATH（新开的终端生效）"
     }

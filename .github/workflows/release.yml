@@ -198,6 +198,9 @@ jobs:
             -o "dist/$STAGE/$BIN" .
           cp "$CORE_EMBED"/eos-core* "dist/$STAGE/core/${{ matrix.triple }}/"
           cp "$CORE_EMBED/manifest.json" "dist/$STAGE/core/${{ matrix.triple }}/"
+          CHANNEL=stable
+          if [[ "$VERSION" == *-beta.* && "$VERSION" != v1.0.0-beta.34 ]]; then CHANNEL=beta; fi
+          printf '{"channel":"%s","method":"archive"}\n' "$CHANNEL" > "dist/$STAGE/eos-install.json"
           # darwin/amd64 is cross-compiled on an arm64 runner; its native
           # runtime acceptance needs an Intel machine.
           if [ "${{ matrix.goos }}/${{ matrix.goarch }}" != "darwin/amd64" ]; then

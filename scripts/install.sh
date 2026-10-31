@@ -15,18 +15,24 @@ set -euo pipefail
 
 REPO="eosaios/eos"
 VERSION=""
+CHANNEL=""
+RESOLVE_ONLY=""
 BIN_DIR="${EOS_INSTALL_BIN:-$HOME/.local/bin}"
 DIST_DIR="${EOS_INSTALL_DIR:-$HOME/.local/share/eos}"
 
 while [ $# -gt 0 ]; do
   case "$1" in
+    --channel) CHANNEL="${2:-}"; shift 2 ;;
+    --resolve-only) RESOLVE_ONLY=1; shift ;;
     --version) VERSION="${2:-}"; shift 2 ;;
     --bin) BIN_DIR="${2:-}"; shift 2 ;;
     --dir) DIST_DIR="${2:-}"; shift 2 ;;
     -h|--help)
       cat <<'USAGE'
-用法: install.sh [--version vX.Y.Z] [--bin DIR] [--dir DIR]
-  --version  安装指定版本（默认最新）
+用法: install.sh [--channel stable|beta] [--version vX.Y.Z] [--resolve-only] [--bin DIR] [--dir DIR]
+  --channel  安装渠道（新安装默认 stable；现有安装沿用其渠道）
+  --version  安装指定版本（校验 Release 属性并记录正确渠道）
+  --resolve-only  仅输出选中的版本和渠道，不安装
   --bin      可执行文件链接目录（默认 ~/.local/bin，可用 EOS_INSTALL_BIN 覆盖）
   --dir      安装目录（默认 ~/.local/share/eos，可用 EOS_INSTALL_DIR 覆盖）
 USAGE
@@ -54,18 +60,153 @@ esac
 
 SHA_CMD="sha256sum"; command -v sha256sum >/dev/null 2>&1 || SHA_CMD="shasum -a 256"
 
-# 解析最新版本（未指定 --version 时）
-if [ -z "$VERSION" ]; then
-  echo "正在获取最新版本..."
-  # 不走 api.github.com：未认证 API 限流 60 次/小时/IP，共享出口极易触发
-  # rate limit。releases/latest 网页 302 到 releases/tag/<版本>，取
-  # Location 头解析 tag，不占 API 配额。
-  VERSION="$(curl -fsSI --retry 3 --connect-timeout 10 --max-time 30 \
-    "https://github.com/${REPO}/releases/latest" \
-    | tr -d '\r' | sed -n 's/^[Ll]ocation:.*\/tag\/\([^[:space:]]*\).*/\1/p' | tail -1)"
-  [ -n "$VERSION" ] || err "无法获取最新版本号，请到 https://github.com/${REPO}/releases 手动下载"
+# The selector is embedded so curl | bash remains a single-file installer.
+release_json() {
+  awk -v channel="$1" -v want="$2" -v best="$3" -v mode="${4:-release}" '
+# Strict JSON reader: only top-level release objects supply selection fields.
+# No jq/Python/Node dependency is required by the standalone Bash installer.
+function fail() { bad=1; exit 1 }
+function ws() { while (substr(json,pos,1) ~ /[ \t\r\n]/ && pos<=length(json)) pos++ }
+function stringval( out,c,e) {
+ if (substr(json,pos++,1)!="\"") fail()
+ out=""
+ while (pos<=length(json)) {
+  c=substr(json,pos++,1)
+  if(c=="\"") return out
+  if(c=="\\") {
+   e=substr(json,pos++,1)
+   if(e=="u") { if(substr(json,pos,4)!~/^[0-9a-fA-F]+$/ || length(substr(json,pos,4))!=4) fail(); out=out "\\u" substr(json,pos,4); pos+=4 }
+   else if(e ~ /^["\\\/bfnrt]$/) out=out "\\" e
+   else fail()
+  } else { if(c ~ /[\r\n\t]/) fail(); out=out c }
+ }
+ fail()
+}
+function newer(a,b, ap,bp,av,bv,i,an,bn) {
+ sub(/^v/,"",a); sub(/^v/,"",b)
+ an=split(a,ap,/-beta\./); bn=split(b,bp,/-beta\./)
+ split(ap[1],av,"."); split(bp[1],bv,".")
+ for(i=1;i<=3;i++) if(av[i]+0!=bv[i]+0) return av[i]+0>bv[i]+0
+ if(an!=bn) return an<bn
+ return ap[2]+0>bp[2]+0
+}
+function candidate(tag,pre,draft, tc,plain) {
+ count++
+ if(draft!="false" || (pre!="true" && pre!="false")) return
+ if(tag!~/^v?[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?$/) return
+ plain=tag;sub(/^v/,"",plain)
+ tc=(plain=="1.0.0-beta.34" || plain!~/-beta\./)?"stable":"beta"
+ if((tc=="beta") != (pre=="true")) return
+ if(want!="") { plain=want;sub(/^v/,"",plain); if("v" plain != (tag~/^v/?tag:"v" tag)) return }
+ if(channel!="" && channel!=tc) return
+ if(best=="" || newer(tag,best)) { best=tag; bestchannel=tc }
+}
+function object(depth, key,v,vt,tag,pre,draft,seenTag,seenPre,seenDraft) {
+ pos++; ws()
+ if(substr(json,pos,1)=="}") { pos++; if((depth==0 || (rootkind=="array" && depth==1))) fail(); return }
+ while(1) {
+  ws();key=stringval();ws();if(substr(json,pos++,1)!=":")fail()
+  v=value(depth+1); vt=kind
+  if((depth==0 || (rootkind=="array" && depth==1))) {
+   if(mode=="installation" && depth==0 && key=="channel") { if(vt!="string")fail();installchannel=v }
+   if(mode=="installation" && depth==0 && key=="method") { if(vt!="string")fail();installmethod=v }
+   if(key=="tag_name") { if(seenTag++ || vt!="string")fail();tag=v }
+   if(key=="prerelease") { if(seenPre++ || vt!="boolean")fail();pre=v }
+   if(key=="draft") { if(seenDraft++ || vt!="boolean")fail();draft=v }
+  }
+  ws();v=substr(json,pos++,1);if(v=="}")break;if(v!=",")fail()
+ }
+ if((depth==0 || (rootkind=="array" && depth==1))) { if(mode!="installation"){if(!seenTag || !seenPre || !seenDraft)fail();candidate(tag,pre,draft)} }
+}
+function array(depth, c) {
+ pos++;ws();if(substr(json,pos,1)=="]"){pos++;return}
+ while(1) { value(depth+1);ws();c=substr(json,pos++,1);if(c=="]")return;if(c!=",")fail() }
+}
+function value(depth, c,start,token) {
+ if(depth>64)fail()
+ ws();c=substr(json,pos,1)
+ if(c=="{"){object(depth);kind="object";return ""}
+ if(c=="["){array(depth);kind="array";return ""}
+ if(c=="\""){token=stringval();kind="string";return token}
+ start=pos
+ while(pos<=length(json) && substr(json,pos,1)!~/[ \t\r\n,\]}]/)pos++
+ token=substr(json,start,pos-start)
+ if(token=="true" || token=="false")kind="boolean"
+ else if(token=="null")kind="null"
+ else if(token ~ /^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$/)kind="number"
+ else fail()
+ return token
+}
+{json=json $0 "\n"}
+END {
+ if(bad)exit 1
+ pos=1;ws();if(substr(json,pos,1)!~/[\[{]/)fail()
+ rootkind=(substr(json,pos,1)=="["?"array":"object");value(0);ws();if(pos<=length(json))fail()
+ if(mode=="installation") {
+  if(installchannel!="stable" && installchannel!="beta")fail()
+  if(installmethod!="script" && installmethod!="archive" && installmethod!="package-manager")fail()
+  print 0,installchannel,installmethod; exit
+ }
+ if(best=="") print count+0,"-","-"
+ else { if(bestchannel=="") bestchannel=channel; print count+0,best,bestchannel }
+}
+  '
+}
+channel_for_tag() {
+  case "${1#v}" in
+    1.0.0-beta.34) echo stable ;;
+    *-beta.*) echo beta ;;
+    *-*) err "不支持的版本渠道: $1" ;;
+    *) echo stable ;;
+  esac
+}
+[ -z "$CHANNEL" ] || [ "$CHANNEL" = stable ] || [ "$CHANNEL" = beta ] || err "渠道必须是 stable 或 beta"
+case "$(printf '%s' "$DIST_DIR" | tr '[:upper:]' '[:lower:]')/" in
+  */cellar/*|*/homebrew/caskroom/*|*/scoop/apps/*|*/chocolatey/*|*/nix/store/*|*/snap/*)
+    err "此目录由包管理器维护，请使用原包管理器更新" ;;
+esac
+if [ -f "$DIST_DIR/eos-install.json" ]; then
+  marker="$(release_json "" "" "" installation < "$DIST_DIR/eos-install.json")" || err "安装渠道记录无效"
+  read -r marker_count installed_channel installed_method <<< "$marker"
+  [ "$installed_method" != package-manager ] || err "此安装由包管理器维护，请使用原包管理器更新"
+  if [ -z "$CHANNEL" ] && [ -z "$VERSION" ]; then CHANNEL="$installed_channel"; fi
 fi
-echo "目标版本: ${VERSION} (${OS}/${ARCH})"
+if [ -z "$CHANNEL" ] && [ -z "$VERSION" ] && [ -f "$DIST_DIR/eos" ]; then
+  installed_version="$("$DIST_DIR/eos" version | awk 'NR==1 && $1=="eos" {print $2}')"
+  [ -n "$installed_version" ] || err "无法识别现有安装，请明确指定 --channel 或 --version"
+  CHANNEL="$(channel_for_tag "$installed_version")"
+fi
+API="https://api.github.com/repos/${REPO}/releases"
+if [ -n "$VERSION" ]; then
+  # A version pin is checked against GitHub's actual draft/prerelease flags.
+  VERSION="v${VERSION#v}"
+  metadata="$(curl -fsSL --retry 3 --connect-timeout 10 --max-time 30 "$API/tags/$VERSION")" || err "无法读取指定版本的发布信息"
+  resolved="$(printf '%s' "$metadata" | release_json "$CHANNEL" "$VERSION" "")" || err "发布信息无效"
+  read -r release_count VERSION CHANNEL <<< "$resolved"
+  [ "$VERSION" != - ] || err "指定版本不存在、不是公开发布或与渠道不一致"
+else
+  CHANNEL="${CHANNEL:-stable}"
+  if [ "$CHANNEL" = stable ]; then
+    metadata="$(curl -fsSL --retry 3 --connect-timeout 10 --max-time 30 "$API/latest")" || err "无法获取正式渠道版本"
+    resolved="$(printf '%s' "$metadata" | release_json stable "" "")" || err "正式发布信息无效"
+    read -r release_count VERSION selected_channel <<< "$resolved"
+    [ "$VERSION" != - ] || err "latest 不是公开正式发布，拒绝跨渠道安装"
+  else
+    BEST=""
+    for page in $(seq 1 100); do
+      metadata="$(curl -fsSL --retry 3 --connect-timeout 10 --max-time 30 "$API?per_page=100&page=$page")" || err "无法读取 Beta 发布信息（可能是网络或 GitHub 限流）"
+      resolved="$(printf '%s' "$metadata" | release_json beta "" "$BEST")" || err "Beta 发布信息无效"
+      read -r release_count BEST selected_channel <<< "$resolved"
+      [ "$BEST" != - ] || BEST=""
+      [ "$release_count" -ge 100 ] || break
+      [ "$page" -lt 100 ] || err "发布分页超出上限"
+    done
+    [ -n "$BEST" ] || err "没有已发布的 Beta 版本"
+    VERSION="$BEST"
+  fi
+fi
+if [ -n "$RESOLVE_ONLY" ]; then printf '%s %s\n' "$VERSION" "$CHANNEL"; exit 0; fi
+echo "目标版本: ${VERSION} (${OS}/${ARCH}), 渠道: ${CHANNEL}"
 
 VER_NUM="${VERSION#v}"
 ASSET="eos-cli_v${VER_NUM}_${OS}-${ARCH}.tar.gz"
@@ -127,6 +268,7 @@ done
 cp -R "${SRC_DIR}/." "$DIST_DIR/"
 [ -n "$OLD" ] && rm -rf "$OLD" 2>/dev/null || true
 chmod +x "${DIST_DIR}/eos"
+printf '{"channel":"%s","method":"script"}\n' "$CHANNEL" > "${DIST_DIR}/eos-install.json"
 
 ln -sf "${DIST_DIR}/eos" "${BIN_DIR}/eos"
 
