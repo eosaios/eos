@@ -1,3 +1,6 @@
+# 已废弃（2026-10-08）：本脚本是 Windows 时代「去白底做剪影」的旧图标管线，
+# 产物为透明底剪影而非家族白卡全出血标准，禁止再用于生成图标。
+# 现行标准见 eos-docs(品牌仓) brand-guidelines.md 第七节；eos-app 构建期有全出血校验门。
 param(
   [string]$Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path,
   [string]$Source = 'C:\home\eos\eos.png'

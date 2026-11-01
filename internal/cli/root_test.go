@@ -131,12 +131,13 @@ func TestApplyDefaultWorkspaceFlagDisabledKeepsCWD(t *testing.T) {
 }
 
 func TestRootRunVersionArm(t *testing.T) {
-	// version 臂：置位后 Run 直接打印并返回（不进入 print/TUI 路径）。
+	// version 臂：置位后 RunE 直接打印并返回（不进入 print/TUI 路径）。
 	old := cliShowVersion
 	cliShowVersion = true
 	t.Cleanup(func() { cliShowVersion = old })
-	// Run 不应 panic/退出即覆盖该臂。
-	rootCmd.Run(rootCmd, nil)
+	if err := rootCmd.RunE(rootCmd, nil); err != nil {
+		t.Fatalf("version root command: %v", err)
+	}
 }
 
 func TestRootHelpers(t *testing.T) {

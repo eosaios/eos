@@ -47,5 +47,5 @@ func legacyGet(service, account string) (string, error) {
 		return "", fmt.Errorf("legacy credential status %d", int(status))
 	}
 	defer C.free(bytes)
-	return C.GoStringN((*C.char)(bytes), C.int(length)), nil
+	return decodeLegacySecret(C.GoStringN((*C.char)(bytes), C.int(length)))
 }

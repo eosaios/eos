@@ -14,17 +14,19 @@ import (
 	"github.com/eosaios/eos/pkg/coreapi"
 )
 
-func settingsZero() settings.Settings              { return settings.Settings{} }
-func modelSaveReqZero() coreapi.ModelSaveRequest   { return coreapi.ModelSaveRequest{} }
-func toolReqZero() coreapi.ToolRequest             { return coreapi.ToolRequest{} }
+func settingsZero() settings.Settings            { return settings.Settings{} }
+func modelSaveReqZero() coreapi.ModelSaveRequest { return coreapi.ModelSaveRequest{} }
+func toolReqZero() coreapi.ToolRequest           { return coreapi.ToolRequest{} }
 func browserLaunchReqZero() coreapi.BrowserLaunchRequest {
 	return coreapi.BrowserLaunchRequest{}
 }
-func browserCloseReqZero() coreapi.BrowserCloseRequest           { return coreapi.BrowserCloseRequest{} }
-func takeoverReqZero() coreapi.BrowserControlTakeoverRequest    { return coreapi.BrowserControlTakeoverRequest{} }
-func gitLogReqZero() coreapi.GitLogRequest                       { return coreapi.GitLogRequest{} }
-func gitShowReqZero() coreapi.GitShowRequest                     { return coreapi.GitShowRequest{} }
-func mcpEntryZero() config.MCPEntry                              { return config.MCPEntry{} }
+func browserCloseReqZero() coreapi.BrowserCloseRequest { return coreapi.BrowserCloseRequest{} }
+func takeoverReqZero() coreapi.BrowserControlTakeoverRequest {
+	return coreapi.BrowserControlTakeoverRequest{}
+}
+func gitLogReqZero() coreapi.GitLogRequest   { return coreapi.GitLogRequest{} }
+func gitShowReqZero() coreapi.GitShowRequest { return coreapi.GitShowRequest{} }
+func mcpEntryZero() config.MCPEntry          { return config.MCPEntry{} }
 
 // TestCoreClientAdapterNotAvailableGuards 覆盖全部方法的「引擎不可用」
 // 防御分支：nil adapter 与未注入 engine 的 adapter 一律返回错误/零值，

@@ -45,10 +45,10 @@ func TestSavePlanHistoryEntry(t *testing.T) {
 
 	// 有效条目
 	app.history = append(app.history, historyEntry{
-		kind:        "ai",
-		rawMarkdown: "# plan",
+		kind:          "ai",
+		rawMarkdown:   "# plan",
 		executionMode: "plan",
-		timestamp:   planDownloadNow(),
+		timestamp:     planDownloadNow(),
 	})
 	dir := t.TempDir()
 	path, err := app.savePlanHistoryEntryToDir(0, dir)

@@ -13,28 +13,27 @@ import (
 	"github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
 
-const packagedCoreBinary2 = `C:/home/eos/eos-cli/pkg/coreapi/sidecar/binaries/x86_64-pc-windows-gnu/eos-core.exe`
-
 // TestE2EVendoredFileMkdirAllowSession reproduces the "本次都允许" (allow_session)
 // stall: the TUI maps allow_session to decision="acceptForSession", which Rust's
 // approval_is_approved must treat as approved. Without the fix the tool is
 // denied and the turn stalls after approval.
 func TestE2EVendoredFileMkdirAllowSession(t *testing.T) {
-	if _, err := os.Stat(packagedCoreBinary2); err != nil {
-		t.Skipf("packaged sidecar not found at %s: %v", packagedCoreBinary2, err)
-	}
+	coreBinary := resolveE2ECoreBinary(t)
+	t.Logf("driving real core: %s", coreBinary)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	tmpDir := t.TempDir()
 
+	// 见 e2e_mkdir_test：审批流用 untrusted；on-request 下 medium mkdir 直接 ok。
 	client, err := sidecarclient.Start(ctx, sidecarclient.Options{
-		BinaryPath: packagedCoreBinary2,
+		BinaryPath: coreBinary,
 		Env: map[string]string{
 			"EOS_SANDBOX_MODE":           "workspace-write",
 			"EOS_WORKSPACE_ROOT":         tmpDir,
 			"EOS_SANDBOX_WORKSPACE_ROOT": tmpDir,
+			"EOS_APPROVAL_MODE":          "untrusted",
 		},
 	})
 	if err != nil {
@@ -71,23 +70,36 @@ func TestE2EVendoredFileMkdirAllowSession(t *testing.T) {
 	}
 
 	// Respond exactly like the TUI does for allow_session: decision="acceptForSession".
-	var approveResult coreapi.ToolResult
+	var receipt struct {
+		ApprovalID string `json:"approval_id"`
+		Decision   string `json:"decision"`
+		Accepted   bool   `json:"accepted"`
+	}
 	if err := client.Process().Call(ctx, jsonrpc.MethodApprovalRespond, map[string]any{
 		"approval_id": pending.ApprovalID,
 		"decision":    "acceptForSession",
-	}, &approveResult); err != nil {
+	}, &receipt); err != nil {
 		t.Fatalf("approval/respond error = %v", err)
 	}
-	if approveResult.Status != "ok" {
-		t.Fatalf("approval/respond status = %q, want ok for allow_session (display=%q output=%s)",
-			approveResult.Status, approveResult.Display, string(approveResult.Output))
+	if !receipt.Accepted {
+		t.Fatalf("approval/respond(acceptForSession) receipt = %+v, want accepted=true", receipt)
 	}
 
-	info, err := os.Stat(filepath.Join(tmpDir, "test"))
-	if err != nil {
-		t.Fatalf("expected directory created after allow_session: %v", err)
+	created := filepath.Join(tmpDir, "test")
+	deadline := time.Now().Add(30 * time.Second)
+	var info os.FileInfo
+	for {
+		var err error
+		info, err = os.Stat(created)
+		if err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("expected directory %s after allow_session: %v", created, err)
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 	if !info.IsDir() {
-		t.Fatalf("test is not a directory")
+		t.Fatalf("%s exists but is not a directory", created)
 	}
 }

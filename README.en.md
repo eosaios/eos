@@ -95,6 +95,12 @@ irm https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.ps1 | iex
 
 Then run `eos`. Use `eos version` to check the version and `eos update` to self-upgrade (the Rust core sidecar is updated together with the binary).
 
+Channels: `v1.0.0-beta.34` remains the historical stable-channel release. Actual Betas from `.35` onward are isolated from stable.
+Users of beta.35 need the one-time explicit installation in the [beta.37 release notes](https://github.com/eosaios/eos/releases/tag/v1.0.0-beta.37); subsequent `eos update` commands stay on Beta.
+The new tagged installers support `--channel beta` (`-Channel beta` in PowerShell), explicit versions, and `--resolve-only` / `-ResolveOnly`. Each installation stores its channel in `eos-install.json`.
+Fresh default installations remain on stable, and legacy beta.34 users can wait for a future stable release. Use the owning package manager for managed installations and retain custom directory arguments.
+This describes manual `eos update`, not automatic checks or installation when the TUI starts.
+
 If you already have the Go toolchain (the Rust core is embedded and self-extracts on first run):
 
 ```bash

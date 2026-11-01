@@ -62,7 +62,7 @@ func TestExtractSelection_ReversedOrderNormalized(t *testing.T) {
 func TestExtractSelection_AcrossLines(t *testing.T) {
 	text := "line one\nline two"
 	got := extractSelection(text, 20,
-		selectionCoord{line: 0, col: 5},  // "one" starts at col5
+		selectionCoord{line: 0, col: 5}, // "one" starts at col5
 		selectionCoord{line: 1, col: 4}) // "line" ends at col4
 	// expected: "one\nline"
 	if got != "one\nline" {

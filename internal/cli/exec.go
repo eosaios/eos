@@ -25,7 +25,8 @@ type execOptions struct {
 	ApprovalMode   string
 	SkipPermission bool
 	// Session 非空时恢复既有会话继续对话：显式 session id 或 "last"（最近更新的会话）。
-	Session string
+	Session       string
+	ModelOverride string
 }
 
 func newExecCmd() *cobra.Command {
@@ -64,6 +65,7 @@ func newExecCmd() *cobra.Command {
 				ApprovalMode:   modes.ApprovalMode,
 				SkipPermission: modes.SkipAllChecks,
 				Session:        strings.TrimSpace(resume),
+				ModelOverride:  strings.TrimSpace(cliModel),
 			})
 		},
 	}
@@ -132,7 +134,7 @@ func runExec(ctx context.Context, opts execOptions) error {
 
 	// stream-json 走真增量 JSONL 流式（与 print 模式一致的 JSONL 契约）。
 	if strings.EqualFold(strings.TrimSpace(opts.Output), "stream-json") {
-		if err := runStreamJSONTurn(ctx, engine, opts.Prompt, startedAt, ""); err != nil {
+		if err := runStreamJSONTurn(ctx, engine, opts.Prompt, startedAt, opts.ModelOverride); err != nil {
 			if ctx.Err() == context.DeadlineExceeded {
 				err = fmt.Errorf("exec timed out after %s", opts.Timeout)
 			}
@@ -142,7 +144,7 @@ func runExec(ctx context.Context, opts execOptions) error {
 		return nil
 	}
 
-	content, err := runSingleTurn(ctx, engine, opts.Prompt, opts.Output, "")
+	content, err := runSingleTurn(ctx, engine, opts.Prompt, opts.Output, opts.ModelOverride)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			err = fmt.Errorf("exec timed out after %s", opts.Timeout)
@@ -155,7 +157,11 @@ func runExec(ctx context.Context, opts execOptions) error {
 	if summary, err := engine.Usage().Summary(ctx); err == nil {
 		usage = summary
 	}
-	modelName, _ := headless.ResolveActiveModelName(ctx, engine)
+	modelName, err := headless.ResolveCurrentModelName(ctx, engine)
+	if err != nil {
+		writeExecError(opts.Output, err)
+		return err
+	}
 
 	result := ExecResult{
 		Content:     content,

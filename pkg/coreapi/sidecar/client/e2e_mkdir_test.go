@@ -13,9 +13,8 @@ import (
 	"github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
 
-// localCoreBinary points at a locally-built eos-core sidecar so this test can
-// exercise sandbox/approval changes without a signed release binary.
-const localCoreBinary = `C:/home/eos/eos-core-rs/target/debug/eos-core.exe`
+// 本用例使用与 `eos` 相同的解析规则定位内核；对着本地构建的内核跑时
+// 设置 EOS_CORE_PATH 即可，无需改测试代码。
 
 // TestE2EFileMkdirRelativePathApproval verifies that a relative write path
 // (e.g. a model-supplied "test") is resolved against the request workspace root
@@ -23,21 +22,24 @@ const localCoreBinary = `C:/home/eos/eos-core-rs/target/debug/eos-core.exe`
 // denied as "outside all writable roots". This reproduces the user scenario
 // where creating a directory via FileMkdir stalled after approval.
 func TestE2EFileMkdirRelativePathApproval(t *testing.T) {
-	if _, err := os.Stat(localCoreBinary); err != nil {
-		t.Skipf("locally-built sidecar not found at %s: %v", localCoreBinary, err)
-	}
+	coreBinary := resolveE2ECoreBinary(t)
+	t.Logf("driving real core: %s", coreBinary)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	tmpDir := t.TempDir()
 
+	// 产品决策（default low friction）：on-request/默认下普通工作区 mkdir
+	// 不弹审批（与 internal/modes 一致）。审批流用例必须显式 untrusted，
+	// 才能覆盖 approval_required → accept/reject/acceptForSession。
 	client, err := sidecarclient.Start(ctx, sidecarclient.Options{
-		BinaryPath: localCoreBinary,
+		BinaryPath: coreBinary,
 		Env: map[string]string{
 			"EOS_SANDBOX_MODE":           "workspace-write",
 			"EOS_WORKSPACE_ROOT":         tmpDir,
 			"EOS_SANDBOX_WORKSPACE_ROOT": tmpDir,
+			"EOS_APPROVAL_MODE":          "untrusted",
 		},
 	})
 	if err != nil {
@@ -53,11 +55,10 @@ func TestE2EFileMkdirRelativePathApproval(t *testing.T) {
 		t.Fatalf("Sessions().Create() error = %v", err)
 	}
 
-	// Direct tool/execute with a RELATIVE path "test". file_mkdir is medium
-	// risk under the default approval policy, so the first call must return
-	// approval_required and an approval_id (pending inserted, sandbox not yet
-	// checked). workspace_root is supplied so the later approval path can
-	// resolve the relative write path.
+	// Direct tool/execute with a RELATIVE path "test". Under untrusted mode,
+	// file_mkdir (medium / non-read-only) must return approval_required and an
+	// approval_id (pending inserted, sandbox not yet checked). workspace_root
+	// is supplied so the later approval path can resolve the relative write path.
 	var toolResult coreapi.ToolResult
 	if err := client.Process().Call(ctx, jsonrpc.MethodToolExecute, map[string]any{
 		"name":           "file_mkdir",

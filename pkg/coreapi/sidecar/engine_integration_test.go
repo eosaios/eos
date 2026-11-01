@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
@@ -70,9 +71,18 @@ func TestRemoteEngineWithRealSidecar(t *testing.T) {
 		t.Fatalf("Sandbox().BackendStatus()=%+v, want visible degraded status", status)
 	}
 
-	_, err = engine.Tools().Execute(ctx, coreapi.ToolRequest{Name: "shell"})
-	if !errors.Is(err, coreapi.ErrUnsupported) {
-		t.Fatalf("Tools().Execute() error = %v, want ErrUnsupported", err)
+	// The frozen Rust core supports tool/execute. An unregistered tool is a
+	// structured denial, rather than a missing-method transport error.
+	tool, err := engine.Tools().Execute(ctx, coreapi.ToolRequest{Name: "shell"})
+	if err != nil {
+		t.Fatalf("Tools().Execute() error = %v", err)
+	}
+	wantTool := coreapi.ToolResult{
+		Name: "shell", Status: "denied", Display: "tool 'shell' is not registered",
+		Output: json.RawMessage("null"), Error: "tool 'shell' is not registered",
+	}
+	if !reflect.DeepEqual(tool, wantTool) {
+		t.Fatalf("Tools().Execute() = %#v, want %#v", tool, wantTool)
 	}
 
 	// Use a dedicated context for Shutdown so it is not racing

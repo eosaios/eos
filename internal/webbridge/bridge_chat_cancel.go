@@ -55,6 +55,9 @@ func (svc *ChatService) CancelSession(sessionID string) (BootstrapState, error) 
 		interrupt = running.Interrupt
 		assistantMessageID = running.AssistantMessageID
 		hasRunningConversation = true
+		// Stop withdraws pending UI confirmations even while a stream is active.
+		// This settles shell state; the interrupt below cancels core work.
+		s.settleSessionPromptsCancelledLocked(session)
 	} else {
 		for _, prompt := range s.prompts {
 			if prompt == nil || prompt.SessionID != trimmed {

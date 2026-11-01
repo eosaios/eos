@@ -99,7 +99,9 @@ func TestOpenBrowserIntercepted(t *testing.T) {
 	_, calls := installOpenCommandFixtures(t)
 
 	openBrowser("http://127.0.0.1:1")
-	deadline := time.Now().Add(3 * time.Second)
+	// macOS may validate a fresh launcher script before executing it. Keep
+	// its TempDir alive through that startup; this is not a product timeout.
+	deadline := time.Now().Add(30 * time.Second)
 	for {
 		if data, err := os.ReadFile(calls); err == nil && len(data) > 0 {
 			return

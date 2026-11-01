@@ -264,9 +264,9 @@ func TestHTTPClientDoRetriesAndTruncation(t *testing.T) {
 	defer srv.Close()
 	c := NewHTTPClient()
 	resp, err := c.Do(context.Background(), RequestSpec{
-		URL:          srv.URL,
-		AllowHTTP:    true,
-		RetryPolicy:  RetryPolicy{MaxAttempts: 3, BaseDelay: time.Millisecond, Multiplier: 1},
+		URL:         srv.URL,
+		AllowHTTP:   true,
+		RetryPolicy: RetryPolicy{MaxAttempts: 3, BaseDelay: time.Millisecond, Multiplier: 1},
 	})
 	if err != nil || string(resp.Body) != "ok" {
 		t.Fatalf("retry then ok = %+v %v attempts=%d", resp, err, attempts)

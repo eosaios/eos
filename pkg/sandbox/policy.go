@@ -31,10 +31,10 @@ const (
 // network:"allow"/"deny" 字符串，与内核 allow_network bool 不匹配，导致
 // sandbox/set_policy 静默丢失网络设置——已统一为 allow_network bool。
 type Policy struct {
-	Mode          Mode   `json:"mode"`
-	WorkspaceRoot string `json:"workspace_root,omitempty"`
+	Mode          Mode     `json:"mode"`
+	WorkspaceRoot string   `json:"workspace_root,omitempty"`
 	WritableRoots []string `json:"writable_roots,omitempty"`
-	AllowNetwork  bool   `json:"allow_network,omitempty"`
+	AllowNetwork  bool     `json:"allow_network,omitempty"`
 }
 
 // BackendStatus 描述内核沙箱后端的当前能力与降级状态，由内核经 RPC 返回壳层。
@@ -61,4 +61,3 @@ func NormalizeMode(mode string) Mode {
 		return ModeWorkspaceWrite
 	}
 }
-

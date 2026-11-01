@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	coreapijsonrpc "github.com/eosaios/eos/pkg/coreapi/jsonrpc"
 	"github.com/eosaios/eos/pkg/coreapi/engineprovider"
+	coreapijsonrpc "github.com/eosaios/eos/pkg/coreapi/jsonrpc"
 	"github.com/spf13/pflag"
 )
 
@@ -559,5 +559,3 @@ func TestUpdateCmdFailsFastOnInvalidProxy(t *testing.T) {
 		t.Fatal("invalid proxy must fail before network")
 	}
 }
-
-

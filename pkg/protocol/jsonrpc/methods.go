@@ -121,6 +121,7 @@ const (
 	MethodRuntimeSandboxModeSet      = "runtime/sandbox_mode/set"
 	MethodRuntimeReasoningLevelSet   = "runtime/reasoning_level/set"
 	MethodModelList                  = "model/list"
+	MethodModelConnections           = "model/connections"
 	MethodModelCatalog               = "model/catalog"
 	MethodModelBundledMcp            = "model/bundled_mcp"
 	MethodModelUpsert                = "model/upsert"
@@ -334,6 +335,7 @@ func AllCoreMethods() []string {
 		MethodRuntimeSandboxModeSet,
 		MethodRuntimeReasoningLevelSet,
 		MethodModelList,
+		MethodModelConnections,
 		MethodModelCatalog,
 		MethodModelBundledMcp,
 		MethodModelUpsert,

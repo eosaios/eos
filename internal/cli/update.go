@@ -26,6 +26,9 @@ func newUpdateCmd() *cobra.Command {
 		Short: i18n.T("update.short", lang),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fmt.Printf(i18n.T("update.current_version", lang), version.AppVersion)
+			if channel, err := update.VersionChannel(version.AppVersion); err == nil {
+				fmt.Printf(i18n.T("update.channel", lang), channel)
+			}
 			fmt.Println(i18n.T("update.checking", lang))
 
 			// 代理开关（config set update_proxy）生效：地址非法时构造期
@@ -66,8 +69,8 @@ func newUpdateCmd() *cobra.Command {
 			outcome, err := update.ApplyWithClient(ctx, result, func(done, total int64) {
 				if total > 0 {
 					pct := int(float64(done) / float64(total) * 100)
-				fmt.Printf(i18n.T("update.progress", lang), pct,
-					float64(done)/1024/1024, float64(total)/1024/1024)
+					fmt.Printf(i18n.T("update.progress", lang), pct,
+						float64(done)/1024/1024, float64(total)/1024/1024)
 				}
 			}, proxyClient)
 			if err != nil {

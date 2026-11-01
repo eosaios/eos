@@ -376,7 +376,7 @@ func (m *AppModel) handleAIResponse(msg AIResponseMsg) tea.Cmd {
 		m.aiLive.Reset()
 		m.clearCurrentThinking()
 		m.shell.SetStatusHints(false, false)
-		m.appendHistory(historyEntry{kind: "system", content: msg.Content, level: "error"})
+		m.appendTurnError(msg.Content)
 		m.state.Processing = false
 		m.shell.SetProcessing(false)
 		m.activeCancel = nil

@@ -130,22 +130,22 @@ func TestSplitAndWrapAndLastNonEmptyLine(t *testing.T) {
 
 func TestDisplayToolName(t *testing.T) {
 	cases := map[string]string{
-		"":                    "",
-		"  ":                  "",
-		"Bash":                "Bash",
-		"fs_read":             "FSRead",
-		"mcp.call":            "Call",
-		"package.tool_name":   "ToolName",
-		"time_now":            "TimeNow",
-		"websearch":           "WebSearch",
-		"read_file":           "ReadFile",
-		"fs.write_file":       "WriteFile",
-		"http_request":        "HTTPRequest",
-		"get_json_data":       "GetJSONData",
-		"run-command":         "RunCommand",
-		"SearchCodebase":      "SearchCodebase",
-		"a":                   "A",
-		"_leading":            "Leading",
+		"":                  "",
+		"  ":                "",
+		"Bash":              "Bash",
+		"fs_read":           "FSRead",
+		"mcp.call":          "Call",
+		"package.tool_name": "ToolName",
+		"time_now":          "TimeNow",
+		"websearch":         "WebSearch",
+		"read_file":         "ReadFile",
+		"fs.write_file":     "WriteFile",
+		"http_request":      "HTTPRequest",
+		"get_json_data":     "GetJSONData",
+		"run-command":       "RunCommand",
+		"SearchCodebase":    "SearchCodebase",
+		"a":                 "A",
+		"_leading":          "Leading",
 	}
 	for in, want := range cases {
 		if got := displayToolName(in); got != want {
@@ -234,10 +234,10 @@ func TestTruncateAndFormatHelpers(t *testing.T) {
 		t.Fatal("all empty")
 	}
 
-	if formatDuration(500 * time.Millisecond) != "500ms" {
+	if formatDuration(500*time.Millisecond) != "500ms" {
 		t.Fatalf("ms = %q", formatDuration(500*time.Millisecond))
 	}
-	if formatDuration(1500 * time.Millisecond) != "1.5s" {
+	if formatDuration(1500*time.Millisecond) != "1.5s" {
 		t.Fatalf("s = %q", formatDuration(1500*time.Millisecond))
 	}
 

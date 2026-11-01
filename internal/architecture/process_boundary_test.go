@@ -68,6 +68,11 @@ var allowedProcessExecCalls = map[string]int{
 	"internal/webbridge/update_install_darwin.go:replaceMacOSBundle:exec.Command":         1,
 	"internal/webbridge/update_install_darwin.go:scheduleMacOSRelaunch:exec.Command":      1,
 	"internal/webbridge/update_launch_other.go:launchUpdateInstaller:exec.Command":        1,
+	// 测试底座（internal/testsupport）：唯一调用点是启动**被测对象自身**的
+	// eos-core 子进程。命令路径来自 sidecar.ResolveBinary 的解析结果，参数固定为
+	// `--stdio`，不拼接任何模型或工具产生的输入，因此不是工具/代理执行路径，
+	// 不经 GuardedRunner。与 process_client.go:StartProcess 同类。
+	"internal/testsupport/rpc.go:StartCore:exec.Command": 1,
 }
 
 func TestProcessExecutionCallSitesAreClassified(t *testing.T) {

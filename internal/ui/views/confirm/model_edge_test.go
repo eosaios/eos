@@ -14,15 +14,15 @@ import (
 
 func newTestModel(kind string, opts []string, allowText bool) *Model {
 	return New(testStyles(), "zh", "monokai", Request{
-		ID: "req-1",
-		Kind: kind,
-		Title: "确认操作",
-		Question: "执行该命令？",
-		Options: opts,
-		Diff: "+ added\n- removed",
-		DiffPath: "/ws/a.txt",
+		ID:        "req-1",
+		Kind:      kind,
+		Title:     "确认操作",
+		Question:  "执行该命令？",
+		Options:   opts,
+		Diff:      "+ added\n- removed",
+		DiffPath:  "/ws/a.txt",
 		AllowText: allowText,
-		TextHint: "输入补充",
+		TextHint:  "输入补充",
 	})
 }
 
@@ -49,7 +49,7 @@ func TestConfirmModelLifecycle(t *testing.T) {
 
 	// up/down 导航边界。
 	m2 := newTestModel("generic", []string{"a", "b", "c"}, false)
-	_, _ = m2.Update(tea.KeyPressMsg{Code: tea.KeyUp})   // 顶部不再上移
+	_, _ = m2.Update(tea.KeyPressMsg{Code: tea.KeyUp}) // 顶部不再上移
 	_, cmd = m2.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if res := cmd().(ResultMsg); res.Option != "a" || res.Decision != "a" {
 		t.Errorf("enter at top = %+v", res)
@@ -119,9 +119,9 @@ func TestConfirmModelTextInput(t *testing.T) {
 func TestConfirmModelViewBranches(t *testing.T) {
 	// permission 空标题 → status.header；含 diff 路径与选项标签本地化。
 	m := New(testStyles(), "zh", "monokai", Request{
-		Kind:    "permission",
-		Options: []string{"accept", "acceptForSession", "decline", "cancel"},
-		Diff:    strings.Repeat("+ line\n", 1200), // 触发 5000 截断
+		Kind:     "permission",
+		Options:  []string{"accept", "acceptForSession", "decline", "cancel"},
+		Diff:     strings.Repeat("+ line\n", 1200), // 触发 5000 截断
 		DiffPath: "/ws/x.txt",
 	})
 	view := m.View()

@@ -156,7 +156,7 @@ func (m *AppModel) handleAgentFinalMsg(msg AgentFinalMsg) (tea.Model, tea.Cmd) {
 
 // handleErrorMsg 处理 ErrorMsg（Update 分支提取）。fall-through。
 func (m *AppModel) handleErrorMsg(msg ErrorMsg) (tea.Model, tea.Cmd) {
-	m.appendHistory(historyEntry{kind: "system", content: msg.Err.Error(), level: "error"})
+	m.appendTurnError(msg.Err.Error())
 	m.cancelProcessingUI()
 	return m, m.finalizeUpdate(nil)
 }

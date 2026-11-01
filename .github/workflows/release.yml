@@ -20,11 +20,11 @@ on:
         required: true
         default: ""
       core_ref:
-        description: "eos-core-rs 构建 ref（默认 main）"
+        description: "内核提交；Beta 从冻结清单读取，正式默认 main"
         required: false
-        default: "main"
+        default: ""
       sidecar_run_id:
-        description: "复用本仓成功构建并签名的 sidecar 运行 ID（留空重新构建）"
+        description: "正式构建可复用签名运行 ID；Beta 固定使用仓库内冻结的签名核心"
         required: false
         default: ""
   push:
@@ -60,22 +60,29 @@ jobs:
     steps:
       - name: Checkout eos-cli
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Validate release notes before building
+        id: release
         shell: bash
         env:
           RELEASE_VERSION: ${{ inputs.version || github.ref_name }}
+          INPUT_CORE_REF: ${{ inputs.core_ref }}
+          INPUT_SIDECAR_RUN_ID: ${{ inputs.sidecar_run_id }}
         run: |
           set -euo pipefail
           [[ "$RELEASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]] || { echo "::error::invalid version"; exit 1; }
           test -s ".github/release-notes/$RELEASE_VERSION.md"
+          python3 scripts/verify_release_core.py --version "$RELEASE_VERSION" \
+            --core-ref "$INPUT_CORE_REF" --sidecar-run-id "$INPUT_SIDECAR_RUN_ID" >> "$GITHUB_OUTPUT"
 
       - name: Checkout eos-core-rs (private)
-        if: ${{ !inputs.sidecar_run_id }}
+        if: ${{ !contains(inputs.version || github.ref_name, '-beta.') && !steps.release.outputs.sidecar_run_id }}
         uses: actions/checkout@v4
         with:
           repository: eosaios/eos-core-rs
-          ref: ${{ inputs.core_ref || 'main' }}
+          ref: ${{ steps.release.outputs.core_ref }}
           token: ${{ secrets.EOS_CORE_PAT }}
           path: eos-core-rs
 
@@ -84,7 +91,7 @@ jobs:
           go-version: "1.25"
 
       - name: Install Rust target
-        if: ${{ !inputs.sidecar_run_id }}
+        if: ${{ !contains(inputs.version || github.ref_name, '-beta.') && !steps.release.outputs.sidecar_run_id }}
         run: rustup target add ${{ matrix.triple }}
 
       # X11 供 CLI Go 侧剪贴板；pipewire/drm/gbm/wayland/xdo 供内核 xcap
@@ -96,18 +103,18 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libx11-dev pkg-config libpipewire-0.3-dev libdrm-dev libgbm-dev libwayland-dev libxdo-dev libegl-dev
 
       - uses: Swatinem/rust-cache@v2
-        if: ${{ !inputs.sidecar_run_id }}
+        if: ${{ !contains(inputs.version || github.ref_name, '-beta.') && !steps.release.outputs.sidecar_run_id }}
         with:
           workspaces: eos-core-rs
           key: ${{ matrix.triple }}
 
       - name: Build sidecar (release)
-        if: ${{ !inputs.sidecar_run_id }}
+        if: ${{ !contains(inputs.version || github.ref_name, '-beta.') && !steps.release.outputs.sidecar_run_id }}
         working-directory: eos-core-rs
         run: cargo build --release --target ${{ matrix.triple }} -p eos-core-bin
 
       - name: Sign and package sidecar
-        if: ${{ !inputs.sidecar_run_id }}
+        if: ${{ !contains(inputs.version || github.ref_name, '-beta.') && !steps.release.outputs.sidecar_run_id }}
         shell: pwsh
         working-directory: eos-core-rs
         env:
@@ -130,11 +137,11 @@ jobs:
             -PrivateKeyPath scripts/eos-signing-key.pem
 
       - name: Verify reusable sidecar run
-        if: ${{ inputs.sidecar_run_id }}
+        if: ${{ !contains(inputs.version || github.ref_name, '-beta.') && steps.release.outputs.sidecar_run_id }}
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          SIDECAR_RUN_ID: ${{ inputs.sidecar_run_id }}
+          SIDECAR_RUN_ID: ${{ steps.release.outputs.sidecar_run_id }}
         run: |
           set -euo pipefail
           [[ "$SIDECAR_RUN_ID" =~ ^[0-9]+$ ]]
@@ -142,13 +149,27 @@ jobs:
           [ "$result" = success ] || { echo "::error::sidecar run did not succeed"; exit 1; }
 
       - name: Download signed sidecar
-        if: ${{ inputs.sidecar_run_id }}
+        if: ${{ !contains(inputs.version || github.ref_name, '-beta.') && steps.release.outputs.sidecar_run_id }}
         uses: actions/download-artifact@v4
         with:
-          run-id: ${{ inputs.sidecar_run_id }}
+          run-id: ${{ steps.release.outputs.sidecar_run_id }}
           github-token: ${{ github.token }}
           name: sidecar-${{ matrix.triple }}
           path: eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}
+
+      # Beta uses the signed bytes versioned by this exact CLI commit. Older
+      # signing-run archives predate source_commit metadata; never infer or
+      # patch their provenance during release assembly.
+      - name: Stage frozen Beta sidecar
+        if: ${{ contains(inputs.version || github.ref_name, '-beta.') }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          source="pkg/coreapi/sidecar/core/${{ matrix.triple }}"
+          dest="eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}"
+          mkdir -p "$dest"
+          cp "$source"/eos-core* "$dest/"
+          cp "$source/manifest.json" "$dest/"
 
       - name: Restore sidecar executable mode
         if: ${{ matrix.goos != 'windows' }}
@@ -179,6 +200,9 @@ jobs:
           BIN="eos"; [ "$GOOS_T" = "windows" ] && BIN="eos.exe"
           STAGE="eos-cli_${VERSION}_${{ matrix.goos }}-${{ matrix.goarch }}"
           mkdir -p "dist/$STAGE/core/${{ matrix.triple }}"
+          python3 scripts/verify_release_core.py --version "$VERSION" \
+            --core-dir "eos-core-rs/pkg/coreapi/sidecar/core/${{ matrix.triple }}" \
+            --cli-commit "$COMMIT" --write-pair "dist/$STAGE/release-pair.json"
           # 目标三元组显式下发（native runner 上与宿主一致；darwin/amd64 为交叉）。
           export CGO_ENABLED=1 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }}
           if [ "${{ matrix.goos }}/${{ matrix.goarch }}" = "darwin/amd64" ]; then
@@ -196,6 +220,9 @@ jobs:
             -o "dist/$STAGE/$BIN" .
           cp "$CORE_EMBED"/eos-core* "dist/$STAGE/core/${{ matrix.triple }}/"
           cp "$CORE_EMBED/manifest.json" "dist/$STAGE/core/${{ matrix.triple }}/"
+          CHANNEL=stable
+          if [[ "$VERSION" == *-beta.* && "$VERSION" != v1.0.0-beta.34 ]]; then CHANNEL=beta; fi
+          printf '{"channel":"%s","method":"archive"}\n' "$CHANNEL" > "dist/$STAGE/eos-install.json"
           # darwin/amd64 is cross-compiled on an arm64 runner; its native
           # runtime acceptance needs an Intel machine.
           if [ "${{ matrix.goos }}/${{ matrix.goarch }}" != "darwin/amd64" ]; then
@@ -249,13 +276,16 @@ jobs:
           VERSION="${{ inputs.version || github.ref_name }}"
           NOTES_FILE=".github/release-notes/$VERSION.md"
           [ -s "$NOTES_FILE" ] || { echo "::error::missing release notes: $NOTES_FILE"; exit 1; }
-          # The supported CLI beta channel is consumed through releases/latest
-          # by install.sh and eos update; do not strand it on beta.30.
+          # Keep prerelease builds out of the default stable install/update entry.
+          release_flags=(--prerelease=false --latest)
+          if [[ "$VERSION" == *-* ]]; then
+            release_flags=(--prerelease --latest=false)
+          fi
           gh release create "$VERSION" dist/* \
             --target "$GITHUB_SHA" \
             --title "EOS CLI $VERSION" \
             --notes-file "$NOTES_FILE" \
-            --prerelease=false --latest \
+            "${release_flags[@]}" \
             --repo "$GITHUB_REPOSITORY"
 
   winget:

@@ -17,6 +17,7 @@ jobs:
         with:
           # golangci-lint --new-from-rev=HEAD~1 需要至少两个提交的历史
           fetch-depth: 0
+          lfs: true
       - name: Install system dependencies
         # golang.design/x/clipboard 在 Linux 通过 cgo 绑定 X11 剪贴板，
         # 编译需要 X11 头文件；eos-cli 虽仅 Windows 分发，但 Linux job
@@ -28,6 +29,10 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.25"
+      - name: Test release core pairing guard
+        run: python3 -m unittest discover -s scripts -p test_verify_release_core.py
+      - name: Test Bash installation channels
+        run: python3 scripts/test_install_channels.py
       - name: Download dependencies
         run: go mod download
       - name: Build
@@ -42,6 +47,10 @@ jobs:
         with:
           version: v2.13.2
           args: --new-from-rev=HEAD~1
+      # Contract CT-01 读 third_party/eos-core-protocol/schema.json（仓库内锚点）。
+      # 不在此 job 检出完整 eos-core-rs：actions/checkout 的 path 必须在
+      # GITHUB_WORKSPACE 下，而放进 module root 会触发
+      # TestClosedRustCoreSourceIsNotVendored。
       - name: Test
         run: go test ./... -timeout 300s
       - name: Verify packaged and embedded CLI runtime
@@ -58,11 +67,17 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # aarch64-apple-darwin/eos-core 走 Git LFS；默认 checkout 只留下
+          # pointer，go:embed / VerifyBinary 会对上错误的 sha256。
+          lfs: true
       - uses: actions/setup-go@v6
         with:
           go-version: "1.25"
+      - name: Test Bash installation channels
+        run: python3 scripts/test_install_channels.py
       - name: Test native CLI contracts and runtime
-        run: go test ./pkg/coreapi/sidecar ./internal/headless ./internal/ui/adapter ./pkg/attachments -timeout 300s
+        run: go test ./internal/update ./pkg/coreapi/sidecar ./internal/headless ./internal/ui/adapter ./pkg/attachments -timeout 300s
       - name: Verify packaged and embedded CLI runtime (macOS)
         run: |
           go build -trimpath -o "$RUNNER_TEMP/eos-runtime-gate/eos" .
@@ -75,9 +90,14 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          lfs: true
       - uses: actions/setup-go@v6
         with:
           go-version: "1.25"
+      - name: Test PowerShell installation channels
+        shell: pwsh
+        run: ./scripts/test_install_channels.ps1
       - name: Build (Windows)
         run: go build ./...
       - name: Test (Windows)

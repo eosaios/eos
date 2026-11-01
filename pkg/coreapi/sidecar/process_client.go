@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"runtime"
@@ -182,7 +183,14 @@ func (c *ProcessClient) CloseWithTimeout(timeout time.Duration) error {
 	}
 	c.closeOnce.Do(func() {
 		if c.client != nil {
-			_ = c.client.Close()
+			// A synchronous Windows pipe close may wait for the child. Keep it
+			// outside the process deadline so the deadline can terminate a child
+			// which ignores EOF and release the pending pipe read.
+			go func() {
+				if err := c.client.Close(); err != nil && !errors.Is(err, io.EOF) {
+					slog.Debug("core.stream.close.failed", "error", err)
+				}
+			}()
 		}
 		if timeout <= 0 {
 			timeout = 2 * time.Second

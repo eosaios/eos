@@ -58,7 +58,9 @@ func TestRootRunShortCircuitsOnVersionFlag(t *testing.T) {
 	os.Stdout = wOut
 	t.Cleanup(func() { os.Stdout = origStdout })
 
-	rootCmd.Run(rootCmd, nil)
+	if err := rootCmd.RunE(rootCmd, nil); err != nil {
+		t.Fatalf("version root command: %v", err)
+	}
 	_ = wOut.Close()
 
 	output, _ := io.ReadAll(rOut)

@@ -408,7 +408,6 @@ func TestConvertEventReasoningCompletedJoinsContentVec(t *testing.T) {
 	}
 }
 
-
 func TestConvertEventBrowserEvents(t *testing.T) {
 	cases := []struct {
 		name string

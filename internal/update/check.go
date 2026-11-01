@@ -24,9 +24,10 @@ const githubRepo = "eos"
 var checkTimeout = 15 * time.Second
 
 type CheckResult struct {
-	CurrentVersion string `json:"currentVersion"`
-	LatestVersion  string `json:"latestVersion"`
-	HasUpdate      bool   `json:"hasUpdate"`
+	Channel        Channel `json:"channel"`
+	CurrentVersion string  `json:"currentVersion"`
+	LatestVersion  string  `json:"latestVersion"`
+	HasUpdate      bool    `json:"hasUpdate"`
 	// AssetName / DownloadURL 指向当前平台对应的发布归档
 	// （eos-cli_<版本>_<goos>-<goarch>.tar.gz / .zip），而非裸二进制。
 	AssetName string `json:"assetName,omitempty"`
@@ -47,12 +48,15 @@ func checkLatestFor(ctx context.Context, goos, goarch string, client *http.Clien
 		return &CheckResult{CurrentVersion: current, HasUpdate: false}, nil
 	}
 
-	latest, err := fetchLatestTag(ctx, latestReleasesPageURL(), client)
+	executable, err := currentExecutable()
 	if err != nil {
 		return nil, err
 	}
-
-	return buildCheckResult(current, latest, goos, goarch), nil
+	install, err := ReadInstallation(executable, current)
+	if err != nil {
+		return nil, err
+	}
+	return checkChannelFor(ctx, install.Channel, platform{goos, goarch}, client)
 }
 
 // latestReleasesPageURL 返回 releases/latest 网页地址（非 API 端点）。

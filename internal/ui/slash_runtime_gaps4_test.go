@@ -32,10 +32,10 @@ import (
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/eosaios/eos/internal/config"
 	"github.com/eosaios/eos/internal/ui/panels"
 	"github.com/eosaios/eos/pkg/coreapi"
-	tea "charm.land/bubbletea/v2"
 )
 
 func TestWorkspaceSlashAddRemoveFailures(t *testing.T) {
@@ -475,9 +475,9 @@ func TestFastSlashSwitchBackSelectError(t *testing.T) {
 	}
 	eng.activeModel = "fast-model"
 	eng.modelCtxSnapshot = coreapi.ModelContextSnapshot{
-		ResolvedModelName:   "fast-model",
-		WorkspaceModelName:  "default-model",
-		GlobalDefaultName:   "default-model",
+		ResolvedModelName:  "fast-model",
+		WorkspaceModelName: "default-model",
+		GlobalDefaultName:  "default-model",
 	}
 	eng.selectModelErr = os.ErrPermission
 	app.handleFastSlash()

@@ -17,8 +17,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/eosaios/eos/internal/ui/views/confirm"
 	tea "charm.land/bubbletea/v2"
+	"github.com/eosaios/eos/internal/ui/views/confirm"
 )
 
 func TestUpdateInlinePermissionUIGuards(t *testing.T) {

@@ -132,8 +132,8 @@ type fakeExecWSSvc struct{}
 func (s *fakeExecWSSvc) List(context.Context, coreapi.WorkspaceListRequest) ([]coreapi.Workspace, error) {
 	return nil, nil
 }
-func (s *fakeExecWSSvc) Default(context.Context) (string, error)   { return "", nil }
-func (s *fakeExecWSSvc) Last(context.Context) (string, error)      { return "", nil }
+func (s *fakeExecWSSvc) Default(context.Context) (string, error) { return "", nil }
+func (s *fakeExecWSSvc) Last(context.Context) (string, error)    { return "", nil }
 func (s *fakeExecWSSvc) ResolveForeground(context.Context, coreapi.ResolveForegroundWorkspaceRequest) (string, error) {
 	return "", nil
 }

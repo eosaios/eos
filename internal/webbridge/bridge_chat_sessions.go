@@ -227,13 +227,88 @@ func (svc *ChatService) ArchiveSession(sessionID string, archived bool) (Bootstr
 			})
 		}
 	}
-	if archived {
-	} else {
-	}
 	s.ensureActiveSessionLocked("")
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
 	return s.LoadBootstrap(), nil
+}
+
+// ArchiveWorkspaceSessions 批量归档/恢复一个工作区下的全部会话。
+// 归档方向从内存投影筛目标（workspacePathKey 归一比较，与前端分组同一
+// 口径）并跳过运行中的会话；恢复方向从内核归档列表按 workspace 取目标。
+// 逐会话走既有 archive 软标志 RPC，单个失败不中断整批（软标志部分成功
+// 后 LoadBootstrap 反映真实状态），末尾统一重算当前会话、emitShellUpdated
+// ——前端只见一次刷新。
+func (svc *ChatService) ArchiveWorkspaceSessions(workspacePath string, archived bool) (BootstrapState, error) {
+	s := svc.bridge
+	if s == nil {
+		return BootstrapState{}, errors.New("bridge service is not available")
+	}
+	targetKey := workspacePathKey(workspacePath)
+
+	var targetIDs []string
+	if archived {
+		s.stateMu.Lock()
+		for _, session := range s.sessions {
+			if session.Running || workspacePathKey(session.WorkspacePath) != targetKey {
+				continue
+			}
+			targetIDs = append(targetIDs, session.ID)
+		}
+		s.stateMu.Unlock()
+	} else {
+		for _, card := range s.loadArchivedSessionCardsReadOnly() {
+			if workspacePathKey(card.WorkspacePath) != targetKey {
+				continue
+			}
+			targetIDs = append(targetIDs, card.ID)
+		}
+	}
+	if len(targetIDs) == 0 {
+		return s.LoadBootstrap(), nil
+	}
+
+	var doneIDs []string
+	var lastErr error
+	for _, id := range targetIDs {
+		if err := s.archiveSessionRPC(id, archived); err != nil {
+			lastErr = err
+			continue
+		}
+		doneIDs = append(doneIDs, id)
+	}
+
+	s.stateMu.Lock()
+	if len(doneIDs) > 0 {
+		currentArchived := false
+		for _, id := range doneIDs {
+			if s.currentSessionID == id {
+				currentArchived = true
+			}
+			// 与单会话 ArchiveSession 一致：两个方向都从投影移除，让下次
+			// 投影从内核重建（归档列表/会话列表随即反映新状态）。
+			delete(s.sessions, id)
+		}
+		if archived && currentArchived {
+			s.currentSessionID = ""
+			if next := s.latestSessionForWorkspaceLocked(""); next != nil {
+				s.currentSessionID = next.ID
+				s.activeWorkspace = next.WorkspacePath
+			}
+			if s.currentSessionID != "" {
+				s.tryCoreRPC("activate-workspace", s.activeWorkspace, "", func() error {
+					return s.activateWorkspaceRPC(s.activeWorkspace)
+				})
+				s.tryCoreRPC("set-current-session", s.activeWorkspace, s.currentSessionID, func() error {
+					return s.setWorkspaceCurrentSessionRPC(s.activeWorkspace, s.currentSessionID)
+				})
+			}
+		}
+	}
+	s.ensureActiveSessionLocked("")
+	s.emitShellUpdated()
+	s.stateMu.Unlock()
+	return s.LoadBootstrap(), lastErr
 }
 
 func (svc *ChatService) PredictNextUserMessage(draft string) (string, error) {

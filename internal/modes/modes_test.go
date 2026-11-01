@@ -9,15 +9,15 @@ import "testing"
 
 func TestNormalizeExecutionMode(t *testing.T) {
 	cases := map[string]string{
-		"":             "auto",
-		"plan":         "plan",
-		"PLAN":         "plan",
-		"plan_first":   "plan",
-		"计划优先":       "plan",
-		"auto":         "auto",
-		"auto-mode":    "auto",
+		"":            "auto",
+		"plan":        "plan",
+		"PLAN":        "plan",
+		"plan_first":  "plan",
+		"计划优先":        "plan",
+		"auto":        "auto",
+		"auto-mode":   "auto",
 		"自动":          "auto",
-		"unknown-xyz":  "auto",
+		"unknown-xyz": "auto",
 	}
 	for in, want := range cases {
 		if got := NormalizeExecutionMode(in); got != want {
@@ -28,16 +28,16 @@ func TestNormalizeExecutionMode(t *testing.T) {
 
 func TestNormalizeAccessMode(t *testing.T) {
 	cases := map[string]string{
-		"":                  "workspace-write",
-		"read-only":         "read-only",
-		"readonly":          "read-only",
-		"只读":               "read-only",
-		"workspace-write":   "workspace-write",
-		"workspace":         "workspace-write",
+		"":                   "workspace-write",
+		"read-only":          "read-only",
+		"readonly":           "read-only",
+		"只读":                 "read-only",
+		"workspace-write":    "workspace-write",
+		"workspace":          "workspace-write",
 		"danger-full-access": "danger-full-access",
-		"full":              "danger-full-access",
-		"完全访问":            "danger-full-access",
-		"nope":              "workspace-write",
+		"full":               "danger-full-access",
+		"完全访问":               "danger-full-access",
+		"nope":               "workspace-write",
 	}
 	for in, want := range cases {
 		if got := NormalizeAccessMode(in); got != want {
@@ -48,12 +48,12 @@ func TestNormalizeAccessMode(t *testing.T) {
 
 func TestNormalizeApprovalMode(t *testing.T) {
 	cases := map[string]string{
-		"":            "on-request",
-		"on-request":  "on-request",
-		"untrusted":   "untrusted",
-		"never":       "never",
+		"":           "on-request",
+		"on-request": "on-request",
+		"untrusted":  "untrusted",
+		"never":      "never",
 		"从不审批":       "never",
-		"nope":        "on-request",
+		"nope":       "on-request",
 	}
 	for in, want := range cases {
 		if got := NormalizeApprovalMode(in); got != want {

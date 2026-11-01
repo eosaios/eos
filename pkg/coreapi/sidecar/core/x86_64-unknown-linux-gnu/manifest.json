@@ -4,8 +4,8 @@
   "api_version": "v1",
   "target": "x86_64-unknown-linux-gnu",
   "binary": "eos-core",
-  "sha256": "sha256:d06237485a61a3cd0eb824daed97e7b2caa35ca2c546fbeb95fd1c28dccd87f7",
-  "signature": "ed25519:J7LgfHHmay5o45xzyTLZwiiOzJLK2xyFPgoIuY5LkS7nOxM52cLAVvIqUtRQzGOEmB5D3KfrftpkrXcsk2v4Cg==",
+  "sha256": "sha256:0187095a1873cd132d3d800c2575c8385477a8d5f88fc4cefca1c47723070ede",
+  "signature": "ed25519:/M1pqH22lcxUq07AljOzPMQ0ywZSw2iZlDxNMwhTT4Rz/im6jJ+OEktrwVkYBXxTGSwuKkU8/1mqecfzIqGICg==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "initialize",
@@ -134,6 +134,7 @@
     "runtime/execution_mode/set",
     "runtime/sandbox_mode/set",
     "runtime/reasoning_level/set",
+    "model/connections",
     "model/list",
     "model/catalog",
     "model/bundled_mcp",
@@ -206,5 +207,6 @@
     "agent/control",
     "diagnostics/startup"
   ],
-  "signature_algorithm": "ed25519"
+  "signature_algorithm": "ed25519",
+  "source_commit": "a7def3fd3716782b91063c9f907436a74984fc6c"
 }

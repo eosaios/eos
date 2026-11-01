@@ -90,7 +90,7 @@ func highlightANSI(code string, lang string, theme string) string {
 }
 
 // HighlightDiffANSI 用 chroma 的 diff lexer 渲染统一 diff 的 ANSI 高亮
-//（+/-/@@ 标记行着色）。theme 会被 NormalizeChromaTheme 校验回退。
+// （+/-/@@ 标记行着色）。theme 会被 NormalizeChromaTheme 校验回退。
 // 注意：输入必须是原始 diff 文本；截断应在调用前完成，避免截断 ANSI 序列。
 func HighlightDiffANSI(diff string, theme string) string {
 	return highlightANSI(diff, "diff", theme)
