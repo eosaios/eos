@@ -130,11 +130,13 @@ func (s *Stream) Close() error {
 	}
 	var err error
 	s.closeOnce.Do(func() {
-		if s.readCloser != nil {
-			err = s.readCloser.Close()
-		}
+		// Signal EOF to the peer before waiting for an in-flight pipe read to
+		// finish. Windows synchronous pipe Close waits for ReadFile to return.
 		if s.writeCloser != nil {
-			if closeErr := s.writeCloser.Close(); err == nil {
+			err = s.writeCloser.Close()
+		}
+		if s.readCloser != nil {
+			if closeErr := s.readCloser.Close(); err == nil {
 				err = closeErr
 			}
 		}
