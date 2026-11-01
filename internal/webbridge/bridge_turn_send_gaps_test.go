@@ -343,6 +343,7 @@ func TestSendChatArms(t *testing.T) {
 			return session != nil && !session.Running && !running
 		})
 		eventually(t, "shellUpdated emitted", func() bool { return rec.has(shellUpdatedEventName) })
+		s.conversationWG.Wait()
 	})
 }
 
@@ -397,6 +398,9 @@ func TestResumeFailedTurnArms(t *testing.T) {
 			defer s.stateMu.RUnlock()
 			return s.sessions["sess-1"] != nil && !s.sessions["sess-1"].Running
 		})
+		// Running clears before the final shell projection writes to HOME.
+		// Join the worker before TempDir cleanup can remove that directory.
+		s.conversationWG.Wait()
 	})
 }
 
