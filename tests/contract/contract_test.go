@@ -112,12 +112,6 @@ func loadRustSchema(t *testing.T) rustSchema {
 	return s
 }
 
-func sortedCopy(in []string) []string {
-	out := append([]string(nil), in...)
-	sort.Strings(out)
-	return out
-}
-
 func setDiff(a, b map[string]bool) []string {
 	var out []string
 	for k := range a {

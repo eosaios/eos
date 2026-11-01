@@ -30,12 +30,10 @@ type ModelServer struct {
 
 	srv *httptest.Server
 
-	mu         sync.Mutex
-	scripts    []*ModelScript
-	barriers   []*Barrier
-	nextScript int
-	requests   []CapturedRequest
-	unmatched  int
+	mu        sync.Mutex
+	scripts   []*ModelScript
+	requests  []CapturedRequest
+	unmatched int
 }
 
 // ModelScript 是一段“按谓词命中”的模型脚本。

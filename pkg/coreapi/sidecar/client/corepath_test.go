@@ -2,8 +2,6 @@ package client_test
 
 import (
 	"os"
-	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/eosaios/eos/pkg/coreapi/sidecar"
@@ -43,18 +41,4 @@ func resolveE2ECoreBinary(t *testing.T) string {
 			"请构建内核或设置 %s。", err, sidecar.EnvCorePath)
 	}
 	return resolved.Path
-}
-
-// vendoredManifestDir 返回仓库内嵌产物中当前目标的目录名。
-//
-// 仅用于诊断信息；测试驱动内核一律走 resolveE2ECoreBinary。
-func vendoredManifestDir(t *testing.T) string {
-	t.Helper()
-	_, thisFile, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("runtime.Caller failed")
-	}
-	root := filepath.Clean(filepath.Join(filepath.Dir(thisFile), "..", "..", ".."))
-	target := sidecar.TargetTriple(runtime.GOOS, runtime.GOARCH)
-	return filepath.Join(root, "pkg", "coreapi", "sidecar", "core", target)
 }

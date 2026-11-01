@@ -138,10 +138,14 @@ func TestRefreshRotationAndFailure(t *testing.T) {
 					reply(w, map[string]any{"access_token": "new-access", "refresh_token": "new-refresh", "access_token_expires_in": 3600})
 				case "rejected":
 					w.WriteHeader(401)
-					w.Write([]byte(`{"error":{"code":"AUTH_INVALID_TOKEN"}}`))
+					if _, err := w.Write([]byte(`{"error":{"code":"AUTH_INVALID_TOKEN"}}`)); err != nil {
+						t.Error(err)
+					}
 				case "network":
 					w.WriteHeader(503)
-					w.Write([]byte(`{"error":{"code":"UNAVAILABLE"}}`))
+					if _, err := w.Write([]byte(`{"error":{"code":"UNAVAILABLE"}}`)); err != nil {
+						t.Error(err)
+					}
 				case "invalid":
 					reply(w, map[string]any{"access_token": "new-access"})
 				}
@@ -150,20 +154,23 @@ func TestRefreshRotationAndFailure(t *testing.T) {
 			store.value = string(raw)
 			before := store.value
 			state, err := m.Status(context.Background())
-			if mode == "success" {
+			switch mode {
+			case "success":
 				if err != nil || state != (State{LoggedIn: true, UserID: "u"}) {
 					t.Fatalf("state=%+v %v", state, err)
 				}
 				var s session
-				json.Unmarshal([]byte(store.value), &s)
+				if err := json.Unmarshal([]byte(store.value), &s); err != nil {
+					t.Fatal(err)
+				}
 				if s.Refresh != "new-refresh" {
 					t.Fatal("rotation not persisted")
 				}
-			} else if mode == "network" {
+			case "network":
 				if err != nil || state != (State{LoggedIn: true, ProfileError: "ACCOUNT_PROFILE_SYNC_FAILED"}) || store.value != before {
 					t.Fatalf("transient refresh lost stored identity: %+v %v", state, err)
 				}
-			} else {
+			default:
 				if err == nil {
 					t.Fatal("expected failure")
 				}

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -59,14 +60,30 @@ func capturePrintStartupFailure(t *testing.T, run func() error) (string, string)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer stdoutReader.Close()
-	defer stdoutWriter.Close()
+	defer func() {
+		if err := stdoutReader.Close(); err != nil && !errors.Is(err, os.ErrClosed) {
+			t.Error(err)
+		}
+	}()
+	defer func() {
+		if err := stdoutWriter.Close(); err != nil && !errors.Is(err, os.ErrClosed) {
+			t.Error(err)
+		}
+	}()
 	stderrReader, stderrWriter, err := os.Pipe()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer stderrReader.Close()
-	defer stderrWriter.Close()
+	defer func() {
+		if err := stderrReader.Close(); err != nil && !errors.Is(err, os.ErrClosed) {
+			t.Error(err)
+		}
+	}()
+	defer func() {
+		if err := stderrWriter.Close(); err != nil && !errors.Is(err, os.ErrClosed) {
+			t.Error(err)
+		}
+	}()
 	previousStdout, previousStderr := os.Stdout, os.Stderr
 	os.Stdout, os.Stderr = stdoutWriter, stderrWriter
 	defer func() { os.Stdout, os.Stderr = previousStdout, previousStderr }()

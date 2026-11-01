@@ -323,15 +323,6 @@ func stringAt(m map[string]any, key string) string {
 	return s
 }
 
-func firstNonEmptyString(vals ...string) string {
-	for _, v := range vals {
-		if v != "" {
-			return v
-		}
-	}
-	return ""
-}
-
 // DecodeInto 把事件的 Payload 解码到强类型结构体，失败即 Fatal。
 func DecodeInto(t testing.TB, e Event, out any) {
 	t.Helper()

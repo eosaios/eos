@@ -77,7 +77,7 @@ func TestCT05_RealWireFramingUnicode(t *testing.T) {
 		if !bytes.HasPrefix(buf.Bytes(), []byte(wantHeader)) {
 			t.Errorf("生产写路径的 Content-Length 不是字节数：\n  want %q\n  got  %q\n"+
 				"  (payload 字节数=%d 字符数=%d)",
-				wantHeader, trunc(string(buf.Bytes()), 60), wantLen, gotRunes)
+				wantHeader, trunc(buf.String(), 60), wantLen, gotRunes)
 		}
 		// 写出来的帧必须能被读回来（含中文与 emoji 往返无损）。
 		// 比较对象是 result 部分：payload 是完整信封，ReadMessage 返回信封。

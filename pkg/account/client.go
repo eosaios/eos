@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -40,7 +41,7 @@ func newClient(base string) (*client, error) {
 		return nil, errors.New("ACCOUNT_ENDPOINT_INVALID")
 	}
 	local := u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" || u.Hostname() == "::1"
-	if u.Scheme != "https" && !(local && u.Scheme == "http") {
+	if u.Scheme != "https" && (!local || u.Scheme != "http") {
 		return nil, errors.New("ACCOUNT_HTTPS_REQUIRED")
 	}
 	return &client{base, &http.Client{Timeout: 20 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return errors.New("ACCOUNT_REDIRECT_REJECTED") }}}, nil
@@ -69,7 +70,11 @@ func (c *client) call(ctx context.Context, method, path string, body any, token 
 	if err != nil {
 		return errNetwork
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			slog.Debug("account.response.close_failed", "error", err)
+		}
+	}()
 	var env struct {
 		Data  json.RawMessage `json:"data"`
 		Error *struct {
