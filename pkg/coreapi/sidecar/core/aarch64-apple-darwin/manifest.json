@@ -4,10 +4,24 @@
   "api_version": "v1",
   "target": "aarch64-apple-darwin",
   "binary": "eos-core",
-  "sha256": "sha256:47aae2c4dce1b3d853e47426b18ca2ed7484047d64f74c7fc1a82a1d32b6017d",
-  "signature": "ed25519:QWFOuUiTJG4rfKm2SGc8FRM89lIRRl+JL8hZVo7J1CVFg8gec6E47OaudwxKVccLwb8KG4RKfpWN5G20uKdAAw==",
+  "sha256": "sha256:87045e86ea19bd650bcfa721fdafd0812d62ba66e03c4508633214da65151fef",
+  "signature": "ed25519:h1Agu3lAnbsC9P5c6hvmxZ9MbaKDukEn402ApFv+cdaRWUQcKGkVFciUsQc8lPyahCkxZPNbf5lrn4o06wEIAg==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
+    "plugin/market/identity",
+    "plugin/market/host",
+    "plugin/market/search",
+    "plugin/market/prepare",
+    "plugin/market/install",
+    "plugin/market/list",
+    "plugin/market/sync",
+    "plugin/market/set-enabled",
+    "plugin/market/remove",
+    "plugin/market/view",
+    "plugin/market/ui-call",
+    "plugin/market/diagnose",
+    "plugin/market/signout",
+    "plugin/market/access-denied",
     "initialize",
     "shutdown",
     "workspace/list",
@@ -207,6 +221,5 @@
     "agent/control",
     "diagnostics/startup"
   ],
-  "signature_algorithm": "ed25519",
-  "source_commit": "a7def3fd3716782b91063c9f907436a74984fc6c"
+  "signature_algorithm": "ed25519"
 }

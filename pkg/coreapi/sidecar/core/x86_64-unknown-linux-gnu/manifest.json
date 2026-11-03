@@ -4,10 +4,24 @@
   "api_version": "v1",
   "target": "x86_64-unknown-linux-gnu",
   "binary": "eos-core",
-  "sha256": "sha256:0187095a1873cd132d3d800c2575c8385477a8d5f88fc4cefca1c47723070ede",
-  "signature": "ed25519:/M1pqH22lcxUq07AljOzPMQ0ywZSw2iZlDxNMwhTT4Rz/im6jJ+OEktrwVkYBXxTGSwuKkU8/1mqecfzIqGICg==",
+  "sha256": "sha256:78521b4b4bf648edb88816023c3cc1e0ba36ee10d9052f3c3d1aebb07a218155",
+  "signature": "ed25519:Ta1CJKpHeUMUOXmDLpuFdKocYktkhj976JSZGp/xocAs4qKGEYFCouxeIi+pPzarZpjRGhRoTivS1smHT5YADg==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
+    "plugin/market/identity",
+    "plugin/market/host",
+    "plugin/market/search",
+    "plugin/market/prepare",
+    "plugin/market/install",
+    "plugin/market/list",
+    "plugin/market/sync",
+    "plugin/market/set-enabled",
+    "plugin/market/remove",
+    "plugin/market/view",
+    "plugin/market/ui-call",
+    "plugin/market/diagnose",
+    "plugin/market/signout",
+    "plugin/market/access-denied",
     "initialize",
     "shutdown",
     "workspace/list",
@@ -207,6 +221,5 @@
     "agent/control",
     "diagnostics/startup"
   ],
-  "signature_algorithm": "ed25519",
-  "source_commit": "a7def3fd3716782b91063c9f907436a74984fc6c"
+  "signature_algorithm": "ed25519"
 }
