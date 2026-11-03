@@ -221,5 +221,7 @@
     "agent/control",
     "diagnostics/startup"
   ],
-  "signature_algorithm": "ed25519"
+  "signature_algorithm": "ed25519",
+  "source_commit": "dc7fd9d9d87a679309d5dd57c9b002821d5dee10",
+  "signed_build_run": 41617187822
 }
