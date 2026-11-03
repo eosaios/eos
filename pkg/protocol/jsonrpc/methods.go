@@ -214,7 +214,7 @@ const (
 )
 
 func AllCoreMethods() []string {
-	return []string{
+	return append([]string{
 		MethodInitialize,
 		MethodShutdown,
 		MethodWorkspaceList,
@@ -414,5 +414,5 @@ func AllCoreMethods() []string {
 		MethodConfigReload,
 		MethodAgentControl,
 		MethodDiagnosticsStartup,
-	}
+	}, pluginMarketMethods()...)
 }
