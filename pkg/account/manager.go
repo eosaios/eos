@@ -27,11 +27,12 @@ type State struct {
 	AvatarURL    string `json:"avatarUrl,omitempty"`
 }
 type session struct {
-	Access    string    `json:"access_token"`
-	Refresh   string    `json:"refresh_token"`
-	ExpiresIn int64     `json:"access_token_expires_in"`
-	ExpiresAt time.Time `json:"expires_at"`
-	Email     string    `json:"email,omitempty"`
+	PluginMarkets map[string]pluginMarketIdentity `json:"plugin_markets,omitempty"`
+	Access        string                          `json:"access_token"`
+	Refresh       string                          `json:"refresh_token"`
+	ExpiresIn     int64                           `json:"access_token_expires_in"`
+	ExpiresAt     time.Time                       `json:"expires_at"`
+	Email         string                          `json:"email,omitempty"`
 }
 type flow struct {
 	ID          string
@@ -260,6 +261,7 @@ func (m *Manager) refresh(ctx context.Context, s *session) error {
 		return err
 	}
 	next.Email = s.Email
+	next.PluginMarkets = s.PluginMarkets
 	if err = m.persist(next); err != nil {
 		return err
 	}

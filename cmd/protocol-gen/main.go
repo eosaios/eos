@@ -51,7 +51,7 @@ var fieldAbbreviations = map[string]string{
 }
 
 func snakeToPascal(s string, abbrevs map[string]string) string {
-	parts := strings.Split(s, "_")
+	parts := strings.Split(strings.ReplaceAll(s, "-", "_"), "_")
 	for i, part := range parts {
 		lower := strings.ToLower(part)
 		if abbr, ok := abbrevs[lower]; ok {
