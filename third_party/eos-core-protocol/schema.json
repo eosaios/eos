@@ -1,6 +1,62 @@
 {
   "methods": [
     {
+      "group": "extensions",
+      "name": "plugin/market/identity"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/host"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/search"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/prepare"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/install"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/list"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/sync"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/set-enabled"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/remove"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/view"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/ui-call"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/diagnose"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/signout"
+    },
+    {
+      "group": "extensions",
+      "name": "plugin/market/access-denied"
+    },
+    {
       "group": "system",
       "name": "initialize"
     },
