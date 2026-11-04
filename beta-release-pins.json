@@ -1,14 +1,14 @@
 {
   "channel": "beta",
   "version": "v1.0.0-beta.41",
-  "core_source_commit": "dc7fd9d9d87a679309d5dd57c9b002821d5dee10",
-  "core_beta_commit": "236b0fa82af1ea12ba72bcccd67e51535bb11208",
-  "signed_sidecar_run": 41617187822,
+  "core_source_commit": "ff2facfbe4f3f38171cd090c130044403f60d041",
+  "core_beta_commit": "f29b245596c5f5692302c0f2b615bdc090f1ccde",
+  "signed_sidecar_run": 41748898260,
   "core_sha256": {
-    "aarch64-apple-darwin": "87045e86ea19bd650bcfa721fdafd0812d62ba66e03c4508633214da65151fef",
-    "aarch64-unknown-linux-gnu": "ffe611b589bb8a2fae9affeda1afae6b6230f80aa2ba5f595bb62141b920c396",
-    "x86_64-apple-darwin": "137af2ea891e933a7068b2499c58c24e83930f667bc3449847c6d1b4f572fcab",
-    "x86_64-pc-windows-gnu": "4105c6108dc594d7be5b8b4cf2cd3497ec5e685d3c8e2cbbdb89f23ad285b253",
-    "x86_64-unknown-linux-gnu": "78521b4b4bf648edb88816023c3cc1e0ba36ee10d9052f3c3d1aebb07a218155"
+    "aarch64-apple-darwin": "45b905aa2c0e6da595b9925b051aa230f1876c7ae93f44072c8ff8821b1acf43",
+    "aarch64-unknown-linux-gnu": "07eb9dc5bb45d71d7ec0a859b1a43ca5a9b99398e8461c9867488f23b9aedd07",
+    "x86_64-apple-darwin": "7e1e0f3294484cc0caf638c7b8241685a9583c8c34cf8799182459a426ea8669",
+    "x86_64-pc-windows-gnu": "00a95fbd2e8dd871b12d191df36cd4990568ff4b98a08f11b0d10bf84a880ac2",
+    "x86_64-unknown-linux-gnu": "ef3cd3f7abc9c665b5c0db58bc01cdc44dd943b3251060d14e7a9edee00f060f"
   }
 }
