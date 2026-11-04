@@ -1,11 +1,12 @@
 {
+  "source_commit": "ff2facfbe4f3f38171cd090c130044403f60d041",
   "schema_version": "1.0",
   "core_version": "0.1.0",
   "api_version": "v1",
   "target": "x86_64-unknown-linux-gnu",
   "binary": "eos-core",
-  "sha256": "sha256:78521b4b4bf648edb88816023c3cc1e0ba36ee10d9052f3c3d1aebb07a218155",
-  "signature": "ed25519:Ta1CJKpHeUMUOXmDLpuFdKocYktkhj976JSZGp/xocAs4qKGEYFCouxeIi+pPzarZpjRGhRoTivS1smHT5YADg==",
+  "sha256": "sha256:ef3cd3f7abc9c665b5c0db58bc01cdc44dd943b3251060d14e7a9edee00f060f",
+  "signature": "ed25519:mp3vL/+8RUF/5T8FZN6QwkNZXzleq1iM1OwjMD4tnkTpvQUWZ8DZu9kFYy/XMfW5qohTKJrGPF05oabVEgCMCA==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "plugin/market/identity",
@@ -221,7 +222,5 @@
     "agent/control",
     "diagnostics/startup"
   ],
-  "signature_algorithm": "ed25519",
-  "source_commit": "dc7fd9d9d87a679309d5dd57c9b002821d5dee10",
-  "signed_build_run": 41617187822
+  "signature_algorithm": "ed25519"
 }
