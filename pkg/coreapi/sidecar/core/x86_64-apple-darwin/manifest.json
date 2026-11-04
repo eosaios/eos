@@ -1,11 +1,12 @@
 {
+  "source_commit": "ff2facfbe4f3f38171cd090c130044403f60d041",
   "schema_version": "1.0",
   "core_version": "0.1.0",
   "api_version": "v1",
   "target": "x86_64-apple-darwin",
   "binary": "eos-core",
-  "sha256": "sha256:137af2ea891e933a7068b2499c58c24e83930f667bc3449847c6d1b4f572fcab",
-  "signature": "ed25519:PWs6qZA8HaOxdXSSG14LOowAvIGHBE77EhRrMCtg6fuhDYSyQCZox5TQ/YIgP9QZbX+ke2b52RG1dXoK5H3qDA==",
+  "sha256": "sha256:7e1e0f3294484cc0caf638c7b8241685a9583c8c34cf8799182459a426ea8669",
+  "signature": "ed25519:gzHwAPwRfHPyPbhq3TpImzGPIuspGfRI/7vDgVyEMHD5Sf+LkpzCtUb0wBTOGFqC1hWi5N+Zp/KWkQ8rUoqHAw==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "plugin/market/identity",
@@ -221,7 +222,5 @@
     "agent/control",
     "diagnostics/startup"
   ],
-  "signature_algorithm": "ed25519",
-  "source_commit": "dc7fd9d9d87a679309d5dd57c9b002821d5dee10",
-  "signed_build_run": 41617187822
+  "signature_algorithm": "ed25519"
 }
