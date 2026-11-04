@@ -1,12 +1,12 @@
 {
-  "source_commit": "ff2facfbe4f3f38171cd090c130044403f60d041",
+  "source_commit": "47f77aaa7af7eafb884fe7543b9825cbe5738a42",
   "schema_version": "1.0",
   "core_version": "0.1.0",
   "api_version": "v1",
   "target": "x86_64-apple-darwin",
   "binary": "eos-core",
-  "sha256": "sha256:7e1e0f3294484cc0caf638c7b8241685a9583c8c34cf8799182459a426ea8669",
-  "signature": "ed25519:gzHwAPwRfHPyPbhq3TpImzGPIuspGfRI/7vDgVyEMHD5Sf+LkpzCtUb0wBTOGFqC1hWi5N+Zp/KWkQ8rUoqHAw==",
+  "sha256": "sha256:384518ec95df4045f6d3fafafa6fa2cd381ff765bd3e1775a3a262f8482154aa",
+  "signature": "ed25519:Xg6HWsCqBciJZ6Q4Oa3VjSWPAdZuOZ7w9RsDlUstAVm3H2WBOTgLYdsN0SEk+lvLynbDrC6svdqyp2xbkqZ0Ag==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "plugin/market/identity",

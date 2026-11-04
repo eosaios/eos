@@ -1,12 +1,12 @@
 {
-  "source_commit": "ff2facfbe4f3f38171cd090c130044403f60d041",
+  "source_commit": "47f77aaa7af7eafb884fe7543b9825cbe5738a42",
   "schema_version": "1.0",
   "core_version": "0.1.0",
   "api_version": "v1",
   "target": "x86_64-pc-windows-gnu",
   "binary": "eos-core.exe",
-  "sha256": "sha256:00a95fbd2e8dd871b12d191df36cd4990568ff4b98a08f11b0d10bf84a880ac2",
-  "signature": "ed25519:kL/tPNBGEq96wQZGUBYacw1undqXFt2iWVamtEp3p1Xyc+PlIaiif6wyCWpqQ4H3VsRtjbKsw8mnghSr5umGCg==",
+  "sha256": "sha256:e631adc5614769eb0e7522192cd51c40bae2f5d1438d9749f595d2e08e2974f2",
+  "signature": "ed25519:h+flx2PR1AxK9ES8NM1N6CKq5Px2n1oPzJ/NSHWM5E4gh2rrNC9PAxtmWqj/vfzV2binYiGf1Ld0JLDv4JmACg==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "plugin/market/identity",
