@@ -1,12 +1,12 @@
 {
-  "source_commit": "ff2facfbe4f3f38171cd090c130044403f60d041",
+  "source_commit": "47f77aaa7af7eafb884fe7543b9825cbe5738a42",
   "schema_version": "1.0",
   "core_version": "0.1.0",
   "api_version": "v1",
   "target": "aarch64-unknown-linux-gnu",
   "binary": "eos-core",
-  "sha256": "sha256:07eb9dc5bb45d71d7ec0a859b1a43ca5a9b99398e8461c9867488f23b9aedd07",
-  "signature": "ed25519:Anj9sEqPdm9SAZXCKMx2cgS2lPGD7O5I/Qg826C1hWf3AIPFz70r+DB7Xmrn/abUv5Si6x4dzB58ZuoBfWTJAg==",
+  "sha256": "sha256:51fc6ecf074d8a52a51927dd8da20fa27c7dde079ddfbe70030ad1f6f1c2d817",
+  "signature": "ed25519:h8yF1oGUmtbMC3gpoMTDVTVlMED1QH1AdFlOaIbzq9QhqY5c+2h1olmT6Nu1pObNx8I6XtDD5jNe62OEOz0lCQ==",
   "min_cli_version": "v1.0.0-beta.1",
   "features": [
     "plugin/market/identity",
