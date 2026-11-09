@@ -23,6 +23,7 @@ func newHiddenLegalCmd() *cobra.Command {
 			fmt.Println("License: EOS Non-Commercial License v1.1 (EOS-NCL-1.1)")
 			fmt.Println("SPDX-License-Identifier: EOS-NCL-1.1")
 			fmt.Println("Contact: legal@eosaios.com")
+			fmt.Println("Website: https://eosaios.com")
 			fmt.Println()
 			fmt.Printf("Version:     %s\n", version.AppVersion)
 			fmt.Printf("BuildCommit: %s\n", version.BuildCommit)
