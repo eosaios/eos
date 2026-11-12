@@ -22,6 +22,7 @@ func printVersion() {
 	if version.BuildCommit != "" && version.BuildCommit != "unknown" {
 		fmt.Printf("commit %s, built %s\n", version.BuildCommit, version.BuildDate)
 	}
+	fmt.Println("© 2026 EOSAIOS · https://eosaios.com")
 }
 
 func newVersionCmd() *cobra.Command {

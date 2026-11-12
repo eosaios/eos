@@ -1154,6 +1154,7 @@ type SkillInfo struct {
 	Location               string   `json:"location,omitempty"`
 	BaseDir                string   `json:"base_dir,omitempty"`
 	AllowedTools           []string `json:"allowed_tools,omitempty"`
+	AllowedToolsDefined    bool     `json:"allowed_tools_defined"`
 	Enabled                bool     `json:"enabled"`
 	Active                 bool     `json:"active"`
 	DisableModelInvocation bool     `json:"disable_model_invocation"`
