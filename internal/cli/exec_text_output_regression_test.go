@@ -26,7 +26,14 @@ func TestExecTextOutputPrintsStreamOnce(t *testing.T) {
 }
 
 func TestExecTextOutputKeepsFinalOnlyReply(t *testing.T) {
-	events := make(chan protocol.Envelope, 3)
+	for _, prefix := range []string{"", "progress"} {
+		t.Run("prefix="+prefix, func(t *testing.T) { assertExecFinalOnly(t, prefix) })
+	}
+}
+
+func assertExecFinalOnly(t *testing.T, prefix string) {
+	t.Helper()
+	events := make(chan protocol.Envelope, 5)
 	release := make(chan struct{})
 	started := make(chan coreapi.StartTurnRequest, 1)
 	defer close(release)
@@ -38,6 +45,10 @@ func TestExecTextOutputKeepsFinalOnlyReply(t *testing.T) {
 	}
 	go func() {
 		req := <-started
+		if prefix != "" {
+			events <- protocol.NewEvent(protocol.EventTypeTurnItemDelta, protocol.EventOptions{SessionID: req.SessionID, TurnID: req.TurnID, Payload: map[string]any{"delta_type": "text", "delta": prefix}})
+			events <- protocol.NewEvent(protocol.EventTypeTurnItemCompleted, protocol.EventOptions{SessionID: req.SessionID, TurnID: req.TurnID, Payload: map[string]any{"item": map[string]any{"kind": "agent_message", "text": prefix}}})
+		}
 		events <- protocol.NewEvent(protocol.EventType("turn.retry"), protocol.EventOptions{
 			SessionID: req.SessionID, TurnID: req.TurnID,
 			Payload: map[string]any{"message": "正在重试（1/10）"},
@@ -88,7 +99,7 @@ func TestExecTextOutputKeepsFinalOnlyReply(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if output != "final only\n" {
+	if output != prefix+"final only\n" {
 		t.Fatalf("stdout = %q, want the final-only reply once", output)
 	}
 	if !strings.Contains(string(diagnostics), "正在重试（1/10）") {
