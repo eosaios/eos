@@ -356,7 +356,9 @@ func runSingleTurn(ctx context.Context, engine coreapi.Engine, query, outputForm
 	var content string
 	err = headless.AwaitTurn(ctx, startDone, events, func(eventType protocol.EventType, payload map[string]any, raw protocol.EventType) (bool, error) {
 		if string(raw) == "turn.retry" {
-			fmt.Fprintln(os.Stderr, headless.PayloadText("Model connection interrupted; retrying", payload, "message", "error"))
+			if _, err := fmt.Fprintln(os.Stderr, headless.PayloadText("Model connection interrupted; retrying", payload, "message", "error")); err != nil {
+				return true, err
+			}
 			return false, nil
 		}
 		switch eventType {
@@ -392,7 +394,9 @@ func runSingleTurn(ctx context.Context, engine coreapi.Engine, query, outputForm
 	// Some providers emit a final message without any text deltas. That is a
 	// distinct event shape: print it once here, through the same text owner.
 	if streamLive && !streamedText && content != "" {
-		fmt.Fprint(os.Stdout, content)
+		if _, writeErr := fmt.Fprint(os.Stdout, content); writeErr != nil {
+			return content, writeErr
+		}
 	}
 	return content, err
 }

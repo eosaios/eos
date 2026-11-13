@@ -42,11 +42,15 @@ func TestWriteExecErrorAndOutput(t *testing.T) {
 
 	n := 1
 	f := 1.5
-	writeExecOutput("text", ExecResult{
+	if err := writeExecOutput("text", ExecResult{
 		Content: "hello", Model: "m", DurationMs: 10,
 		TotalTokens: &n, CostUSD: &f, Workspace: "/ws",
-	})
-	writeExecOutput("json", ExecResult{Content: "h"})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeExecOutput("json", ExecResult{Content: "h"}); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestGoVersionAndLegalCmd(t *testing.T) {

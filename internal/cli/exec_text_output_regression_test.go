@@ -54,20 +54,35 @@ func TestExecTextOutputKeepsFinalOnlyReply(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer reader.Close()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
 	previousStderr := os.Stderr
 	os.Stderr = writer
-	defer func() { os.Stderr = previousStderr; writer.Close() }()
+	writerClosed := false
+	defer func() {
+		os.Stderr = previousStderr
+		if !writerClosed {
+			if err := writer.Close(); err != nil {
+				t.Error(err)
+			}
+		}
+	}()
 	output := captureStdout(t, func() {
 		content, err := runSingleTurn(context.Background(), engine, "hello", "text", "")
 		if err != nil {
 			t.Fatal(err)
 		}
-		writeExecOutput("text", ExecResult{Content: content})
+		if err := writeExecOutput("text", ExecResult{Content: content}); err != nil {
+			t.Fatal(err)
+		}
 	})
 	if err := writer.Close(); err != nil {
 		t.Fatal(err)
 	}
+	writerClosed = true
 	os.Stderr = previousStderr
 	diagnostics, err := io.ReadAll(reader)
 	if err != nil {
@@ -78,5 +93,23 @@ func TestExecTextOutputKeepsFinalOnlyReply(t *testing.T) {
 	}
 	if !strings.Contains(string(diagnostics), "正在重试（1/10）") {
 		t.Fatalf("retry progress missing from stderr: %q", diagnostics)
+	}
+}
+
+func TestExecOutputReportsClosedStdout(t *testing.T) {
+	closed, err := os.CreateTemp(t.TempDir(), "closed-output")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := closed.Close(); err != nil {
+		t.Fatal(err)
+	}
+	previous := os.Stdout
+	os.Stdout = closed
+	defer func() { os.Stdout = previous }()
+	for _, format := range []string{"text", "json"} {
+		if err := writeExecOutput(format, ExecResult{Content: "reply"}); err == nil {
+			t.Fatalf("%s output silently ignored closed stdout", format)
+		}
 	}
 }

@@ -173,8 +173,7 @@ func runExec(ctx context.Context, opts execOptions) error {
 		CostUSD:     usage.CostUSD,
 		Workspace:   opts.Workspace,
 	}
-	writeExecOutput(opts.Output, result)
-	return nil
+	return writeExecOutput(opts.Output, result)
 }
 
 // execOptionEnv 把 exec flags 透传到 eos-core 子进程环境变量。
@@ -300,14 +299,15 @@ func writeExecError(output string, err error) {
 	fmt.Fprintln(os.Stderr, "Error:", err.Error())
 }
 
-func writeExecOutput(output string, result ExecResult) {
+func writeExecOutput(output string, result ExecResult) error {
 	if output == "json" {
-		writeExecJSON(os.Stdout, result)
-		return
+		return json.NewEncoder(os.Stdout).Encode(result)
 	}
 	// runSingleTurn owns text output, including final-only providers. Only
 	// terminate its streamed line here; replaying Content duplicates the reply.
-	fmt.Fprintln(os.Stdout)
+	if _, err := fmt.Fprintln(os.Stdout); err != nil {
+		return err
+	}
 	parts := []string{
 		fmt.Sprintf("Model: %s", result.Model),
 		fmt.Sprintf("Duration: %v", time.Duration(result.DurationMs)*time.Millisecond),
@@ -321,7 +321,8 @@ func writeExecOutput(output string, result ExecResult) {
 	if result.Workspace != "" {
 		parts = append(parts, fmt.Sprintf("Workspace: %s", result.Workspace))
 	}
-	fmt.Fprintf(os.Stderr, "\n---\n%s\n", strings.Join(parts, " | "))
+	_, err := fmt.Fprintf(os.Stderr, "\n---\n%s\n", strings.Join(parts, " | "))
+	return err
 }
 
 func writeExecJSON(f *os.File, v ExecResult) {
