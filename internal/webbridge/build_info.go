@@ -31,7 +31,7 @@ type BuildMetadata struct {
 
 func CurrentBuildMetadata() BuildMetadata {
 	info := BuildMetadata{
-		AppName:   "EOS GUI",
+		AppName:   "EOS Agent",
 		Version:   strings.TrimSpace(BuildVersion),
 		Commit:    strings.TrimSpace(BuildCommit),
 		BuildDate: strings.TrimSpace(BuildDate),
