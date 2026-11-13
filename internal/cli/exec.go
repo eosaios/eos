@@ -305,7 +305,9 @@ func writeExecOutput(output string, result ExecResult) {
 		writeExecJSON(os.Stdout, result)
 		return
 	}
-	fmt.Fprintln(os.Stdout, result.Content)
+	// runSingleTurn owns text output, including final-only providers. Only
+	// terminate its streamed line here; replaying Content duplicates the reply.
+	fmt.Fprintln(os.Stdout)
 	parts := []string{
 		fmt.Sprintf("Model: %s", result.Model),
 		fmt.Sprintf("Duration: %v", time.Duration(result.DurationMs)*time.Millisecond),
