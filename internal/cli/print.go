@@ -352,8 +352,15 @@ func runSingleTurn(ctx context.Context, engine coreapi.Engine, query, outputForm
 
 	// text 格式实时打印 delta；其它格式只累积，turn 结束后统一输出。
 	streamLive := strings.EqualFold(strings.TrimSpace(outputFormat), "text")
+	streamedText := false
 	var content string
 	err = headless.AwaitTurn(ctx, startDone, events, func(eventType protocol.EventType, payload map[string]any, raw protocol.EventType) (bool, error) {
+		if string(raw) == "turn.retry" {
+			if _, err := fmt.Fprintln(os.Stderr, headless.PayloadText("Model connection interrupted; retrying", payload, "message", "error")); err != nil {
+				return true, err
+			}
+			return false, nil
+		}
 		switch eventType {
 		case protocol.EventTypeItemDelta:
 			if dt := headless.PayloadText("", payload, "delta_type"); dt != "" && dt != "text" {
@@ -363,6 +370,7 @@ func runSingleTurn(ctx context.Context, engine coreapi.Engine, query, outputForm
 			content += text
 			if streamLive && text != "" {
 				fmt.Fprint(os.Stdout, text)
+				streamedText = true
 			}
 		case protocol.EventTypeItemCompleted:
 			if item, ok := payload["item"].(map[string]any); ok {
@@ -383,6 +391,13 @@ func runSingleTurn(ctx context.Context, engine coreapi.Engine, query, outputForm
 		}
 		return false, nil
 	})
+	// Some providers emit a final message without any text deltas. That is a
+	// distinct event shape: print it once here, through the same text owner.
+	if streamLive && !streamedText && content != "" {
+		if _, writeErr := fmt.Fprint(os.Stdout, content); writeErr != nil {
+			return content, writeErr
+		}
+	}
 	return content, err
 }
 
