@@ -352,8 +352,19 @@ func runSingleTurn(ctx context.Context, engine coreapi.Engine, query, outputForm
 
 	// text 格式实时打印 delta；其它格式只累积，turn 结束后统一输出。
 	streamLive := strings.EqualFold(strings.TrimSpace(outputFormat), "text")
+	streamedText := false
+	messageStreamed := false
 	var content string
 	err = headless.AwaitTurn(ctx, startDone, events, func(eventType protocol.EventType, payload map[string]any, raw protocol.EventType) (bool, error) {
+		if err := headlessInteractionError(raw, session.ID); err != nil {
+			return true, err
+		}
+		if string(raw) == "turn.retry" {
+			if _, err := fmt.Fprintln(os.Stderr, headless.PayloadText("Model connection interrupted; retrying", payload, "message", "error")); err != nil {
+				return true, err
+			}
+			return false, nil
+		}
 		switch eventType {
 		case protocol.EventTypeItemDelta:
 			if dt := headless.PayloadText("", payload, "delta_type"); dt != "" && dt != "text" {
@@ -362,14 +373,25 @@ func runSingleTurn(ctx context.Context, engine coreapi.Engine, query, outputForm
 			text := headless.PayloadText("", payload, "delta", "text", "message")
 			content += text
 			if streamLive && text != "" {
-				fmt.Fprint(os.Stdout, text)
+				if _, err := fmt.Fprint(os.Stdout, text); err != nil {
+					return true, err
+				}
+				streamedText = true
+				messageStreamed = true
 			}
 		case protocol.EventTypeItemCompleted:
 			if item, ok := payload["item"].(map[string]any); ok {
 				if k, _ := item["kind"].(string); k == "agent_message" {
 					if text, _ := item["text"].(string); text != "" {
 						content = text
+						if streamLive && !messageStreamed {
+							if _, err := fmt.Fprint(os.Stdout, text); err != nil {
+								return true, err
+							}
+							streamedText = true
+						}
 					}
+					messageStreamed = false
 				}
 			}
 		case protocol.EventTypeTextFinal:
@@ -383,6 +405,13 @@ func runSingleTurn(ctx context.Context, engine coreapi.Engine, query, outputForm
 		}
 		return false, nil
 	})
+	// Some providers emit a final message without any text deltas. That is a
+	// distinct event shape: print it once here, through the same text owner.
+	if streamLive && !streamedText && content != "" {
+		if _, writeErr := fmt.Fprint(os.Stdout, content); writeErr != nil {
+			return content, writeErr
+		}
+	}
 	return content, err
 }
 
@@ -429,6 +458,10 @@ func runStreamJSONTurn(ctx context.Context, engine coreapi.Engine, query string,
 	writeJSONL(map[string]any{"type": "turn.started", "session_id": session.ID, "turn_id": turnID})
 
 	return headless.AwaitTurn(ctx, startDone, events, func(eventType protocol.EventType, payload map[string]any, raw protocol.EventType) (bool, error) {
+		if err := headlessInteractionError(raw, session.ID); err != nil {
+			writeJSONL(map[string]any{"type": string(raw), "session_id": session.ID, "error": map[string]string{"message": err.Error()}})
+			return true, err
+		}
 		switch eventType {
 		case protocol.EventTypeItemStarted, protocol.EventTypeItemDelta, protocol.EventTypeItemCompleted:
 			// item.* 事件原样透传：type + 完整 payload（含 item/delta/text 等字段）。
