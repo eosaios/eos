@@ -6,6 +6,8 @@ package i18n
 // 商业使用请联系版权人获得商业授权。
 
 var zhText = map[string]string{
+	"cli.headless.approval_required":  "会话 %s 需要审批。请在交互模式中打开该会话并检查请求。无人值守执行可用 --approval-mode never 明确拒绝需要审批的操作。",
+	"cli.headless.input_required":     "会话 %s 需要用户输入。请在交互模式中打开该会话，回答后继续。",
 	"attachment.added":                "已添加附件：%s（Esc 清除）",
 	"attachment.failed":               "添加附件失败：%v",
 	"attachment.only":                 "请分析附件文件。",

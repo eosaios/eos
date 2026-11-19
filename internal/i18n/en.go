@@ -6,6 +6,8 @@ package i18n
 // 商业使用请联系版权人获得商业授权。
 
 var enText = map[string]string{
+	"cli.headless.approval_required":  "Session %s requires approval. Open this session in interactive mode to review the request. For unattended execution, --approval-mode never explicitly rejects operations requiring approval.",
+	"cli.headless.input_required":     "Session %s needs user input. Open this session in interactive mode to answer and continue.",
 	"attachment.added":                "File attached: %s (Esc to clear)",
 	"attachment.failed":               "Could not attach file: %v",
 	"attachment.only":                 "Please analyze the attached files.",
