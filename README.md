@@ -90,7 +90,7 @@ curl -fsSL https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.sh | bas
 Windows（PowerShell）：
 
 ```powershell
-irm https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.ps1 | iex
+irm https://eosaios.com/assets/install/eos-cli.ps1 | iex
 ```
 
 安装后运行 `eos` 即可；`eos version` 查看版本，`eos update` 一键自升级（含 Rust 内核 core/ 同步更新）。
