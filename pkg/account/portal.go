@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"time"
 )
@@ -11,6 +12,14 @@ import (
 // AccountCenterURL follows Todo's one-use portal handoff. Long-lived tokens
 // remain in this process; the caller must open the URL without logging it.
 func (m *Manager) AccountCenterURL(ctx context.Context) (string, error) {
+	return m.portalURL(ctx, "/")
+}
+
+func (m *Manager) SubscriptionURL(ctx context.Context) (string, error) {
+	return m.portalURL(ctx, "/billing")
+}
+
+func (m *Manager) portalURL(ctx context.Context, path string) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	raw, err := m.store.Get()
@@ -38,7 +47,7 @@ func (m *Manager) AccountCenterURL(ctx context.Context) (string, error) {
 		err = m.client.call(ctx, "GET", "/api/v1/auth/me", nil, sess.Access, &profile)
 	}
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("ACCOUNT_PORTAL_PROFILE: %w", err)
 	}
 	u, err := url.Parse(profile.PortalURL)
 	base, _ := url.Parse(m.client.base)
@@ -49,6 +58,10 @@ func (m *Manager) AccountCenterURL(ctx context.Context) (string, error) {
 		if u.Scheme != "https" || (u.Host != "account.eosaios.com" && u.Host != "eosaios.com") {
 			return "", errors.New("ACCOUNT_ENDPOINT_INVALID")
 		}
+	} else if m.client.base == "https://api-test.eosaios.com" {
+		if u.Scheme != "https" || (u.Host != "test.eosaios.com" && u.Host != "account-test.eosaios.com" && u.Host != base.Host) {
+			return "", errors.New("ACCOUNT_ENDPOINT_INVALID")
+		}
 	} else if u.Scheme != base.Scheme || u.Host != base.Host {
 		return "", errors.New("ACCOUNT_ENDPOINT_INVALID")
 	}
@@ -56,7 +69,7 @@ func (m *Manager) AccountCenterURL(ctx context.Context) (string, error) {
 		ID string `json:"flow_id"`
 	}
 	if err := m.client.call(ctx, "POST", "/api/v1/auth/desktop/flows", map[string]string{"client": "web-portal"}, "", &flow); err != nil {
-		return "", err
+		return "", fmt.Errorf("ACCOUNT_PORTAL_FLOW: %w", err)
 	}
 	if flow.ID == "" {
 		return "", errors.New("ACCOUNT_FLOW_INVALID")
@@ -65,13 +78,13 @@ func (m *Manager) AccountCenterURL(ctx context.Context) (string, error) {
 		Ticket string `json:"ticket"`
 	}
 	if err := m.client.call(ctx, "POST", "/api/v1/auth/desktop/flows/"+url.PathEscape(flow.ID)+"/authorize", nil, sess.Access, &authorized); err != nil {
-		return "", err
+		return "", fmt.Errorf("ACCOUNT_PORTAL_AUTHORIZE: %w", err)
 	}
 	if authorized.Ticket == "" {
 		return "", errors.New("ACCOUNT_FLOW_INVALID")
 	}
 	u.Path = "/desktop-session"
 	u.RawPath = ""
-	u.Fragment = url.Values{"portal_flow": {flow.ID}, "portal_ticket": {authorized.Ticket}, "portal_target": {"/"}}.Encode()
+	u.Fragment = url.Values{"portal_flow": {flow.ID}, "portal_ticket": {authorized.Ticket}, "portal_target": {path}}.Encode()
 	return u.String(), nil
 }
