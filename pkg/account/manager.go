@@ -204,6 +204,21 @@ func (m *Manager) persist(s session) error {
 	return m.store.Set(string(b))
 }
 
+// RefreshIfExpiring keeps a desktop session usable during long-running hosted
+// calls. A signed-out user or a fresh session needs no network request.
+func (m *Manager) RefreshIfExpiring(ctx context.Context, ahead time.Duration) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	current, err := m.agentSession()
+	if err != nil || current == nil {
+		return err
+	}
+	if time.Until(current.ExpiresAt) > ahead {
+		return nil
+	}
+	return m.refresh(ctx, current)
+}
+
 // Status restores a session, rotates expired tokens and reads the authoritative profile.
 func (m *Manager) Status(ctx context.Context) (State, error) {
 	m.mu.Lock()
