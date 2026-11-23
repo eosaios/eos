@@ -3,12 +3,15 @@ package identitypilot
 import (
 	"context"
 	"crypto/subtle"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -37,11 +40,48 @@ type Settings struct {
 	APIOrigin    string
 	ClientID     string
 	Confirmation string
+	CAFile       string
 }
 
 // Check completes a read-only identity check using the system browser.
 func Check(ctx context.Context, settings Settings, open func(string) error) (uuid.UUID, error) {
-	return check(ctx, settings, open, http.DefaultTransport)
+	transport := http.DefaultTransport
+	if settings.CAFile != "" {
+		isolated, err := loopbackTransport(settings)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		transport = isolated
+	}
+	return check(ctx, settings, open, transport)
+}
+
+// A fixture CA never applies to a network address or the system trust store.
+func loopbackTransport(settings Settings) (*http.Transport, error) {
+	for _, raw := range []string{settings.Issuer, settings.APIOrigin} {
+		origin, err := httpsOrigin(raw)
+		if err != nil || !net.ParseIP(origin.Hostname()).IsLoopback() {
+			return nil, ErrConfig
+		}
+	}
+	file, err := os.Open(settings.CAFile)
+	if err != nil {
+		return nil, ErrConfig
+	}
+	defer file.Close()
+	pem, err := io.ReadAll(io.LimitReader(file, (1<<20)+1))
+	roots := x509.NewCertPool()
+	if err != nil || len(pem) > 1<<20 || !roots.AppendCertsFromPEM(pem) {
+		return nil, ErrConfig
+	}
+	base, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		return nil, ErrConfig
+	}
+	transport := base.Clone()
+	transport.Proxy = nil
+	transport.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots}
+	return transport, nil
 }
 
 func check(ctx context.Context, settings Settings, open func(string) error, transport http.RoundTripper) (uuid.UUID, error) {

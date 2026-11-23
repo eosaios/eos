@@ -33,6 +33,7 @@ func newIdentityCheckCmd() *cobra.Command {
 	command.Flags().StringVar(&settings.Issuer, "issuer", "", "OIDC issuer")
 	command.Flags().StringVar(&settings.APIOrigin, "api-origin", "", "Account API origin")
 	command.Flags().StringVar(&settings.ClientID, "client-id", "", "Registered public client ID")
+	command.Flags().StringVar(&settings.CAFile, "loopback-ca-file", "", "CA bundle for isolated loopback HTTPS testing")
 	return command
 }
 
