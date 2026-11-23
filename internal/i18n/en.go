@@ -6,6 +6,12 @@ package i18n
 // 商业使用请联系版权人获得商业授权。
 
 var enText = map[string]string{
+	"identity.check.invalid_config":   "Provide the HTTPS identity issuer, the HTTPS account API, and the registered client ID.",
+	"identity.check.provider":         "EOS could not verify the sign-in response. Try signing in again.",
+	"identity.check.browser":          "EOS could not open your browser.",
+	"identity.check.callback":         "The sign-in did not complete. Start the sign-in again.",
+	"identity.check.account":          "EOS could not confirm your account.",
+	"identity.check.browser_received": "Return to EOS to see the sign-in result. You can close this tab.",
 	"cli.headless.approval_required":  "Session %s requires approval. Open this session in interactive mode to review the request. For unattended execution, --approval-mode never explicitly rejects operations requiring approval.",
 	"cli.headless.input_required":     "Session %s needs user input. Open this session in interactive mode to answer and continue.",
 	"attachment.added":                "File attached: %s (Esc to clear)",
