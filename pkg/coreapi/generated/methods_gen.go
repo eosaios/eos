@@ -155,6 +155,7 @@ const (
 	MethodModelSyncEnv                  = "model/sync_env"
 	MethodModelReload                   = "model/reload"
 	MethodModelContext                  = "model/context"
+	MethodModelInputBudget              = "model/input_budget"
 	MethodModelWorkspaceSet             = "model/workspace/set"
 	MethodModelWorkspaceClear           = "model/workspace/clear"
 	MethodModelSessionSet               = "model/session/set"
@@ -371,6 +372,7 @@ func CoreMethods() []string {
 		MethodModelSyncEnv,
 		MethodModelReload,
 		MethodModelContext,
+		MethodModelInputBudget,
 		MethodModelWorkspaceSet,
 		MethodModelWorkspaceClear,
 		MethodModelSessionSet,
@@ -602,6 +604,7 @@ func MethodGroups() map[string][]string {
 			MethodModelSyncEnv,
 			MethodModelReload,
 			MethodModelContext,
+			MethodModelInputBudget,
 			MethodModelWorkspaceSet,
 			MethodModelWorkspaceClear,
 			MethodModelSessionSet,

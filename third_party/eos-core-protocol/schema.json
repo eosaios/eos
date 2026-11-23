@@ -610,6 +610,10 @@
     },
     {
       "group": "model",
+      "name": "model/input_budget"
+    },
+    {
+      "group": "model",
       "name": "model/workspace/set"
     },
     {
@@ -3111,6 +3115,10 @@
         },
         {
           "go": "bool",
+          "json": "allowed_tools_defined"
+        },
+        {
+          "go": "bool",
           "json": "enabled"
         },
         {
@@ -4809,6 +4817,36 @@
         }
       ],
       "name": "ModelNameRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "model_name"
+        },
+        {
+          "go": "string",
+          "json": "text"
+        }
+      ],
+      "name": "ModelInputBudgetRequest"
+    },
+    {
+      "fields": [
+        {
+          "go": "string",
+          "json": "model_name"
+        },
+        {
+          "go": "uint64",
+          "json": "estimated_tokens"
+        },
+        {
+          "go": "*uint64",
+          "json": "max_input_tokens"
+        }
+      ],
+      "name": "ModelInputBudget"
     },
     {
       "fields": [

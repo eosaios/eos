@@ -1175,6 +1175,17 @@ type ModelNameRequest struct {
 	Name string `json:"name"`
 }
 
+type ModelInputBudgetRequest struct {
+	ModelName string `json:"model_name"`
+	Text      string `json:"text"`
+}
+
+type ModelInputBudget struct {
+	ModelName       string `json:"model_name"`
+	EstimatedTokens uint64 `json:"estimated_tokens"`
+	MaxInputTokens  uint64 `json:"max_input_tokens,omitempty"`
+}
+
 type ModelVerifyResponse struct {
 	Ok        bool   `json:"ok"`
 	LatencyMs uint64 `json:"latency_ms"`

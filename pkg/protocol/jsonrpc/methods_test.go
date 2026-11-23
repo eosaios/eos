@@ -36,8 +36,9 @@ func TestAllCoreMethodsFreezesMigrationSurface(t *testing.T) {
 	//   + 3 captures（采集板：满意 AI 回复的常驻知识卡，桌面端右侧采集板
 	//     面板 + capture_* AI 工具共用的数据面）
 	//   + 4 desktop/host/*（Rust 冻结版已有的桌面宿主契约，补齐 Go 同步遗漏）
-	if len(methods) != 212 {
-		t.Fatalf("AllCoreMethods() len=%d, want 212", len(methods))
+	//   + 1 model/input_budget（发送框的模型输入预算）
+	if len(methods) != 213 {
+		t.Fatalf("AllCoreMethods() len=%d, want 213", len(methods))
 	}
 
 	seen := make(map[string]bool, len(methods))
