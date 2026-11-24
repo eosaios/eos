@@ -55,6 +55,22 @@ func TestDiffThemeAndProxy(t *testing.T) {
 	}
 }
 
+func TestProxyEnvForCore(t *testing.T) {
+	if ProxyEnvForCore(false, "http://127.0.0.1:7897") != nil {
+		t.Fatal("disabled proxy must not inject")
+	}
+	if ProxyEnvForCore(true, "ftp://127.0.0.1:7897") != nil {
+		t.Fatal("unsupported scheme")
+	}
+	env := ProxyEnvForCore(true, "http://127.0.0.1:7897")
+	if env["https_proxy"] != "http://127.0.0.1:7897" || env["GIT_CONFIG_VALUE_0"] != "http://127.0.0.1:7897" || env["GIT_CONFIG_VALUE_1"] != "HTTP/1.1" {
+		t.Fatalf("env = %#v", env)
+	}
+	if env["no_proxy"] == "" {
+		t.Fatal("localhost must bypass the proxy")
+	}
+}
+
 func TestResolveLogDir(t *testing.T) {
 	// 空 → 默认
 	if ResolveLogDir("") == "" {

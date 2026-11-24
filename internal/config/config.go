@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -321,6 +322,47 @@ func EffectiveUpdateProxyURL(cfg *Config) string {
 		return ""
 	}
 	return strings.TrimSpace(cfg.UpdateProxyURL)
+}
+
+// CoreProcessProxyEnv 把更新代理开关写进 eos-core 子进程环境。
+// 与桌面端同一组键：开关打开时 curl/git 走该代理，并用 HTTP/1.1，
+// 避免 Apple Git 经 HTTP/2 代理时握手被重置。开关关闭时不改环境，
+// 继续遵循调用方已经设置的 HTTP_PROXY。地址非法则不注入。
+func CoreProcessProxyEnv() map[string]string {
+	cfg, _ := Load()
+	return ProxyEnvForCore(cfg.UpdateProxyEnabled, cfg.UpdateProxyURL)
+}
+
+func ProxyEnvForCore(enabled bool, raw string) map[string]string {
+	raw = strings.TrimSpace(raw)
+	if !enabled || raw == "" {
+		return nil
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+		return nil
+	}
+	value := parsed.String()
+	return map[string]string{
+		"http_proxy":         value,
+		"https_proxy":        value,
+		"all_proxy":          value,
+		"no_proxy":           "localhost,127.0.0.1,::1",
+		"GIT_CONFIG_COUNT":   "2",
+		"GIT_CONFIG_KEY_0":   "http.proxy",
+		"GIT_CONFIG_VALUE_0": value,
+		"GIT_CONFIG_KEY_1":   "http.version",
+		"GIT_CONFIG_VALUE_1": "HTTP/1.1",
+	}
+}
+
+func ApplyCoreProxyEnv(dst map[string]string) {
+	if dst == nil {
+		return
+	}
+	for key, value := range CoreProcessProxyEnv() {
+		dst[key] = value
+	}
 }
 
 func Path() string {
