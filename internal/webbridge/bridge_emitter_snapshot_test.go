@@ -7,6 +7,21 @@ package webbridge
 
 import "testing"
 
+// shellSnapshotsSettled：至少发出了一份快照，并且合并队列里没有待发或在途的请求。
+//
+// 调用方必须先把会触发快照的调用都等完（runConversation 结束、OpenRemoteWorkspace
+// 返回）。此后不会再有新请求，这个条件为真就说明所有快照构造都已落地，测试可以
+// 结束而不会与清理临时目录的步骤赛跑（构造快照的 goroutine 会写 HOME 目录）。
+//
+// 不要用「数到 N 份快照」来等：快照是合并发射的，两次紧挨着的请求在慢机器上会
+// 合成一份——CI 上 TestRemoteWorkspaceServiceArms 就是这样失败的。
+func shellSnapshotsSettled(s *BridgeService, rec *emitRecorder) bool {
+	emitted := rec.count() >= 1
+	s.shellSnapshots.mu.Lock()
+	defer s.shellSnapshots.mu.Unlock()
+	return emitted && len(s.shellSnapshots.order) == 0 && !s.shellSnapshots.inFlight
+}
+
 // 构造期间到达的请求按会话合并，构造完成后按请求先后补发。
 func TestShellSnapshotQueueCoalescesAndKeepsRequestOrder(t *testing.T) {
 	var q shellSnapshotQueue

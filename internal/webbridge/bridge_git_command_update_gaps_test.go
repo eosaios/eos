@@ -321,18 +321,10 @@ func TestRemoteWorkspaceServiceArms(t *testing.T) {
 			t.Fatalf("openRemoteCalls = %v", gateway.openRemoteCalls)
 		}
 		// SelectWorkspace and OpenRemoteWorkspace each schedule a bootstrap.
-		// Both may write workspace state; waiting for only the first event
-		// races TempDir cleanup against the second writer on Linux CI.
-		eventually(t, "both shell updates after remote open", func() bool {
-			rec.mu.Lock()
-			defer rec.mu.Unlock()
-			count := 0
-			for _, name := range rec.events {
-				if name == shellUpdatedEventName {
-					count++
-				}
-			}
-			return count >= 2
+		// Both may write workspace state; ending after only the first event
+		// races TempDir cleanup against a writer still in flight.
+		eventually(t, "shell updates settled after remote open", func() bool {
+			return shellSnapshotsSettled(chatSvc.bridge, rec)
 		})
 	})
 
