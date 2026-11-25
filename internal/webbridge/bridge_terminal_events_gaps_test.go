@@ -264,7 +264,7 @@ func TestTerminalLifecycleArms(t *testing.T) {
 
 	t.Run("close 不存在与成功切换 active", func(t *testing.T) {
 		backend := &fakeTerminalBackend{}
-		_, svc, rec := newTerminalTestBridge(t, backend, nil)
+		s, svc, rec := newTerminalTestBridge(t, backend, nil)
 		if _, err := svc.CloseTerminalSession("missing"); !errors.Is(err, os.ErrNotExist) {
 			t.Fatalf("CloseTerminalSession(missing) error = %v", err)
 		}
@@ -295,9 +295,14 @@ func TestTerminalLifecycleArms(t *testing.T) {
 		if closed != 1 {
 			t.Fatalf("backend closed = %d, want 1", closed)
 		}
-		// 两次创建 + 一次 close 各 emit 一波 shellUpdated（goroutine 内
-		// loadBootstrap 写 HOME 目录），全部落地后再结束防清理竞态。
-		eventually(t, "close emits settled", func() bool { return rec.count() >= 3 })
+		// 两次创建 + 一次 close 各请求一次 shellUpdated。快照构造是合并的：同一时刻
+		// 最多构造一份，构造期间的请求合并后补发。等到至少发出一份、队列排空且没有
+		// 在途构造再结束（goroutine 内 loadBootstrap 写 HOME 目录），防清理竞态。
+		eventually(t, "close emits settled", func() bool {
+			s.shellSnapshots.mu.Lock()
+			defer s.shellSnapshots.mu.Unlock()
+			return rec.count() >= 1 && !s.shellSnapshots.inFlight
+		})
 	})
 
 	t.Run("closeAll 清空并关后端", func(t *testing.T) {

@@ -85,6 +85,9 @@ func (s *BridgeService) handleConversationEventLocked(frame conversationEventFra
 		s.handleConversationItemCompletedLocked(frame)
 	case frame.kind == "request.failed" || frame.kind == "turn.error":
 		s.handleConversationFailureLocked(frame)
+	case frame.kind == "turn.cancelled" || frame.kind == "turn.interrupted":
+		// 内核发起的取消/中断：按「已停止」收尾，不落到流关闭后的报错兜底。
+		s.handleConversationInterruptedLocked(frame)
 	case frame.kind == "text.final":
 		s.handleConversationTextFinalLocked(frame)
 	case frame.kind == "turn.completed" || frame.kind == "request.completed":
@@ -422,11 +425,17 @@ func (s *BridgeService) handleConversationTurnCompletedLocked(frame conversation
 	if len(payload) == 0 {
 		payload = frame.event.Data
 	}
+	// 未完成（输出被截断 / 内容安全 / 步数上限）：内容照常保留并收尾，但不写
+	// 「请求已完成」，改由消息底部的说明行与 IncompleteReason 表达。
+	incompleteReason := runtimeIncompleteReason(payload)
 	completionTitle, completionDetail := runtimeCompletionEvent(payload, frame.message)
-	if !frame.assistantCompleted {
+	if !frame.assistantCompleted && incompleteReason == "" {
 		s.appendRuntimeEventLocked(frame.session, frame.assistantMessageID, "lifecycle", completionTitle, completionDetail, "completed")
 	}
 	s.completeAssistantMessage(frame.session, frame.assistantMessageID)
+	if incompleteReason != "" {
+		s.markMessageIncomplete(frame.session, frame.assistantMessageID, incompleteReason)
+	}
 	s.applyStructuredResultToMessageLocked(frame.session, frame.assistantMessageID, payload)
 	if isAutoSessionPlaceholderTitle(frame.session.Title) {
 		frame.session.Title = autoSessionTitle(frame.session, frame.input)

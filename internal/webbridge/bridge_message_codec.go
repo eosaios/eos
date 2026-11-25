@@ -115,6 +115,13 @@ func chatMessageFromTurnGroup(msgs []adapter.SessionMessage) ChatMessage {
 	}
 	// 把 tool 结果消息（role=tool）的 content 回填到对应 tool_call item。
 	backfillToolResults(msgs, message.Items)
+	// 内核下发的未完成说明行：原因编在 item id 里，据此还原。
+	for _, item := range message.Items {
+		if reason := incompleteReasonFromItemID(item.ID); reason != "" {
+			message.IncompleteReason = reason
+			break
+		}
+	}
 
 	message.RuntimeEvents = nonNilSlice(message.RuntimeEvents)
 	if strings.TrimSpace(message.RuntimeSummary) == "" {
