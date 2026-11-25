@@ -51,6 +51,7 @@ type GitCommitMessageResult struct {
 	Message      string `json:"message,omitempty"`
 	Payer        string `json:"payer,omitempty"`
 	CreditsMicro int64  `json:"creditsMicro,omitempty"`
+	InputSHA256  string `json:"inputSha256,omitempty"`
 	RequestID    string `json:"requestId,omitempty"`
 	// 非空 = 服务端要求先确认告知：这次没有生成，也没有扣费。
 	Consent    *CommitMessageConsent `json:"consent,omitempty"`
@@ -60,11 +61,12 @@ type GitCommitMessageResult struct {
 
 // CommitMessageRouteResult 是路由询问的结果：这次生成将由谁付费。
 type CommitMessageRouteResult struct {
-	Ok        bool   `json:"ok"`
-	Error     string `json:"error,omitempty"`
-	Code      string `json:"code,omitempty"`
-	Retryable bool   `json:"retryable"`
-	Payer     string `json:"payer,omitempty"`
+	Ok          bool   `json:"ok"`
+	Error       string `json:"error,omitempty"`
+	Code        string `json:"code,omitempty"`
+	Retryable   bool   `json:"retryable"`
+	Payer       string `json:"payer,omitempty"`
+	InputSHA256 string `json:"inputSha256,omitempty"`
 }
 
 // CommitMessageCancelResult 是取消等待的结果；Cancelled=false 表示这次生成已经结束。
@@ -97,6 +99,7 @@ var gitCommitCalls = struct {
 var gitCommitRetryable = map[string]bool{
 	"AI_UPSTREAM_FAILED":     true,
 	"AI_INVALID_OUTPUT":      true,
+	"AI_PENDING":             true,
 	"AI_BUSY":                true,
 	"AI_MANAGED_UNAVAILABLE": true,
 	"AI_MANAGED_UNREACHABLE": true,
@@ -112,11 +115,12 @@ func (s *BridgeService) CommitMessageRoute(request GitCommitMessageRequest) Comm
 	}
 	result := s.commitMessage(request, commitMessageRoute)
 	return CommitMessageRouteResult{
-		Ok:        result.Ok,
-		Error:     result.Error,
-		Code:      result.Code,
-		Retryable: result.Retryable,
-		Payer:     result.Payer,
+		Ok:          result.Ok,
+		Error:       result.Error,
+		Code:        result.Code,
+		Retryable:   result.Retryable,
+		Payer:       result.Payer,
+		InputSHA256: result.InputSHA256,
 	}
 }
 
@@ -219,6 +223,7 @@ func commitResult(result coreapi.GitSuggestMessageResult) GitCommitMessageResult
 		Payer:        strings.TrimSpace(result.Payer),
 		CreditsMicro: result.CreditsMicro,
 		RequestID:    strings.TrimSpace(result.RequestID),
+		InputSHA256:  strings.TrimSpace(result.InputSha256),
 		Redactions:   int(result.Redactions),
 		Truncated:    result.Truncated,
 	}
