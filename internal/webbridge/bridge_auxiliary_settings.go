@@ -91,25 +91,11 @@ func normalizeAuxiliarySettings(settings AuxiliaryAISettings) AuxiliaryAISetting
 }
 
 func auxiliaryDocumentOf(settings AuxiliaryAISettings) auxiliaryDocument {
-	return auxiliaryDocument{
-		Policy:          settings.Policy,
-		ByokModel:       settings.ByokModel,
-		NoSessionMode:   settings.NoSessionMode,
-		Ack:             settings.Ack,
-		AckCreditsMicro: settings.AckCreditsMicro,
-		LastPayer:       settings.LastPayer,
-	}
+	return auxiliaryDocument(settings)
 }
 
 func (document auxiliaryDocument) settings() AuxiliaryAISettings {
-	return AuxiliaryAISettings{
-		Policy:          document.Policy,
-		ByokModel:       document.ByokModel,
-		NoSessionMode:   document.NoSessionMode,
-		Ack:             document.Ack,
-		AckCreditsMicro: document.AckCreditsMicro,
-		LastPayer:       document.LastPayer,
-	}
+	return AuxiliaryAISettings(document)
 }
 
 // auxiliarySection 取出文件里的 ai_auxiliary 段；没有这一段时是零值。
