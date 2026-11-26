@@ -293,6 +293,7 @@ func productionSidecarProcessOptions(env map[string]string) sidecar.ProcessOptio
 			}
 		}
 	}
+	config.ApplyCoreProxyEnv(nextEnv)
 	return sidecar.ProcessOptions{
 		Env:              nextEnv,
 		VerifyChecksum:   true,

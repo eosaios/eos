@@ -221,3 +221,30 @@ func TestKeychainFailureAndInvalidEndpoint(t *testing.T) {
 		}
 	}
 }
+
+func TestRefreshIfExpiringOnlyRotatesOnce(t *testing.T) {
+	var calls []string
+	m, store := fixture(t, func(w http.ResponseWriter, r *http.Request) {
+		calls = append(calls, r.URL.Path)
+		reply(w, map[string]any{"access_token": "next", "refresh_token": "new-refresh", "access_token_expires_in": 3600})
+	})
+	ensure := func() {
+		t.Helper()
+		if err := m.RefreshIfExpiring(context.Background(), time.Minute); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ensure()
+	if err := m.persist(session{Access: "old", Refresh: "refresh", ExpiresIn: 20}); err != nil {
+		t.Fatal(err)
+	}
+	ensure()
+	ensure()
+	var got session
+	if err := json.Unmarshal([]byte(store.value), &got); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(calls, []string{"/api/v1/auth/refresh"}) || got.Access != "next" {
+		t.Fatal("unexpected session refresh")
+	}
+}

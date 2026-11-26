@@ -90,7 +90,7 @@ curl -fsSL https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.sh | bas
 Windows (PowerShell):
 
 ```powershell
-irm https://cdn.jsdelivr.net/gh/eosaios/eos@main/scripts/install.ps1 | iex
+irm https://eosaios.com/assets/install/eos-cli.ps1 | iex
 ```
 
 Then run `eos`. Use `eos version` to check the version and `eos update` to self-upgrade (the Rust core sidecar is updated together with the binary).

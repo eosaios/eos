@@ -1382,6 +1382,7 @@ type ModeSnapshot struct {
 }
 
 type ModelConfig struct {
+	Label                   string `json:"label,omitempty"`
 	Name                    string `json:"name"`
 	APIBase                 string `json:"api_base,omitempty"`
 	APIKeyMasked            string `json:"api_key_masked,omitempty"`

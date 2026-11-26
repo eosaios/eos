@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/eosaios/eos/internal/config"
 	"github.com/eosaios/eos/pkg/coreapi/sidecar"
 	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
 )
@@ -357,6 +358,7 @@ func (sc *StdioClient) derivedEnv() map[string]string {
 			env[k] = v
 		}
 	}
+	config.ApplyCoreProxyEnv(env)
 	return env
 }
 
