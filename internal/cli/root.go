@@ -195,4 +195,5 @@ func init() {
 	rootCmd.AddCommand(newMcpCmd())
 	rootCmd.AddCommand(newWebCmd())
 	rootCmd.AddCommand(newHiddenLegalCmd())
+	rootCmd.AddCommand(newIdentityCheckCmd())
 }

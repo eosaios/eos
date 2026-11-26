@@ -44,7 +44,10 @@ var allowedProcessExecCalls = map[string]int{
 	"internal/ui/slash_runtime.go:copyToClipboard:exec.Command":                  3,
 	// /feedback 打开系统浏览器（darwin/windows/linux 三分支）：用户可见的
 	// 系统动作，与剪贴板同类，非工具/代理执行路径，不走 GuardedRunner。
-	"internal/ui/app_slash_feedback.go:openInBrowser:exec.Command":    3,
+	"internal/ui/app_slash_feedback.go:openInBrowser:exec.Command": 3,
+	// 用户主动执行身份检查时，打开已校验为同一 HTTPS issuer 的授权地址。
+	// 这是系统浏览器动作，不接受模型或工具产生的 shell 命令。
+	"internal/cli/identity_check.go:openIdentityBrowser:exec.Command": 3,
 	"pkg/coreapi/sidecar/process_client.go:StartProcess:exec.Command": 1,
 	// webbridge（eos web / GUI 桥）的系统动作调用点：全部是用户可见的系统
 	// 集成（开终端/开目录/开浏览器/打开第三方应用/PortableGit 安装引导/
