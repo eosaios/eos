@@ -1568,12 +1568,41 @@ type GitAbortMergeRequest struct {
 	WorkspaceRoot string `json:"workspace_root,omitempty"`
 }
 
+// GitSuggestRouting 是 git/suggest_message 的辅助任务路由：由内核决定用谁的模型、由谁付费。
+type GitSuggestRouting struct {
+	Policy        string `json:"policy"`
+	ByokModel     string `json:"byok_model,omitempty"`
+	SessionID     string `json:"session_id,omitempty"`
+	NoSessionMode string `json:"no_session_mode,omitempty"`
+	RequestKey    string `json:"request_key,omitempty"`
+	Ack           string `json:"ack,omitempty"`
+	Probe         bool   `json:"probe,omitempty"`
+	ExpectedPayer string `json:"expected_payer,omitempty"`
+}
+
+// GitSuggestConsent 是托管生成前须由用户确认的告知：文案、可回传的确认凭据与单次费用上限。
+type GitSuggestConsent struct {
+	Disclosure             string `json:"disclosure"`
+	Ack                    string `json:"ack"`
+	MaxRequestCreditsMicro int64  `json:"max_request_credits_micro"`
+}
+
 type GitSuggestMessageRequest struct {
-	WorkspaceRoot string `json:"workspace_root,omitempty"`
+	WorkspaceRoot string             `json:"workspace_root,omitempty"`
+	StagedDiff    string             `json:"staged_diff,omitempty"`
+	Locale        string             `json:"locale,omitempty"`
+	Routing       *GitSuggestRouting `json:"routing,omitempty"`
 }
 
 type GitSuggestMessageResult struct {
-	Message string `json:"message,omitempty"`
+	Message      string             `json:"message,omitempty"`
+	InputSha256  string             `json:"input_sha256,omitempty"`
+	Payer        string             `json:"payer,omitempty"`
+	CreditsMicro int64              `json:"credits_micro,omitempty"`
+	RequestID    string             `json:"request_id,omitempty"`
+	Consent      *GitSuggestConsent `json:"consent,omitempty"`
+	Redactions   uint32             `json:"redactions,omitempty"`
+	Truncated    bool               `json:"truncated,omitempty"`
 }
 
 type GitDiffRequest struct {

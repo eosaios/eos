@@ -76,14 +76,18 @@ func (g *chatSessionsGatewayStub) CoreGitMergeAbortRPC(_ context.Context, root s
 	return nil
 }
 
-func (g *chatSessionsGatewayStub) CoreGitSuggestMessageRPC(_ context.Context, root string) (coreapi.GitSuggestMessageResult, error) {
+func (g *chatSessionsGatewayStub) CoreGitSuggestRoutingSupportedRPC(context.Context) (bool, error) {
+	return true, nil
+}
+
+func (g *chatSessionsGatewayStub) CoreGitCommitMessageRPC(_ context.Context, request coreapi.GitSuggestMessageRequest) (coreapi.GitSuggestMessageResult, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if g.gitErr != nil {
 		return coreapi.GitSuggestMessageResult{}, g.gitErr
 	}
-	g.suggestRoots = append(g.suggestRoots, root)
-	return coreapi.GitSuggestMessageResult{Message: "feat: 建议信息"}, nil
+	g.commitMessageCalls = append(g.commitMessageCalls, request)
+	return coreapi.GitSuggestMessageResult{Message: "feat: 建议信息", Payer: "byok"}, nil
 }
 
 func (g *chatSessionsGatewayStub) CoreOpenRemoteWorkspaceRPC(_ context.Context, idOrPath string) (adapter.RemoteWorkspace, error) {
@@ -253,9 +257,15 @@ func TestGitOpsForwardingArms(t *testing.T) {
 		if result := s.GitAbortMerge(workspace); !result.Ok {
 			t.Fatalf("GitAbortMerge = %+v", result)
 		}
-		suggest := s.SuggestGitCommitMessage(workspace)
-		if !suggest.Ok || suggest.Message != "feat: 建议信息" {
-			t.Fatalf("SuggestGitCommitMessage = %+v", suggest)
+		route := s.CommitMessageRoute(GitCommitMessageRequest{WorkspaceRoot: workspace, Policy: "auto"})
+		if !route.Ok || route.Payer != "byok" {
+			t.Fatalf("CommitMessageRoute = %+v", route)
+		}
+		generated := s.GenerateCommitMessage(GitCommitMessageRequest{
+			WorkspaceRoot: workspace, Policy: "auto", RequestKey: "11111111-2222-4333-8444-555555555555",
+		})
+		if !generated.Ok || generated.Message != "feat: 建议信息" || generated.Payer != "byok" {
+			t.Fatalf("GenerateCommitMessage = %+v", generated)
 		}
 
 		gateway.gitErr = errors.New("git down")
@@ -271,8 +281,8 @@ func TestGitOpsForwardingArms(t *testing.T) {
 		if result := s.GitAbortMerge(workspace); result.Ok {
 			t.Fatalf("GitAbortMerge error arm = %+v", result)
 		}
-		if result := s.SuggestGitCommitMessage(workspace); result.Ok {
-			t.Fatalf("Suggest error arm = %+v", result)
+		if result := s.GenerateCommitMessage(GitCommitMessageRequest{WorkspaceRoot: workspace, Policy: "auto"}); result.Ok {
+			t.Fatalf("Generate error arm = %+v", result)
 		}
 	})
 }

@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/eosaios/eos/pkg/coreapi"
@@ -30,6 +31,10 @@ import (
 type StdioGateway struct {
 	client *StdioClient
 	events *runtimeJSONRPCEventSink
+
+	// 内核是否认 git/suggest_message 的 routing 字段。按握手结果缓存，
+	// 每个网关只问一次；nil = 还没问过。
+	gitSuggestRouting atomic.Pointer[bool]
 }
 
 // rpcTimeout 是所有非 turn RPC 的默认超时。turn 相关 RPC（turn_start / approval_respond）
