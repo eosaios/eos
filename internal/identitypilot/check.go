@@ -68,7 +68,7 @@ func loopbackTransport(settings Settings) (*http.Transport, error) {
 	if err != nil {
 		return nil, ErrConfig
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	pem, err := io.ReadAll(io.LimitReader(file, (1<<20)+1))
 	roots := x509.NewCertPool()
 	if err != nil || len(pem) > 1<<20 || !roots.AppendCertsFromPEM(pem) {
@@ -163,7 +163,7 @@ func providerEndpoint(issuer *url.URL, raw string) bool {
 
 func validClientID(value string) bool {
 	return value != "" && len(value) <= 160 && strings.IndexFunc(value, func(r rune) bool {
-		return !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("._:-", r))
+		return (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') && (r < '0' || r > '9') && !strings.ContainsRune("._:-", r)
 	}) == -1
 }
 
@@ -191,7 +191,7 @@ func fetchAccount(ctx context.Context, client *http.Client, api *url.URL, token 
 	if err != nil {
 		return uuid.Nil, ErrAccount
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusOK {
 		return uuid.Nil, ErrAccount
 	}
@@ -239,7 +239,7 @@ func nativeCode(ctx context.Context, config *oauth2.Config, open func(string) er
 		IdleTimeout:       time.Second,
 		MaxHeaderBytes:    8192,
 	}
-	defer server.Close()
+	defer func() { _ = server.Close() }()
 	done := make(chan error, 1)
 	go func() { done <- server.Serve(listener) }()
 	target := config.AuthCodeURL(callback.state, oidc.Nonce(nonce),
