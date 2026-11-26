@@ -173,23 +173,3 @@ func (s *BridgeService) GitAbortMerge(workspaceRoot string) GitOpResult {
 	}
 	return GitOpResult{Ok: true}
 }
-
-// SuggestGitCommitMessage 由内核用全局默认模型一次性生成提交信息
-// （Conventional Commits 格式，不带 eos 署名——署名由壳层按设置拼接）。
-func (s *BridgeService) SuggestGitCommitMessage(workspaceRoot string) GitSuggestMessageOpResult {
-	if s == nil {
-		return GitSuggestMessageOpResult{}
-	}
-	gateway := s.runtimeGatewayClient()
-	if gateway == nil {
-		return GitSuggestMessageOpResult{}
-	}
-	result, err := gateway.CoreGitSuggestMessageRPC(coreCtx(), strings.TrimSpace(workspaceRoot))
-	if err != nil {
-		return GitSuggestMessageOpResult{GitOpResult: GitOpResult{Error: err.Error()}}
-	}
-	return GitSuggestMessageOpResult{
-		GitOpResult: GitOpResult{Ok: true},
-		Message:     strings.TrimSpace(result.Message),
-	}
-}

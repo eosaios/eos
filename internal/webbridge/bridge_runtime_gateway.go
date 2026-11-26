@@ -41,7 +41,8 @@ type bridgeRuntimeGateway interface {
 	CoreGitCommitRPC(context.Context, string, string) (coreapi.GitCommitResult, error)
 	CoreGitPushRPC(context.Context, string) (coreapi.GitPushResult, error)
 	CoreGitMergeAbortRPC(context.Context, string) error
-	CoreGitSuggestMessageRPC(context.Context, string) (coreapi.GitSuggestMessageResult, error)
+	CoreGitSuggestRoutingSupportedRPC(context.Context) (bool, error)
+	CoreGitCommitMessageRPC(context.Context, coreapi.GitSuggestMessageRequest) (coreapi.GitSuggestMessageResult, error)
 	CoreInterruptTurnRPC(context.Context, string, string) error
 	RunBash(context.Context, string) (<-chan adapter.Event, error)
 	Invoke(context.Context, string) (<-chan adapter.Event, error)
