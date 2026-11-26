@@ -122,6 +122,17 @@ type ItemToolResult struct {
 	Output     string `json:"output,omitempty"`     // 工具输出（格式化后的可读文本）
 	Error      string `json:"error,omitempty"`      // 错误信息
 	DurationMS int64  `json:"durationMs,omitempty"` // 执行耗时
+	// Stdout/Stderr/ExitCode 是命令类工具的结构化结果（内核 output 里的
+	// stdout/stderr/exit_code）。Output 对 shell_exec 只有「shell exit N
+	// (cwd: …)」一行，真实 stdout 从未到达界面；这三个字段让对话区能
+	// 区分「真实输出」「失败原因」「退出码」。长输出保留尾部并置 Truncated。
+	Stdout    string `json:"stdout,omitempty"`
+	Stderr    string `json:"stderr,omitempty"`
+	ExitCode  *int   `json:"exitCode,omitempty"`
+	Truncated bool   `json:"truncated,omitempty"`
+	// Cwd 是命令实际执行的工作目录（取自内核 display 的「(cwd: …)」）。
+	// 命令没有显式传 cwd 时这里是唯一可靠的来源。
+	Cwd string `json:"cwd,omitempty"`
 }
 
 // ConversationDeltaPayload 是流式增量事件的轻量 payload（item/agentMessage/delta）。
