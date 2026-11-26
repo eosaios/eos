@@ -85,6 +85,9 @@ type BridgeService struct {
 	invokeSession       func(adapter.Core, context.Context, string, []string) (<-chan adapter.Event, error)
 	saveSessionMessages func(adapter.Core, string, string, []adapter.SessionMessage) (string, error)
 	terminalLauncher    terminalLauncher
+	// shellSnapshots 合并 shell-updated 全量快照的构造请求（见 bridge_emitter_snapshot.go）。
+	// 自带独立小锁，不与 stateMu 纠缠。
+	shellSnapshots shellSnapshotQueue
 	// modelCatalogFallback, when non-empty, captures why the live Rust
 	// model catalog was unavailable or empty. It is read by resourceChecks()
 	// to surface a diagnostic and by the bootstrap flow to add a

@@ -43,6 +43,7 @@ var zhText = map[string]string{
 	// 会话生命周期状态行（消息流内联 status item 文案）。
 	"conversation.stopped_manual": "已手动停止",
 	"conversation.interrupted":    "已中断（应用已重启）",
+	"conversation.stopped":        "已停止",
 	// 通知中心：只记录完成 / 失败 / 待处理请求 / 后台任务结果 / 系统降级。
 	"notification.request_completed.title":   "请求完成",
 	"notification.request_completed.message": "会话「%s」输出完成",

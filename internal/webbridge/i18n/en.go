@@ -41,6 +41,7 @@ var enText = map[string]string{
 	// Conversation lifecycle status lines (inline status items in the message stream).
 	"conversation.stopped_manual": "Stopped manually",
 	"conversation.interrupted":    "Interrupted (app restarted)",
+	"conversation.stopped":        "Stopped",
 	// Notification center: completions / failures / pending requests / background
 	// task results / system degradation only.
 	"notification.request_completed.title":   "Request completed",

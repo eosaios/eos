@@ -1,7 +1,6 @@
 package webbridge
 
 import (
-	"strings"
 	"time"
 )
 
@@ -38,19 +37,7 @@ func (s *BridgeService) emitShellUpdatedForSession(sessionID string) {
 	s.emitShellUpdatedForSessionWithSource(sessionID, "event.runtime")
 }
 
-func (s *BridgeService) emitShellUpdatedForSessionWithSource(sessionID, source string) {
-	emitter := s.currentEmitter()
-	if emitter == nil {
-		return
-	}
-	go func() {
-		payload := s.loadBootstrap(source)
-		if strings.TrimSpace(sessionID) != "" {
-			payload = s.bootstrapForSessionWithSource(sessionID, source)
-		}
-		emitter(shellUpdatedEventName, payload)
-	}()
-}
+// emitShellUpdatedForSessionWithSource 在 bridge_emitter_snapshot.go：全量快照合并后按序发射。
 
 // emitConversationDelta 发送轻量增量事件（item/agentMessage/delta）。
 // 零 RPC 往返——纯 Wails EventProcessor 调用，可在 stateMu 锁内安全调用（不阻塞、不开 goroutine）。
