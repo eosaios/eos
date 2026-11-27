@@ -1875,27 +1875,19 @@ type AgentMailboxMessage struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// NetworkHeader 是脱敏后的请求头键值对。
-type NetworkHeader struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-// NetworkRecord 是一条模型 API 请求的流量记录（脱敏 + 截断后），
-// 由内核 http_provider 记录、network/list 返回。
+// NetworkRecord is a Dev Core HTTP diagnostic with protocol categories and counts.
 type NetworkRecord struct {
-	ID             uint64      `json:"id"`
-	StartedAt      string      `json:"started_at"`
-	DurationMs     uint64      `json:"duration_ms"`
-	Method         string      `json:"method"`
-	URL            string      `json:"url"`
-	Streaming      bool        `json:"streaming"`
-	Status         *uint16     `json:"status,omitempty"`
-	Error          string      `json:"error,omitempty"`
-	RequestHeaders [][2]string `json:"request_headers"`
-	RequestBody    string      `json:"request_body"`
-	ResponseBody   string      `json:"response_body"`
-	StreamBlocks   *uint64     `json:"stream_blocks,omitempty"`
+	ID            uint64  `json:"id"`
+	StartedAt     string  `json:"started_at"`
+	DurationMs    uint64  `json:"duration_ms"`
+	Method        string  `json:"method"`
+	URL           string  `json:"url"`
+	Streaming     bool    `json:"streaming"`
+	Status        *uint16 `json:"status,omitempty"`
+	Error         string  `json:"error,omitempty"`
+	RequestBody   string  `json:"request_body"`
+	ResponseBytes uint64  `json:"response_bytes"`
+	StreamBlocks  *uint64 `json:"stream_blocks,omitempty"`
 }
 
 // NetworkListResult 是 network/list 的响应：模型 API 流量记录快照

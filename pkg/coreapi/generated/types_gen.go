@@ -970,11 +970,6 @@ type CostItem struct {
 	CostKnown         bool    `json:"cost_known"`
 }
 
-type NetworkHeader struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
 type PluginManifest struct {
 	Plugin []PluginMeta `json:"plugin"`
 }
@@ -1027,18 +1022,17 @@ type PluginSearchResult struct {
 }
 
 type NetworkRecord struct {
-	ID             uint64          `json:"id"`
-	StartedAt      string          `json:"started_at"`
-	DurationMs     uint64          `json:"duration_ms"`
-	Method         string          `json:"method"`
-	URL            string          `json:"url"`
-	Streaming      bool            `json:"streaming"`
-	Status         *uint16         `json:"status,omitempty"`
-	Error          string          `json:"error,omitempty"`
-	RequestHeaders []NetworkHeader `json:"request_headers"`
-	RequestBody    string          `json:"request_body"`
-	ResponseBody   string          `json:"response_body"`
-	StreamBlocks   uint64          `json:"stream_blocks,omitempty"`
+	ID            uint64  `json:"id"`
+	StartedAt     string  `json:"started_at"`
+	DurationMs    uint64  `json:"duration_ms"`
+	Method        string  `json:"method"`
+	URL           string  `json:"url"`
+	Streaming     bool    `json:"streaming"`
+	Status        *uint16 `json:"status,omitempty"`
+	Error         string  `json:"error,omitempty"`
+	RequestBody   string  `json:"request_body"`
+	ResponseBytes uint64  `json:"response_bytes"`
+	StreamBlocks  uint64  `json:"stream_blocks,omitempty"`
 }
 
 type VersionItem struct {

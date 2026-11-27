@@ -1615,32 +1615,6 @@ func (g *StdioGateway) CoreToolExecuteRPC(ctx context.Context, params json.RawMe
 	return out, nil
 }
 
-func (g *StdioGateway) CoreNetworkListRPC(ctx context.Context, limit int) (coreapi.NetworkListResult, error) {
-	var out coreapi.NetworkListResult
-	params := map[string]any{}
-	if limit > 0 {
-		params["limit"] = limit
-	}
-	var param any
-	if len(params) > 0 {
-		param = params
-	}
-	if err := g.client.Call(ctx, protocoljsonrpc.MethodNetworkList, param, &out); err != nil {
-		return coreapi.NetworkListResult{}, err
-	}
-	return out, nil
-}
-
-func (g *StdioGateway) CoreNetworkClearRPC(ctx context.Context) (int, error) {
-	var out struct {
-		Removed int `json:"removed"`
-	}
-	if err := g.client.Call(ctx, protocoljsonrpc.MethodNetworkClear, nil, &out); err != nil {
-		return 0, err
-	}
-	return out.Removed, nil
-}
-
 func (g *StdioGateway) CostSummary() string {
 	if summary, err := g.CoreCostSummaryRPC(rpcCtx()); err == nil {
 		return summary

@@ -120,10 +120,10 @@ type bridgeRuntimeGateway interface {
 	CoreListWorktreesRPC(context.Context) ([]adapter.Worktree, error)
 	CoreUsageSummaryRPC(context.Context) (adapter.UsageSummary, error)
 	CoreCostItemsRPC(context.Context) ([]adapter.CostItem, error)
-	CoreNetworkListRPC(context.Context, int) (coreapi.NetworkListResult, error)
+
 	CoreToolExecuteRPC(context.Context, json.RawMessage) (json.RawMessage, error)
 	CoreCallRPC(ctx context.Context, method string, params json.RawMessage) (json.RawMessage, error)
-	CoreNetworkClearRPC(context.Context) (int, error)
+
 	CoreListVersionsRPC(context.Context) ([]adapter.VersionItem, error)
 	CoreRollbackVersionRPC(context.Context, string) error
 	CoreDeleteVersionRPC(context.Context, string) error
