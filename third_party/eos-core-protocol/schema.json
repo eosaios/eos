@@ -4076,19 +4076,6 @@
     {
       "fields": [
         {
-          "go": "string",
-          "json": "name"
-        },
-        {
-          "go": "string",
-          "json": "value"
-        }
-      ],
-      "name": "NetworkHeader"
-    },
-    {
-      "fields": [
-        {
           "go": "[PluginMeta]",
           "json": "plugin"
         }
@@ -4304,16 +4291,12 @@
           "o": 1
         },
         {
-          "go": "[NetworkHeader]",
-          "json": "request_headers"
-        },
-        {
           "go": "string",
           "json": "request_body"
         },
         {
-          "go": "string",
-          "json": "response_body"
+          "go": "uint64",
+          "json": "response_bytes"
         },
         {
           "go": "*uint64",

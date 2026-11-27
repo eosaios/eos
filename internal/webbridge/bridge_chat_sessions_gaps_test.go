@@ -107,7 +107,7 @@ type chatSessionsGatewayStub struct {
 	pushRoots         []string
 	gitPushResult     coreapi.GitPushResult
 	abortRoots        []string
-	suggestRoots      []string
+	commitMessageCalls []coreapi.GitSuggestMessageRequest
 	remoteErr         error
 	remoteWorkspace   adapter.RemoteWorkspace
 	openRemoteCalls   []string

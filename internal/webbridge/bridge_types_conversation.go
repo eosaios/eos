@@ -48,6 +48,11 @@ type ChatMessage struct {
 	Prompts               []PromptCard      `json:"prompts,omitempty"`
 	ChangeSet             *MessageChangeSet `json:"changeSet,omitempty"`
 	IsPlaceholder         bool              `json:"isPlaceholder,omitempty"`
+	// IncompleteReason 非空表示这一轮以「未完成」收尾：输出被长度上限截断、被
+	// 内容安全中止，或达到单轮步数上限。已生成的内容完整保留，消息本身已是终态；
+	// 界面据此在消息底部给说明与「继续」入口，不得按成功展示。
+	// 取值：max_output_tokens / content_filter / iteration_limit / unknown。
+	IncompleteReason string `json:"incompleteReason,omitempty"`
 	// Items 是结构化的 ThreadItem 列表。
 	// assistant 消息的思考/正文/工具调用各是独立 item，按 ID 累积，一旦显示不被覆盖。
 	// 历史会话重载时按 metadata.turn_id 合并多条 SessionMessage 重建此列表。
@@ -117,6 +122,17 @@ type ItemToolResult struct {
 	Output     string `json:"output,omitempty"`     // 工具输出（格式化后的可读文本）
 	Error      string `json:"error,omitempty"`      // 错误信息
 	DurationMS int64  `json:"durationMs,omitempty"` // 执行耗时
+	// Stdout/Stderr/ExitCode 是命令类工具的结构化结果（内核 output 里的
+	// stdout/stderr/exit_code）。Output 对 shell_exec 只有「shell exit N
+	// (cwd: …)」一行，真实 stdout 从未到达界面；这三个字段让对话区能
+	// 区分「真实输出」「失败原因」「退出码」。长输出保留尾部并置 Truncated。
+	Stdout    string `json:"stdout,omitempty"`
+	Stderr    string `json:"stderr,omitempty"`
+	ExitCode  *int   `json:"exitCode,omitempty"`
+	Truncated bool   `json:"truncated,omitempty"`
+	// Cwd 是命令实际执行的工作目录（取自内核 display 的「(cwd: …)」）。
+	// 命令没有显式传 cwd 时这里是唯一可靠的来源。
+	Cwd string `json:"cwd,omitempty"`
 }
 
 // ConversationDeltaPayload 是流式增量事件的轻量 payload（item/agentMessage/delta）。

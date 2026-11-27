@@ -255,20 +255,13 @@ func TestSendChatArms(t *testing.T) {
 		if err != nil {
 			t.Fatalf("SendChat(mismatched workspace) error = %v", err)
 		}
-		// 开头「确认工作区」+ 错误收尾各 emit 一波 shellUpdated；
-		// 两波都落地后 runConversation 不再产生新的写盘 goroutine。
-		eventually(t, "both shellUpdated waves", func() bool {
-			rec.mu.Lock()
-			defer rec.mu.Unlock()
-			count := 0
-			for _, name := range rec.events {
-				if name == shellUpdatedEventName {
-					count++
-				}
-			}
-			return count >= 2
-		})
+		// 开头「确认工作区」+ 错误收尾各请求一次 shellUpdated。先等 runConversation
+		// 结束（此后不会再有新的快照请求），再等所有快照构造落地：goroutine 内的
+		// loadBootstrap 会写 HOME 目录，没落地就结束会与临时目录的清理赛跑。
 		s.conversationWG.Wait()
+		eventually(t, "shellUpdated settled", func() bool {
+			return shellSnapshotsSettled(s, rec)
+		})
 	})
 
 	t.Run("persist 失败软着陆", func(t *testing.T) {

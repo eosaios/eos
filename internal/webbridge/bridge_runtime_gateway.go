@@ -41,7 +41,8 @@ type bridgeRuntimeGateway interface {
 	CoreGitCommitRPC(context.Context, string, string) (coreapi.GitCommitResult, error)
 	CoreGitPushRPC(context.Context, string) (coreapi.GitPushResult, error)
 	CoreGitMergeAbortRPC(context.Context, string) error
-	CoreGitSuggestMessageRPC(context.Context, string) (coreapi.GitSuggestMessageResult, error)
+	CoreGitSuggestRoutingSupportedRPC(context.Context) (bool, error)
+	CoreGitCommitMessageRPC(context.Context, coreapi.GitSuggestMessageRequest) (coreapi.GitSuggestMessageResult, error)
 	CoreInterruptTurnRPC(context.Context, string, string) error
 	RunBash(context.Context, string) (<-chan adapter.Event, error)
 	Invoke(context.Context, string) (<-chan adapter.Event, error)
@@ -119,10 +120,10 @@ type bridgeRuntimeGateway interface {
 	CoreListWorktreesRPC(context.Context) ([]adapter.Worktree, error)
 	CoreUsageSummaryRPC(context.Context) (adapter.UsageSummary, error)
 	CoreCostItemsRPC(context.Context) ([]adapter.CostItem, error)
-	CoreNetworkListRPC(context.Context, int) (coreapi.NetworkListResult, error)
+
 	CoreToolExecuteRPC(context.Context, json.RawMessage) (json.RawMessage, error)
 	CoreCallRPC(ctx context.Context, method string, params json.RawMessage) (json.RawMessage, error)
-	CoreNetworkClearRPC(context.Context) (int, error)
+
 	CoreListVersionsRPC(context.Context) ([]adapter.VersionItem, error)
 	CoreRollbackVersionRPC(context.Context, string) error
 	CoreDeleteVersionRPC(context.Context, string) error

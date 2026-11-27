@@ -252,13 +252,91 @@ func extractItemToolResult(obj map[string]any) *ItemToolResult {
 	if dur, ok := obj["duration_ms"].(float64); ok {
 		result.DurationMS = int64(dur)
 	}
+	extractCommandStreams(obj, result)
+	if display, ok := obj["display"].(string); ok {
+		result.Cwd = commandCwd(display)
+	}
 	return result
+}
+
+// commandCwd 从命令 display 首行的「… (cwd: /path)」取真实工作目录。
+// 不是这种形状（文件类工具、后台任务等）时返回空串。
+func commandCwd(display string) string {
+	firstLine, _, _ := strings.Cut(display, "\n")
+	const marker = "(cwd: "
+	start := strings.Index(firstLine, marker)
+	if start < 0 || !strings.HasSuffix(firstLine, ")") {
+		return ""
+	}
+	return strings.TrimSpace(firstLine[start+len(marker) : len(firstLine)-1])
+}
+
+// toolStreamTailRunes 是 stdout/stderr 单流保留的上限。内核对 shell 输出
+// 已有 256 KiB 硬上限；界面再收一道，避免长会话里大量命令调用的快照
+// 膨胀。保留尾部（报错与结论都在末尾），截断时置 Truncated 明示。
+const toolStreamTailRunes = 32 * 1024
+
+// toolHasStructuredStreams 判定结果里是否已有结构化命令流。
+func toolHasStructuredStreams(result *ItemToolResult) bool {
+	return result != nil && (result.Stdout != "" || result.Stderr != "" || result.ExitCode != nil)
+}
+
+// extractCommandStreams 把命令类结果的结构化流带到界面。判定只看形状
+// （output 是否带 stdout/stderr/exit_code），不绑定工具名：shell_exec、
+// git、worktree 等凡是按此形状返回的工具自动受益。
+func extractCommandStreams(obj map[string]any, result *ItemToolResult) {
+	output, ok := obj["output"].(map[string]any)
+	if !ok {
+		return
+	}
+	stdout, _ := output["stdout"].(string)
+	stderr, _ := output["stderr"].(string)
+	if stdout == "" && stderr == "" {
+		return
+	}
+	result.Stdout, result.Truncated = toolStreamTail(stdout, result.Truncated)
+	stderrTail, stderrTruncated := toolStreamTail(stderr, false)
+	result.Stderr = stderrTail
+	result.Truncated = result.Truncated || stderrTruncated
+	// 内核失败时退出码可能为 -1（被信号终止）；0 也必须显式带出，
+	// 所以用指针区分「没有退出码」与「退出码为 0」。
+	if code, ok := output["exit_code"].(float64); ok {
+		value := int(code)
+		result.ExitCode = &value
+	}
+}
+
+func toolStreamTail(text string, alreadyTruncated bool) (string, bool) {
+	runes := []rune(text)
+	if len(runes) <= toolStreamTailRunes {
+		return text, alreadyTruncated
+	}
+	return string(runes[len(runes)-toolStreamTailRunes:]), true
 }
 
 // formatToolResultOutput 从 ToolResult payload 提取可读输出。
 func formatToolResultOutput(obj map[string]any) string {
-	// display 字段是内核格式化好的可读文本，优先用
-	if display, ok := obj["display"].(string); ok && strings.TrimSpace(display) != "" {
+	if obj["name"] == "bg_task" {
+		result, _ := obj["output"].(map[string]any)
+		logs, _ := result["output"].(string)
+		display, _ := obj["display"].(string)
+		if logText := strings.TrimSpace(logs); logText != "" {
+			return strings.TrimSpace(display + "\n" + logText)
+		}
+	}
+	// display 字段是内核格式化好的可读文本，优先用。
+	// git/shell 失败时内核把「shell exit 128」放在 display，真正的
+	// fatal: not a git repository 只在 output.stderr。界面要带上这段，
+	// 否则父目录多仓工作区只看见退出码。
+	display, _ := obj["display"].(string)
+	display = strings.TrimSpace(display)
+	if stderr := toolResultStderr(obj); stderr != "" && !strings.Contains(display, stderr) {
+		if display != "" {
+			return display + "\n" + stderr
+		}
+		return stderr
+	}
+	if display != "" {
 		return display
 	}
 	// output 字段可能是任意 JSON value
@@ -268,6 +346,17 @@ func formatToolResultOutput(obj map[string]any) string {
 		}
 	}
 	return ""
+}
+
+func toolResultStderr(obj map[string]any) string {
+	output, _ := obj["output"].(map[string]any)
+	stderr, _ := output["stderr"].(string)
+	stderr = strings.TrimSpace(stderr)
+	const limit = 2000
+	if len(stderr) > limit {
+		stderr = stderr[:limit] + "…"
+	}
+	return stderr
 }
 
 // joinStringSlice 把 content/summary（可能是 []any 或 string）拼成单个字符串。

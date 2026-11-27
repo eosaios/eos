@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/eosaios/eos/pkg/coreapi"
@@ -30,6 +31,10 @@ import (
 type StdioGateway struct {
 	client *StdioClient
 	events *runtimeJSONRPCEventSink
+
+	// 内核是否认 git/suggest_message 的 routing 字段。按握手结果缓存，
+	// 每个网关只问一次；nil = 还没问过。
+	gitSuggestRouting atomic.Pointer[bool]
 }
 
 // rpcTimeout 是所有非 turn RPC 的默认超时。turn 相关 RPC（turn_start / approval_respond）
@@ -1608,32 +1613,6 @@ func (g *StdioGateway) CoreToolExecuteRPC(ctx context.Context, params json.RawMe
 		return nil, err
 	}
 	return out, nil
-}
-
-func (g *StdioGateway) CoreNetworkListRPC(ctx context.Context, limit int) (coreapi.NetworkListResult, error) {
-	var out coreapi.NetworkListResult
-	params := map[string]any{}
-	if limit > 0 {
-		params["limit"] = limit
-	}
-	var param any
-	if len(params) > 0 {
-		param = params
-	}
-	if err := g.client.Call(ctx, protocoljsonrpc.MethodNetworkList, param, &out); err != nil {
-		return coreapi.NetworkListResult{}, err
-	}
-	return out, nil
-}
-
-func (g *StdioGateway) CoreNetworkClearRPC(ctx context.Context) (int, error) {
-	var out struct {
-		Removed int `json:"removed"`
-	}
-	if err := g.client.Call(ctx, protocoljsonrpc.MethodNetworkClear, nil, &out); err != nil {
-		return 0, err
-	}
-	return out.Removed, nil
 }
 
 func (g *StdioGateway) CostSummary() string {

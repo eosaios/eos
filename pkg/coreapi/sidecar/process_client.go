@@ -82,7 +82,7 @@ func StartProcess(ctx context.Context, opts ProcessOptions) (*ProcessClient, err
 	if opts.Dir != "" {
 		cmd.Dir = opts.Dir
 	}
-	cmd.Env = processEnv(os.Environ(), opts.Env)
+	cmd.Env = SetAgentReviewMode(DisableNetworkInspect(processEnv(os.Environ(), opts.Env)), AgentReviewDisabled)
 	if opts.Stderr != nil {
 		cmd.Stderr = opts.Stderr
 	} else {

@@ -84,7 +84,8 @@ func TestConversationItemsPureArms(t *testing.T) {
 	})
 
 	t.Run("formatToolResultOutput 与 joinStringSlice", func(t *testing.T) {
-		if got := formatToolResultOutput(map[string]any{"display": " 展示 ", "output": "raw"}); got != " 展示 " {
+		// display 会去掉首尾空白（与桌面端投影一致）；无 stderr 时不追加。
+		if got := formatToolResultOutput(map[string]any{"display": " 展示 ", "output": "raw"}); got != "展示" {
 			t.Fatalf("display priority = %q", got)
 		}
 		if got := formatToolResultOutput(map[string]any{"display": "   ", "output": "raw"}); got != "raw" {
