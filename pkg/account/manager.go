@@ -27,12 +27,14 @@ type State struct {
 	AvatarURL    string `json:"avatarUrl,omitempty"`
 }
 type session struct {
-	PluginMarkets map[string]pluginMarketIdentity `json:"plugin_markets,omitempty"`
-	Access        string                          `json:"access_token"`
-	Refresh       string                          `json:"refresh_token"`
-	ExpiresIn     int64                           `json:"access_token_expires_in"`
-	ExpiresAt     time.Time                       `json:"expires_at"`
-	Email         string                          `json:"email,omitempty"`
+	AgentAppearance *AgentAppearance                `json:"agent_appearance,omitempty"`
+	DeviceID        string                          `json:"device_id,omitempty"`
+	PluginMarkets   map[string]pluginMarketIdentity `json:"plugin_markets,omitempty"`
+	Access          string                          `json:"access_token"`
+	Refresh         string                          `json:"refresh_token"`
+	ExpiresIn       int64                           `json:"access_token_expires_in"`
+	ExpiresAt       time.Time                       `json:"expires_at"`
+	Email           string                          `json:"email,omitempty"`
 }
 type flow struct {
 	ID          string
@@ -202,6 +204,21 @@ func (m *Manager) persist(s session) error {
 	return m.store.Set(string(b))
 }
 
+// RefreshIfExpiring keeps a desktop session usable during long-running hosted
+// calls. A signed-out user or a fresh session needs no network request.
+func (m *Manager) RefreshIfExpiring(ctx context.Context, ahead time.Duration) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	current, err := m.agentSession()
+	if err != nil || current == nil {
+		return err
+	}
+	if time.Until(current.ExpiresAt) > ahead {
+		return nil
+	}
+	return m.refresh(ctx, current)
+}
+
 // Status restores a session, rotates expired tokens and reads the authoritative profile.
 func (m *Manager) Status(ctx context.Context) (State, error) {
 	m.mu.Lock()
@@ -261,6 +278,8 @@ func (m *Manager) refresh(ctx context.Context, s *session) error {
 		return err
 	}
 	next.Email = s.Email
+	next.AgentAppearance = s.AgentAppearance
+	next.DeviceID = s.DeviceID
 	next.PluginMarkets = s.PluginMarkets
 	if err = m.persist(next); err != nil {
 		return err

@@ -115,6 +115,13 @@ func chatMessageFromTurnGroup(msgs []adapter.SessionMessage) ChatMessage {
 	}
 	// 把 tool 结果消息（role=tool）的 content 回填到对应 tool_call item。
 	backfillToolResults(msgs, message.Items)
+	// 内核下发的未完成说明行：原因编在 item id 里，据此还原。
+	for _, item := range message.Items {
+		if reason := incompleteReasonFromItemID(item.ID); reason != "" {
+			message.IncompleteReason = reason
+			break
+		}
+	}
 
 	message.RuntimeEvents = nonNilSlice(message.RuntimeEvents)
 	if strings.TrimSpace(message.RuntimeSummary) == "" {
@@ -665,7 +672,9 @@ func backfillToolResults(msgs []adapter.SessionMessage, items []ThreadItem) {
 			continue
 		}
 		if presentation, ok := msg.Metadata[coreapi.ToolResultPresentationKey].(map[string]any); ok {
-			items[idx].ToolResult = extractItemToolResult(presentation)
+			result := extractItemToolResult(presentation)
+			applyCanonicalCommandStreams(msg.Content, result)
+			items[idx].ToolResult = result
 			continue
 		}
 
@@ -674,4 +683,32 @@ func backfillToolResults(msgs []adapter.SessionMessage, items []ThreadItem) {
 			Output: strings.TrimSpace(msg.Content),
 		}
 	}
+}
+
+// applyCanonicalCommandStreams 从工具回执正文补回结构化命令流。
+//
+// 展示摘要（eos_gui_tool_result）只存 display / 状态 / 耗时；命令的真实
+// stdout、stderr、exit_code 在回执正文里——那是内核写给模型的原始结果，
+// sessionMessageToolResult 落盘后由 coreapi.PreserveProjectedToolReceipts
+// 保留原文。历史会话据此还原命令输出：实时看到的和重新打开后看到的一致，
+// 旧会话无需迁移。正文不是这种形状（非命令类工具、被压缩成纯文本）时不动。
+func applyCanonicalCommandStreams(content string, result *ItemToolResult) {
+	if result == nil || toolHasStructuredStreams(result) {
+		return
+	}
+	text := strings.TrimSpace(content)
+	if !strings.HasPrefix(text, "{") {
+		return
+	}
+	var envelope struct {
+		Output json.RawMessage `json:"output"`
+	}
+	if err := json.Unmarshal([]byte(text), &envelope); err != nil || len(envelope.Output) == 0 {
+		return
+	}
+	var output map[string]any
+	if err := json.Unmarshal(envelope.Output, &output); err != nil {
+		return
+	}
+	extractCommandStreams(map[string]any{"output": output}, result)
 }

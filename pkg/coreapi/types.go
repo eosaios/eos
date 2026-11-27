@@ -1382,6 +1382,7 @@ type ModeSnapshot struct {
 }
 
 type ModelConfig struct {
+	Label                   string `json:"label,omitempty"`
 	Name                    string `json:"name"`
 	APIBase                 string `json:"api_base,omitempty"`
 	APIKeyMasked            string `json:"api_key_masked,omitempty"`
@@ -1567,12 +1568,41 @@ type GitAbortMergeRequest struct {
 	WorkspaceRoot string `json:"workspace_root,omitempty"`
 }
 
+// GitSuggestRouting 是 git/suggest_message 的辅助任务路由：由内核决定用谁的模型、由谁付费。
+type GitSuggestRouting struct {
+	Policy        string `json:"policy"`
+	ByokModel     string `json:"byok_model,omitempty"`
+	SessionID     string `json:"session_id,omitempty"`
+	NoSessionMode string `json:"no_session_mode,omitempty"`
+	RequestKey    string `json:"request_key,omitempty"`
+	Ack           string `json:"ack,omitempty"`
+	Probe         bool   `json:"probe,omitempty"`
+	ExpectedPayer string `json:"expected_payer,omitempty"`
+}
+
+// GitSuggestConsent 是托管生成前须由用户确认的告知：文案、可回传的确认凭据与单次费用上限。
+type GitSuggestConsent struct {
+	Disclosure             string `json:"disclosure"`
+	Ack                    string `json:"ack"`
+	MaxRequestCreditsMicro int64  `json:"max_request_credits_micro"`
+}
+
 type GitSuggestMessageRequest struct {
-	WorkspaceRoot string `json:"workspace_root,omitempty"`
+	WorkspaceRoot string             `json:"workspace_root,omitempty"`
+	StagedDiff    string             `json:"staged_diff,omitempty"`
+	Locale        string             `json:"locale,omitempty"`
+	Routing       *GitSuggestRouting `json:"routing,omitempty"`
 }
 
 type GitSuggestMessageResult struct {
-	Message string `json:"message,omitempty"`
+	Message      string             `json:"message,omitempty"`
+	InputSha256  string             `json:"input_sha256,omitempty"`
+	Payer        string             `json:"payer,omitempty"`
+	CreditsMicro int64              `json:"credits_micro,omitempty"`
+	RequestID    string             `json:"request_id,omitempty"`
+	Consent      *GitSuggestConsent `json:"consent,omitempty"`
+	Redactions   uint32             `json:"redactions,omitempty"`
+	Truncated    bool               `json:"truncated,omitempty"`
 }
 
 type GitDiffRequest struct {
@@ -1845,27 +1875,19 @@ type AgentMailboxMessage struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// NetworkHeader 是脱敏后的请求头键值对。
-type NetworkHeader struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-// NetworkRecord 是一条模型 API 请求的流量记录（脱敏 + 截断后），
-// 由内核 http_provider 记录、network/list 返回。
+// NetworkRecord is a Dev Core HTTP diagnostic with protocol categories and counts.
 type NetworkRecord struct {
-	ID             uint64      `json:"id"`
-	StartedAt      string      `json:"started_at"`
-	DurationMs     uint64      `json:"duration_ms"`
-	Method         string      `json:"method"`
-	URL            string      `json:"url"`
-	Streaming      bool        `json:"streaming"`
-	Status         *uint16     `json:"status,omitempty"`
-	Error          string      `json:"error,omitempty"`
-	RequestHeaders [][2]string `json:"request_headers"`
-	RequestBody    string      `json:"request_body"`
-	ResponseBody   string      `json:"response_body"`
-	StreamBlocks   *uint64     `json:"stream_blocks,omitempty"`
+	ID            uint64  `json:"id"`
+	StartedAt     string  `json:"started_at"`
+	DurationMs    uint64  `json:"duration_ms"`
+	Method        string  `json:"method"`
+	URL           string  `json:"url"`
+	Streaming     bool    `json:"streaming"`
+	Status        *uint16 `json:"status,omitempty"`
+	Error         string  `json:"error,omitempty"`
+	RequestBody   string  `json:"request_body"`
+	ResponseBytes uint64  `json:"response_bytes"`
+	StreamBlocks  *uint64 `json:"stream_blocks,omitempty"`
 }
 
 // NetworkListResult 是 network/list 的响应：模型 API 流量记录快照

@@ -35,6 +35,9 @@ func TestPrintVersionOutput(t *testing.T) {
 	if !strings.Contains(string(output), runtime.GOOS) {
 		t.Fatalf("version output missing GOOS %q: %s", runtime.GOOS, output)
 	}
+	if !strings.Contains(string(output), "© 2026 EOSAIOS · https://eosaios.com") {
+		t.Fatalf("version output missing copyright/website line: %s", output)
+	}
 }
 
 // TestRootVersionFlagRegistered 验证根命令已注册 --version 标志。

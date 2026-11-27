@@ -506,8 +506,7 @@ func TestGatewayMiscCompositeSweep(t *testing.T) {
 		protocoljsonrpc.MethodTaskList:                  []any{},
 		protocoljsonrpc.MethodTaskKill:                  map[string]any{},
 		protocoljsonrpc.MethodTaskCleanup:               map[string]any{"count": 2},
-		protocoljsonrpc.MethodNetworkList:               map[string]any{"enabled": false, "records": []any{}},
-		protocoljsonrpc.MethodNetworkClear:              map[string]any{"removed": 3},
+
 		protocoljsonrpc.MethodModelVerify:               map[string]any{"ok": true},
 		protocoljsonrpc.MethodModelSave:                 map[string]any{},
 		protocoljsonrpc.MethodInsightRefineInput:        map[string]any{"text": "润色"},
@@ -549,12 +548,6 @@ func TestGatewayMiscCompositeSweep(t *testing.T) {
 	}
 	if _, err := g.CoreToolExecuteRPC(ctx, json.RawMessage(`{"name":"bash"}`)); err != nil {
 		t.Fatalf("tool execute: %v", err)
-	}
-	if _, err := g.CoreNetworkListRPC(ctx, 10); err != nil {
-		t.Fatalf("network list: %v", err)
-	}
-	if n, err := g.CoreNetworkClearRPC(ctx); err != nil || n != 3 {
-		t.Fatalf("network clear: %v %d", err, n)
 	}
 	if err := g.CoreKillTaskRPC(ctx, "t-1"); err != nil {
 		t.Fatalf("kill task: %v", err)

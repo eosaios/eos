@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/eosaios/eos/pkg/protocol"
 	protocoljsonrpc "github.com/eosaios/eos/pkg/protocol/jsonrpc"
@@ -113,6 +114,8 @@ func (s *runtimeJSONRPCEventSink) Subscribe(ctx context.Context, filter runtimeJ
 // 因此 channel 满时丢弃事件（default 分支），绝不阻塞读循环（notification
 // handler 不阻塞 readLoop 原则）。丢弃数经 slog.Warn 暴露，
 // 便于排查订阅者消费过慢导致的事件丢失。
+// 例外是关键事件（见 isCriticalRuntimeEvent）：它们不能丢，缓冲满了交给独立
+// goroutine 等位置，readLoop 照样立即返回。
 func (s *runtimeJSONRPCEventSink) publish(ctx context.Context, event Event) error {
 	if s == nil {
 		return nil
@@ -126,6 +129,20 @@ func (s *runtimeJSONRPCEventSink) publish(ctx context.Context, event Event) erro
 	dropped := 0
 	for _, sub := range s.subscribers {
 		if !runtimeJSONRPCEventMatchesFilter(event, sub.filter) {
+			continue
+		}
+		if isCriticalRuntimeEvent(event) {
+			// 缓冲有空位时直接送，保持和前后事件的顺序。满了再交给独立
+			// goroutine 等位置：readLoop 不能堵在这里，审批/终态也不能丢。
+			select {
+			case sub.ch <- event:
+				delivered++
+			default:
+				ev := event
+				ch := sub.ch
+				go deliverCriticalRuntimeEvent(ctx, ch, ev)
+				delivered++
+			}
 			continue
 		}
 		select {
@@ -142,6 +159,49 @@ func (s *runtimeJSONRPCEventSink) publish(ctx context.Context, event Event) erro
 			"dropped", dropped)
 	}
 	return nil
+}
+
+// isCriticalRuntimeEvent 报告这个事件是否绝不能丢：审批与问询、各轮终态，以及
+// 携带权威全文的 item 事件。普通增量丢了只是少一截显示，随后会被 item_completed
+// 补齐；这些事件丢了则是整轮的状态出错。
+func isCriticalRuntimeEvent(event Event) bool {
+	switch strings.TrimSpace(event.EventType) {
+	case "tool.approval_required", "approval.required",
+		"turn.waiting_approval", "agent.waiting_approval",
+		"turn.request_user_input",
+		"turn.completed", "turn.cancelled", "turn.error", "turn.interrupted",
+		"request.failed", "request.completed", "request.done",
+		// item_completed 携带该项的权威全文：消费端靠它在收尾时替换掉流式期间
+		// 丢掉的增量。它自己一旦被丢，这段文本就永久残缺，而终态照常到达——
+		// 表现为一轮「正常结束」却少了内容。item_started 一并保住，保证
+		// 后续增量有处可落。
+		"turn.item_started", "turn.item_completed":
+		return true
+	default:
+		return false
+	}
+}
+
+// deliverCriticalRuntimeEvent 在缓冲腾出位置后补送一个关键事件。最多等两分钟：
+// readLoop 不受影响，订阅者退订后关闭的 channel 也不会把进程打崩。
+func deliverCriticalRuntimeEvent(ctx context.Context, ch chan Event, event Event) {
+	defer func() {
+		_ = recover()
+	}()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	timer := time.NewTimer(2 * time.Minute)
+	defer timer.Stop()
+	select {
+	case ch <- event:
+	case <-ctx.Done():
+	case <-timer.C:
+		slog.Warn("runtime_events.critical_undelivered",
+			"eventType", event.EventType,
+			"session_id", event.SessionID,
+			"turn_id", event.TurnID)
+	}
 }
 
 func (s *runtimeJSONRPCEventSink) close() {

@@ -41,7 +41,6 @@ type delegateExtrasGateway struct {
 
 	networkList     coreapi.NetworkListResult
 	networkListErr  error
-	networkListArg  int
 	networkClear    int
 	networkClearErr error
 
@@ -64,15 +63,6 @@ type delegateExtrasGateway struct {
 	verifyErr  error
 
 	bashEmptyInputErr error
-}
-
-func (g *delegateExtrasGateway) CoreNetworkListRPC(_ context.Context, limit int) (coreapi.NetworkListResult, error) {
-	g.networkListArg = limit
-	return g.networkList, g.networkListErr
-}
-
-func (g *delegateExtrasGateway) CoreNetworkClearRPC(context.Context) (int, error) {
-	return g.networkClear, g.networkClearErr
 }
 
 func (g *delegateExtrasGateway) CoreMemorySaveRPC(_ context.Context, content string) error {
@@ -203,18 +193,6 @@ func TestNetworkMemoryScreenshotGitSummaryDelegates(t *testing.T) {
 		},
 	}
 	s, rec := newExtrasBridge(t, extras)
-
-	list, err := s.NetworkInspect(5)
-	if err != nil || !list.Enabled {
-		t.Fatalf("NetworkInspect = %+v, %v", list, err)
-	}
-	if extras.networkListArg != 5 {
-		t.Fatalf("NetworkInspect limit 透传不符: %d", extras.networkListArg)
-	}
-	cleared, err := s.NetworkClear()
-	if err != nil || cleared != 3 {
-		t.Fatalf("NetworkClear = %d, %v", cleared, err)
-	}
 
 	if _, err := s.SaveMemoryNote("  记忆笔记  "); err != nil {
 		t.Fatalf("SaveMemoryNote: %v", err)
