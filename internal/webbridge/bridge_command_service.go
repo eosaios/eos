@@ -5,7 +5,6 @@ package webbridge
 
 import (
 	"errors"
-	"log/slog"
 	"strings"
 
 	"github.com/eosaios/eos/pkg/coreapi"
@@ -53,50 +52,40 @@ func (svc *CommandService) ResolvePrompt(promptID, decision, note string) (Boots
 		s.stateMu.Unlock()
 		return s.LoadBootstrap(), nil
 	}
-	resolvedText, resolvedLevel := s.resolvedStatusTextAndLevel(prompt, decision)
-	session := s.settlePromptLocked(nil, prompt, resolvedText, resolvedLevel, "streaming")
-	if session == nil {
-		s.stateMu.Unlock()
-		return s.LoadBootstrap(), nil
-	}
-	session.Running = true
-	// 把消息流中的"等待确认…"占位更新为用户决策结果，避免决策后还显示旧状态。
-	// 允许/拒绝后 turn 会恢复执行，因此消息整体保持 streaming；但这条审批状态行
-	// 已经收尾，必须标记为 completed，避免前端继续按 waiting/streaming 脉冲显示。
-	if err := s.persistSessionLocked(session); err != nil {
-		s.pushNotificationLocked("Approval Save Failed", err.Error(), "danger")
-		s.stateMu.Unlock()
-		return s.LoadBootstrap(), err
-	}
-	// 会话作用域 emit：针对审批所在的 session 构建快照，避免全局 emit 在多会话时
-	// 把 currentSessionID 解析到别的会话上，导致本次审批的 status 更新（等待确认→已允许）
-	// 不被前端应用到当前查看的会话。
-	s.emitShellUpdatedForSession(prompt.SessionID)
-	s.stateMu.Unlock()
-
-	if err := s.respondPromptRPC(prompt, decision, note); err != nil {
-		slog.Warn("bridge.resolve_prompt_failed", "prompt_id", promptID, "error", err)
-		s.stateMu.Lock()
-		s.pushNotificationLocked("审批响应失败", err.Error(), "danger")
-		// 回滚乐观落账：prompt 翻回 pending（s.prompts 逆索引 + ToolCall item 的
-		// Approval.State + 状态行挂起文案），前端时间线内联卡与底部浮层随之重现，
-		// 用户可以重试。若内核实际已落账（响应丢失场景），后续 resolved 事件会经
-		// handleConversationResolutionLocked 再次收口，状态自愈。
-		s.unsettlePromptLocked(session, prompt)
-		// 失败留痕：追加一条 error 级别状态行（completed 终态，不脉冲），消息整体
-		// 保持 waiting——prompt 仍挂起等待重试，不能把整条消息标 failed。
-		s.setMessageStatusWithItemState(session, prompt.AssistantMessageID, "审批响应失败："+err.Error(), "error", "waiting", "completed")
-		// 不动 session.Running：respond 没送达内核时轮次仍在等审批，Running 保持 true
-		// 与内核实际状态一致；终态由看门狗/流错误路径负责。
-		session.NeedsAttention = true
-		if persistErr := s.persistSessionLocked(session); persistErr != nil {
-			s.pushNotificationLocked("Approval Save Failed", persistErr.Error(), "danger")
+	if prompt.Source == "request-user-input" {
+		answers, err := requestUserInputDisplayAnswers(prompt, decision, note)
+		if err == nil {
+			err = s.resolveStructuredQuestionLocked(prompt, decision, note, answers)
 		}
 		s.stateMu.Unlock()
-		s.emitShellUpdated()
+		if err != nil {
+			return s.LoadBootstrap(), err
+		}
+		s.emitShellUpdatedForSession(prompt.SessionID)
+		return s.bootstrapForSession(prompt.SessionID), nil
+	}
+	// Wait for the Core receipt before mutating the prompt or announcing approval.
+	// The same lock serializes duplicate submissions and incoming resolution events.
+	if pendingSession := s.sessions[prompt.SessionID]; pendingSession != nil {
+		if err := s.persistSessionLocked(pendingSession); err != nil {
+			s.stateMu.Unlock()
+			return s.LoadBootstrap(), err
+		}
+	}
+	if err := s.respondPromptRPC(prompt, decision, note); err != nil {
+		s.stateMu.Unlock()
 		return s.LoadBootstrap(), err
 	}
-	return s.LoadBootstrap(), nil
+	resolvedText, resolvedLevel := s.resolvedStatusTextAndLevel(prompt, decision)
+	session := s.settlePromptLocked(nil, prompt, resolvedText, resolvedLevel, "streaming")
+	if session != nil {
+		if err := s.persistSessionLocked(session); err != nil {
+			s.pushNotificationLocked(s.t("notification.request_failed.title"), err.Error(), "danger")
+		}
+	}
+	s.stateMu.Unlock()
+	s.emitShellUpdatedForSession(prompt.SessionID)
+	return s.bootstrapForSession(prompt.SessionID), nil
 }
 
 func (svc *CommandService) KillTask(taskID string) (BootstrapState, error) {

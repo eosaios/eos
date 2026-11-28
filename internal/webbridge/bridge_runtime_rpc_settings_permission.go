@@ -1,6 +1,8 @@
 package webbridge
 
 import (
+	"context"
+	"log/slog"
 	"strings"
 
 	"github.com/eosaios/eos/internal/webbridge/adapter"
@@ -29,16 +31,25 @@ func (s *BridgeService) permissionSnapshotReadOnly() adapter.PermissionSnapshot 
 }
 
 func (s *BridgeService) permissionSnapshotForSessionReadOnly(sessionID string) adapter.PermissionSnapshot {
+	unknown := adapter.PermissionSnapshot{SandboxMode: "unknown", ApprovalMode: "unknown"}
 	if s == nil || s.runtimeGatewayClient() == nil {
-		return adapter.PermissionSnapshot{}
+		return unknown
 	}
 	sessionID = strings.TrimSpace(sessionID)
 	if sessionID != "" {
-		if currentCore := s.runtimeGatewayClient().ThreadCoreIfExists(sessionID); currentCore != nil {
-			return currentCore.PermissionSnapshot()
+		if current, ok := s.runtimeGatewayClient().(interface {
+			CorePermissionSessionSnapshotRPC(context.Context, string) (adapter.PermissionSnapshot, error)
+		}); ok {
+			snapshot, err := current.CorePermissionSessionSnapshotRPC(coreCtx(), sessionID)
+			if err != nil {
+				slog.Warn("session permission snapshot unavailable", "error", err)
+				return unknown
+			}
+			return snapshot
 		}
+		return unknown
 	}
-	return s.permissionSnapshotReadOnly()
+	return unknown
 }
 
 func (s *BridgeService) threadCoreIfExists(sessionID string) adapter.Core {

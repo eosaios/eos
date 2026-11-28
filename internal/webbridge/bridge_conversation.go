@@ -30,6 +30,13 @@ func turnRollbacksFromMessages(messages []ChatMessage) ([]TurnRollback, error) {
 	return rollbacks, nil
 }
 
+func (s *BridgeService) persistConversationStartLocked(session *sessionState) error {
+	if session.Queue.Starting != "" {
+		return nil
+	}
+	return s.persistSessionLocked(session)
+}
+
 func (s *BridgeService) runConversation(ctx context.Context, sessionID, assistantMessageID, input string, attachments []adapter.Attachment, resume bool) {
 	defer s.conversationWG.Done()
 	// 用 WithCancelCause 而非 WithCancel：静默看门狗（修复点 #5a）触发时通过
@@ -61,7 +68,7 @@ func (s *BridgeService) runConversation(ctx context.Context, sessionID, assistan
 	if session := s.ensureSessionByIDLocked(sessionID); session != nil {
 		s.appendRuntimeEventLocked(session, assistantMessageID, "workspace", "正在确认工作区", workspace, "running")
 		session.UpdatedAt = time.Now()
-		if persistErr := s.persistSessionLocked(session); persistErr != nil {
+		if persistErr := s.persistConversationStartLocked(session); persistErr != nil {
 			session.NeedsAttention = true
 			s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 		}
@@ -94,7 +101,7 @@ func (s *BridgeService) runConversation(ctx context.Context, sessionID, assistan
 		session.UpdatedAt = time.Now()
 		s.appendRuntimeEventLocked(session, assistantMessageID, "error", "请求启动失败", err.Error(), "failed")
 		s.setMessageStatus(session, assistantMessageID, requestFailureMessage(err.Error()), "error", "failed")
-		if persistErr := s.persistSessionLocked(session); persistErr != nil {
+		if persistErr := s.persistConversationStartLocked(session); persistErr != nil {
 			s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 		}
 		s.pushNotificationLocked(s.t("notification.request_failed.title"), err.Error(), "danger")
@@ -126,7 +133,36 @@ func (s *BridgeService) runConversation(ctx context.Context, sessionID, assistan
 			kind == string(protocol.EventTypeTurnCancelled) ||
 			kind == string(protocol.EventTypeTurnError)
 		s.stateMu.Lock()
+		if running := s.runningConversations[strings.TrimSpace(sessionID)]; running != nil &&
+			(running.AssistantMessageID != assistantMessageID || (running.Cancelled && kind != "turn.started" && kind != "turn.steering")) {
+			s.stateMu.Unlock()
+			return
+		}
 		session := s.ensureSessionByIDLocked(sessionID)
+		if session == nil {
+			s.stateMu.Unlock()
+			return
+		}
+		queueStarted := kind == "turn.started" && session.Queue.Starting != ""
+		if queueStarted {
+			s.queuedTurnStartedLocked(session, assistantMessageID, event.TurnID)
+		}
+		if kind == "tool.executing" {
+			s.markToolExecutingLocked(session, assistantMessageID, event)
+			s.stateMu.Unlock()
+			return
+		}
+		if kind == "turn.steering" {
+			applySteeringEvent(session, event)
+			s.stateMu.Unlock()
+			s.emitShellUpdatedForSession(sessionID)
+			return
+		}
+		if kind == "turn.completed" {
+			if running := s.runningConversations[sessionID]; running != nil {
+				running.completedSuccessfully = runtimeIncompleteReason(payloadForItem(event)) == ""
+			}
+		}
 		assistantMessage := findSessionMessageByID(session, assistantMessageID)
 		result := s.handleConversationEventLocked(conversationEventFrame{
 			session:            session,
@@ -140,7 +176,7 @@ func (s *BridgeService) runConversation(ctx context.Context, sessionID, assistan
 			assistantCompleted: assistantMessage != nil && strings.EqualFold(strings.TrimSpace(assistantMessage.State), "completed"),
 		})
 		session.UpdatedAt = time.Now()
-		if result.persist {
+		if result.persist && session.Queue.Starting == "" {
 			if persistErr := s.persistSessionLocked(session); persistErr != nil {
 				session.NeedsAttention = true
 				s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
@@ -157,7 +193,7 @@ func (s *BridgeService) runConversation(ctx context.Context, sessionID, assistan
 		// 例外：审批/问询/计划问题事件必须立即同步，让浮层卡片秒到（不能等 200ms
 		// debouncer，否则会出现"看到等待确认文案但卡片不显示"的窗口）。
 		// turn 完成/取消/出错时无论如何都全量同步最终状态。
-		if !isTurnCompleted && !result.emitBootstrap {
+		if !queueStarted && !isTurnCompleted && !result.emitBootstrap {
 			return
 		}
 		s.emitShellUpdatedForSession(sessionID)
@@ -224,4 +260,21 @@ func (s *BridgeService) emitItemDeltaLocked(sessionID, assistantMessageID, kind 
 			Status:    current.Status,
 		})
 	}
+}
+
+func (s *BridgeService) markToolExecutingLocked(session *sessionState, assistantID string, event adapter.Event) {
+	message := findSessionMessageByID(session, assistantID)
+	if message == nil {
+		return
+	}
+	index := findItemIndex(message.Items, event.EffectiveRequestID())
+	if index < 0 || message.Items[index].ToolResult != nil {
+		return
+	}
+	message.Items[index].Status = "running"
+	item := message.Items[index]
+	s.emitConversationDelta(ConversationDeltaPayload{
+		SessionID: session.ID, MessageID: assistantID, ItemID: item.ID,
+		Kind: item.Kind, Status: item.Status, Item: &item,
+	})
 }

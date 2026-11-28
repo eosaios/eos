@@ -79,6 +79,8 @@ func (s *BridgeService) handleConversationEventLocked(frame conversationEventFra
 		if assistantMsg != nil {
 			assistantMsg.State = "streaming"
 		}
+	case frame.kind == "turn.question_expired":
+		result.emitBootstrap = s.handleAsyncQuestionExpiredLocked(frame)
 	case frame.kind == "turn.request_user_input":
 		s.handleConversationRequestUserInputLocked(frame)
 	case frame.kind == "tool.result" || frame.kind == "turn.item_completed":
@@ -192,15 +194,16 @@ func (s *BridgeService) handleConversationApprovalLocked(frame conversationEvent
 	// 单一数据源：审批态挂到 ToolCall item 上（call.id = envelope.request_id）。
 	// 按钮选项不在壳层携带：前端按 kind 派生 token+label（见 ItemApprovalState 注释）。
 	approval := &ItemApprovalState{
-		ApprovalID: promptID,
-		Kind:       "approval",
-		State:      "pending",
-		Title:      s.t("approval.card.title"),
-		Message:    message,
-		RiskLevel:  level,
-		Reason:     previewReason,
-		DiffPath:   review.Path,
-		Diff:       review.Diff,
+		CanApproveForSession: payloadForItem(frame.event)["can_approve_for_session"] == true,
+		ApprovalID:           promptID,
+		Kind:                 "approval",
+		State:                "pending",
+		Title:                s.t("approval.card.title"),
+		Message:              message,
+		RiskLevel:            level,
+		Reason:               previewReason,
+		DiffPath:             review.Path,
+		Diff:                 review.Diff,
 	}
 	callID := strings.TrimSpace(frame.event.EffectiveRequestID())
 	s.markItemApprovalLocked(frame.session, frame.assistantMessageID, callID, approval)
@@ -333,6 +336,7 @@ func (s *BridgeService) handleConversationRequestUserInputLocked(frame conversat
 			Status:             "pending",
 			CreatedAt:          time.Now().Format(time.RFC3339),
 			Questions:          questions,
+			Background:         payload["background"] == true,
 			CallID:             callID,
 		},
 		AssistantMessageID: frame.assistantMessageID,
@@ -340,6 +344,9 @@ func (s *BridgeService) handleConversationRequestUserInputLocked(frame conversat
 		Input:              frame.input,
 	}
 	s.prompts[prompt.ID] = prompt
+	if prompt.Background {
+		return
+	}
 	s.appendRuntimeEventLocked(frame.session, frame.assistantMessageID, "interaction", title, message, "waiting")
 	text, level := s.pendingPromptStatusTextAndLevel(prompt)
 	s.beginMessageStatusWithKey(frame.session, frame.assistantMessageID, promptStatusKey(prompt.ID), text, level)
@@ -367,6 +374,10 @@ func parseRequestUserInputQuestions(payload map[string]any) []bridgeRequestUserI
 			ID:       runtimeStringValue(m, "id"),
 			Header:   runtimeStringValue(m, "header"),
 			Question: runtimeStringValue(m, "question"),
+		}
+		q.Multiple, _ = m["multiple"].(bool)
+		if allowCustom, ok := m["allow_custom"].(bool); ok {
+			q.AllowCustom = &allowCustom
 		}
 		if opts, ok := m["options"].([]any); ok {
 			for _, opt := range opts {

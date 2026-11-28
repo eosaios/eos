@@ -2,6 +2,7 @@ package webbridge
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 )
@@ -269,7 +270,10 @@ func cloneSessionState(session *sessionState) *sessionState {
 	if session == nil {
 		return nil
 	}
+	queue := session.Queue
+	queue.Messages = slices.Clone(queue.Messages)
 	return &sessionState{
+		Queue:          queue,
 		ID:             session.ID,
 		Title:          session.Title,
 		WorkspacePath:  session.WorkspacePath,

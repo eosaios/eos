@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -107,6 +108,7 @@ func (s *BridgeService) attachRunningTurn(sessionID, assistantMessageID string, 
 		if session := s.sessions[sessionID]; session != nil {
 			if msg := findSessionMessageByID(session, assistantMessageID); msg != nil {
 				msg.turnID = turnID
+				msg.TurnID = turnID
 			}
 		}
 	}
@@ -147,7 +149,32 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 	s.stateMu.Lock()
 	sessionKey := strings.TrimSpace(sessionID)
 	running := s.runningConversations[sessionKey]
-	session := s.sessions[strings.TrimSpace(sessionID)]
+	if running != nil && running.AssistantMessageID != assistantMessageID {
+		s.stateMu.Unlock()
+		return
+	}
+	session := s.sessions[sessionKey]
+	defer func() {
+		s.settleSteeringLocked(session, running)
+		if session != nil && running != nil {
+			if running.completedSuccessfully && !running.Cancelled {
+				s.startQuestionFollowupLocked(session)
+			} else {
+				if s.closeAsyncQuestionsLocked(session, assistantMessageID, running) {
+					if err := s.persistSessionLocked(session); err != nil {
+						slog.Warn("persist closed questions", "error", err)
+					}
+				}
+			}
+		}
+		s.finishChatQueueLocked(session, running)
+		s.stateMu.Unlock()
+		s.emitShellUpdatedForSession(sessionID)
+	}()
+	if session != nil && running != nil && session.Queue.Starting != "" {
+		delete(s.runningConversations, sessionKey)
+		return
+	}
 	if session != nil && session.Running {
 		if assistantMessageCompleted(session, assistantMessageID) {
 			session.Running = false
@@ -159,8 +186,6 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 			if persistErr := s.persistSessionLocked(session); persistErr != nil {
 				s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 			}
-			s.stateMu.Unlock()
-			s.emitShellUpdatedForSession(sessionID)
 			return
 		}
 		switch {
@@ -172,7 +197,7 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 			s.appendRuntimeEventLocked(session, assistantMessageID, "error", "会话无响应", lastRuntimeEventTitle(session, assistantMessageID), "failed")
 			s.setMessageStatus(session, assistantMessageID, "会话无响应，请重试", "error", "failed")
 			s.pushNotificationLocked(s.t("notification.request_failed.title"), "会话无响应，已强制结束", "danger")
-		case errors.Is(ctx.Err(), context.Canceled):
+		case (running != nil && running.Cancelled) || errors.Is(ctx.Err(), context.Canceled):
 			session.Running = false
 			session.NeedsAttention = false
 			s.appendRuntimeEventLocked(session, assistantMessageID, "lifecycle", "已停止生成", "", "failed")
@@ -222,8 +247,6 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 			}
 		}
 	}
-	s.stateMu.Unlock()
-	s.emitShellUpdatedForSession(sessionID)
 }
 
 // dismissPendingPromptsLocked 把本会话挂起的审批/问询 prompt 删除、对应状态行与
@@ -239,6 +262,9 @@ func (s *BridgeService) dismissPendingPromptsLocked(sessionID string) {
 	session := s.sessions[sessionID]
 	for promptID, prompt := range s.prompts {
 		if strings.TrimSpace(prompt.SessionID) != sessionID {
+			continue
+		}
+		if prompt.Background {
 			continue
 		}
 		delete(s.prompts, promptID)

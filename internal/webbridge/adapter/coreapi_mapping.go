@@ -152,7 +152,7 @@ func guiSettingsFromCoreAPI(settings coreapi.Settings) GUISettings {
 func permissionSnapshotFromCoreAPI(snapshot coreapi.PermissionSnapshot) PermissionSnapshot {
 	return PermissionSnapshot{
 		ExecutionMode: normalizeExecutionMode(snapshot.ExecutionMode),
-		SandboxMode:   normalizeSandboxMode(snapshot.SandboxMode),
+		SandboxMode:   strings.TrimSpace(snapshot.SandboxMode),
 		// 内核 ApprovalMode serde 只输出标准 kebab-case，读取侧无需别名映射。
 		ApprovalMode:      strings.TrimSpace(snapshot.ApprovalMode),
 		AllowAll:          snapshot.AllowAll,
@@ -475,15 +475,16 @@ func sessionMetasFromCoreAPI(items []coreapi.Session) []SessionMeta {
 
 func sessionMetaFromCoreAPI(item coreapi.Session) SessionMeta {
 	meta := SessionMeta{
-		ID:          strings.TrimSpace(item.ID),
-		SavedAt:     firstNonZeroCoreAPITime(item.UpdatedAt, item.CreatedAt),
-		Model:       coreAPIMetadataString(item.Metadata, "model"),
-		Summary:     coreAPIMetadataString(item.Metadata, "summary"),
-		Preview:     coreAPIMetadataString(item.Metadata, "preview"),
-		Title:       coreAPIMetadataString(item.Metadata, "title"),
-		Rounds:      coreAPIMetadataInt(item.Metadata, "rounds"),
-		Tokens:      coreAPIMetadataInt(item.Metadata, "tokens"),
-		SandboxMode: normalizeSessionSandboxMode(coreAPIMetadataString(item.Metadata, "sandbox_mode")),
+		ID:                   strings.TrimSpace(item.ID),
+		SavedAt:              firstNonZeroCoreAPITime(item.UpdatedAt, item.CreatedAt),
+		Model:                coreAPIMetadataString(item.Metadata, "model"),
+		Summary:              coreAPIMetadataString(item.Metadata, "summary"),
+		Preview:              coreAPIMetadataString(item.Metadata, "preview"),
+		Title:                coreAPIMetadataString(item.Metadata, "title"),
+		Rounds:               coreAPIMetadataInt(item.Metadata, "rounds"),
+		Tokens:               coreAPIMetadataInt(item.Metadata, "tokens"),
+		PermissionScopeSaved: item.Metadata["tool_permission_scope"] != nil,
+		SandboxMode:          normalizeSessionSandboxMode(coreAPIMetadataString(item.Metadata, "sandbox_mode")),
 	}
 	if meta.Title == "" {
 		meta.Title = meta.ID

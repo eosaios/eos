@@ -48,3 +48,18 @@ func restoreFileReferenceMetadata(message *ChatMessage, gui map[string]any) {
 	message.Content = content
 	message.Attachments = refs
 }
+
+func restoreCommittedMessageDisplay(message *ChatMessage, metadata map[string]any) {
+	if content, ok := metadata["client_display_input"].(string); ok {
+		message.Content = content
+	}
+	if files, ok := metadata["client_display_attachments"]; ok && files != nil {
+		encoded, err := json.Marshal(files)
+		if err == nil {
+			err = json.Unmarshal(encoded, &message.Attachments)
+		}
+		if err != nil {
+			slog.Warn("queued_message.attachments_decode_failed", "error", err)
+		}
+	}
+}

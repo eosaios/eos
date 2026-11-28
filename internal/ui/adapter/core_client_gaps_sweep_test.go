@@ -132,39 +132,16 @@ func TestCoreClientStagedFailureArms(t *testing.T) {
 	if err := newMixed().StartContextEngine(ctx, "/ws"); err != nil {
 		t.Fatalf("StartContextEngine 成功链: %v", err)
 	}
-	// ApplyAccessMode：danger-full-access 的 EnterFullAccess 臂 + 常规链
-	// 逐段（Modes → Permissions.SetAccessMode → Sandbox.DerivePolicy →
-	// SetPolicy → SetApprovalMode 收尾）。
-	if err := newMixed("Permissions").ApplyAccessMode(ctx, "danger-full-access"); err == nil {
-		t.Fatal("danger-full-access EnterFullAccess 失败应报错")
+	for _, mode := range []string{"danger-full-access", "read-only", "workspace-write"} {
+		if err := newMixed("Permissions").ApplyAccessMode(ctx, mode); err == nil {
+			t.Fatalf("permission service failure for %s was lost", mode)
+		}
+		if err := newMixed().ApplyAccessMode(ctx, mode); err != nil {
+			t.Fatalf("setting %s: %v", mode, err)
+		}
 	}
-	if err := newMixed().ApplyAccessMode(ctx, "danger-full-access"); err != nil {
-		t.Fatalf("danger-full-access 成功链: %v", err)
-	}
-	if err := newMixed("Modes").ApplyAccessMode(ctx, "workspace-write"); err == nil {
-		t.Fatal("Modes.SetSandboxMode 失败应报错")
-	}
-	if err := newMixed("Permissions").ApplyAccessMode(ctx, "workspace-write"); err == nil {
-		t.Fatal("Permissions.SetAccessMode 失败应报错")
-	}
-	if err := newMixed("Sandbox").ApplyAccessMode(ctx, "workspace-write"); err == nil {
-		t.Fatal("Sandbox.DerivePolicy 失败应报错")
-	}
-	if err := newMixed().ApplyAccessMode(ctx, "workspace-write"); err != nil {
-		t.Fatalf("workspace-write 成功链: %v", err)
-	}
-	if err := newMixed().ApplyAccessMode(ctx, "  "); err != nil {
-		t.Fatal("空 mode 应幂等成功")
-	}
-	// SyncModeSnapshots：三段非空逐段失败 + 全成功。
-	if err := newMixed("Modes").SyncModeSnapshots(ctx, "s", "a", "p"); err == nil {
-		t.Fatal("SyncModeSnapshots sandbox 段失败应报错")
-	}
-	if err := newMixed("Permissions").SyncModeSnapshots(ctx, "s", "a", "p"); err == nil {
-		t.Fatal("SyncModeSnapshots access 段失败应报错")
-	}
-	if err := newMixed().SyncModeSnapshots(ctx, "s", "a", "p"); err != nil {
-		t.Fatalf("SyncModeSnapshots 成功链: %v", err)
+	if err := newMixed().ApplyAccessMode(ctx, " "); err != nil {
+		t.Fatal(err)
 	}
 	// Events() nil receiver 守卫臂。
 	var nilAdapter *CoreClientAdapter

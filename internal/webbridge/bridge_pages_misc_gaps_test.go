@@ -165,7 +165,15 @@ func TestBridgePagesSettingsSandboxDelegates(t *testing.T) {
 	_ = s.SetExecutionMode("auto")
 	// 审批模式 UI 入口：透传内核 + 回 bootstrap（失败也返回 bootstrap）。
 	_ = s.SetApprovalModeForUI("on-request")
-	// 沙箱模式 UI 入口：read-only 档 + 会话空时跳过持久化。
+	// The explicit preset is bound to the selected chat.
+	workspace := s.activeWorkspaceValue()
+	if workspace == "" {
+		workspace = defaultWorkspacePathFromEnvironment()
+	}
+	extras.sessions = []coreapi.Session{{ID: "test-session", WorkspaceRoot: workspace}}
+	extras.currentMeta = adapter.SessionMeta{ID: "test-session"}
+	s.sessions["test-session"] = &sessionState{ID: "test-session", WorkspacePath: workspace}
+	s.currentSessionID = "test-session"
 	if _, err := s.SetSandboxModeForUI("read-only"); err != nil {
 		t.Fatalf("SetSandboxModeForUI: %v", err)
 	}

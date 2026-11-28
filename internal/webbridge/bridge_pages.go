@@ -5,8 +5,6 @@ package webbridge
 
 import (
 	"fmt"
-	"log/slog"
-	"strings"
 )
 
 func (s *BridgeService) RunBashCommand(input string) (BootstrapState, error) {
@@ -119,47 +117,21 @@ func (s *BridgeService) SetApprovalModeForUI(mode string) BootstrapState {
 	return s.commandService().SetApprovalModeForUI(mode)
 }
 
-// SetSandboxModeForUI 是前端 composer 沙箱下拉（只读/工作区/完全访问）的 Wails 入口。
-// 走 applySandboxModeSemantics 单一入口：完全访问是复合态（approval=never +
-// danger policy + 收口待审卡），切回其余档位时审批轴同步复位——双轴始终一致。
-// 同时把选择写入当前会话 metadata（session/set_meta），下次启动按会话恢复——
-// 每个会话独立持久化，新会话默认 workspace-write（AGENTS.md §3：归一化在壳层，单一
-// 真相源在内核）。
+// SetSandboxModeForUI submits one scoped change. Core persists the complete preset.
 func (s *BridgeService) SetSandboxModeForUI(mode string) (BootstrapState, error) {
-	normalized := NormalizeSandboxMode(mode)
-	if err := s.applySandboxModeSemantics(s.activeWorkspaceValue(), normalized); err != nil {
-		return s.LoadBootstrap(), fmt.Errorf("apply sandbox mode: %w", err)
+	s.stateMu.RLock()
+	sessionID, workspace := s.currentSessionID, s.activeWorkspace
+	if session := s.sessions[sessionID]; session != nil && session.WorkspacePath != "" {
+		workspace = session.WorkspacePath
 	}
-	s.persistSessionSandboxMode(s.currentSessionValue(), normalized)
+	s.stateMu.RUnlock()
+	if err := s.applySandboxModeForSession(workspace, mode, sessionID); err != nil {
+		return s.LoadBootstrap(), fmt.Errorf("apply permission preset: %w", err)
+	}
 	return s.LoadBootstrap(), nil
 }
-
-// EnterFullAccessForUI 是前端“完全访问”危险确认后的 Wails 入口。
-// 语义不是“只切沙箱下拉”，而是进入真正的无审批完全访问：
-// approval=never + sandbox=danger-full-access，并立即收起本地等待中的审批卡片。
-// 沙箱模式按会话持久化为 danger-full-access（approval 不持久化，维持 per-session 运行时语义）。
 func (s *BridgeService) EnterFullAccessForUI() (BootstrapState, error) {
-	if err := s.applySandboxModeSemantics(s.activeWorkspaceValue(), "danger-full-access"); err != nil {
-		return s.LoadBootstrap(), fmt.Errorf("enter full access: %w", err)
-	}
-	s.persistSessionSandboxMode(s.currentSessionValue(), "danger-full-access")
-	return s.LoadBootstrap(), nil
-}
-
-// persistSessionSandboxMode 把沙箱模式写入指定会话的 metadata（session/set_meta）。
-// sessionID 为空时跳过——会话尚未建立时是正常态，仅运行时生效，不持久化。
-func (s *BridgeService) persistSessionSandboxMode(sessionID, mode string) {
-	sessionID = strings.TrimSpace(sessionID)
-	if sessionID == "" {
-		return
-	}
-	gateway := runtimeGatewayOrNil(s)
-	if gateway == nil {
-		return
-	}
-	if err := gateway.CoreSetSessionSandboxModeRPC(coreCtx(), sessionID, mode); err != nil {
-		slog.Warn("bridge.session.persist_sandbox_mode.failed", "session", sessionID, "mode", mode, "error", err)
-	}
+	return s.SetSandboxModeForUI("danger-full-access")
 }
 
 func (s *BridgeService) SetReasoningLevel(level string) (BootstrapState, error) {

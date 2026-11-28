@@ -181,6 +181,13 @@ func convertPromptEvent(e uiadapter.RuntimeEvent) PromptRequestMsg {
 	msg.Title = eventString(e.Data, "title")
 	msg.Question = eventText(e, "question", "message", "summary", "text")
 	msg.Options = eventStringSlice(e.Data, "options")
+	if msg.Kind == "permission" {
+		msg.Options = []string{"accept"}
+		if eventBool(e.Data, "can_approve_for_session") {
+			msg.Options = append(msg.Options, "acceptForSession")
+		}
+		msg.Options = append(msg.Options, "decline", "cancel")
+	}
 	msg.Category = eventString(e.Data, "category")
 	msg.Summary = firstNonEmpty(eventString(e.Data, "summary"), eventString(e.Data, "message"))
 	msg.Diff = eventString(e.Data, "diff")

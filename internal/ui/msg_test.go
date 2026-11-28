@@ -17,9 +17,10 @@ func TestConvertEventApprovalRequired(t *testing.T) {
 		Type: "approval.required",
 		RID:  "req-1",
 		Data: map[string]any{
-			"approval_id": "req-1",
-			"message":     "准备执行高风险步骤",
-			"options":     []string{"accept", "acceptForSession", "decline", "cancel"},
+			"approval_id":             "req-1",
+			"can_approve_for_session": true,
+			"message":                 "准备执行高风险步骤",
+			"options":                 []string{"accept", "acceptForSession", "decline", "cancel"},
 		},
 	})
 

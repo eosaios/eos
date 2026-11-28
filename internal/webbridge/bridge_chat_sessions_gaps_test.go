@@ -99,28 +99,28 @@ type chatSessionsGatewayStub struct {
 	configPathOverride string
 
 	// git / remote workspace / bash / tasks（批三扩展）
-	gitErr            error
-	gitRepos          coreapi.GitReposResult
-	gitRepoRoots      []string
-	stageCalls        [][4]interface{}
-	commitMessages    [][2]string
-	pushRoots         []string
-	gitPushResult     coreapi.GitPushResult
-	abortRoots        []string
+	gitErr             error
+	gitRepos           coreapi.GitReposResult
+	gitRepoRoots       []string
+	stageCalls         [][4]interface{}
+	commitMessages     [][2]string
+	pushRoots          []string
+	gitPushResult      coreapi.GitPushResult
+	abortRoots         []string
 	commitMessageCalls []coreapi.GitSuggestMessageRequest
-	remoteErr         error
-	remoteWorkspace   adapter.RemoteWorkspace
-	openRemoteCalls   []string
-	forgetRemoteCalls []string
-	clearRemoteCalls  []string
-	bashErr           error
-	bashEvents        chan adapter.Event
-	bashCommands      []string
-	killErr           error
-	killCalls         []string
-	cleanupCalls      int
-	respondErr        error
-	respondWithReason [][3]interface{}
+	remoteErr          error
+	remoteWorkspace    adapter.RemoteWorkspace
+	openRemoteCalls    []string
+	forgetRemoteCalls  []string
+	clearRemoteCalls   []string
+	bashErr            error
+	bashEvents         chan adapter.Event
+	bashCommands       []string
+	killErr            error
+	killCalls          []string
+	cleanupCalls       int
+	respondErr         error
+	respondWithReason  [][3]interface{}
 
 	// goal / capability 写（批六扩展）
 	capErr        error
@@ -487,6 +487,13 @@ func (g *chatSessionsGatewayStub) StartupDiagnostics() adapter.StartupDiagnostic
 	return adapter.StartupDiagnosticsResult{}
 }
 
+func (g *chatSessionsGatewayStub) CoreSetPermissionPresetRPC(_ context.Context, req coreapi.PermissionPresetRequest) (adapter.PermissionSnapshot, error) {
+	approval := "never"
+	if req.Mode == "workspace-write" {
+		approval = "on-request"
+	}
+	return adapter.PermissionSnapshot{SandboxMode: req.Mode, ApprovalMode: approval, AllowAll: req.Mode == "danger-full-access"}, nil
+}
 func (g *chatSessionsGatewayStub) CoreSetSandboxModeRPC(context.Context, string) error { return nil }
 
 func (g *chatSessionsGatewayStub) CoreSetSandboxPolicyRPC(_ context.Context, _ string, _ sandbox.Policy) error {
@@ -536,6 +543,15 @@ func newChatSessionsTestBridge(t *testing.T, gateway *chatSessionsGatewayStub) (
 		prompts:              map[string]*promptState{},
 		emitEvent:            rec.record,
 	}
+	// Snapshot publication can still update the per-test HOME after the
+	// caller returns. Drain the queue before its temporary directory is removed.
+	t.Cleanup(func() {
+		eventually(t, "snapshot delivery finished", func() bool {
+			s.shellSnapshots.mu.Lock()
+			defer s.shellSnapshots.mu.Unlock()
+			return !s.shellSnapshots.inFlight && len(s.shellSnapshots.order) == 0
+		})
+	})
 	return s, NewChatService(s), rec
 }
 

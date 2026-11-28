@@ -1210,6 +1210,20 @@ func (s remotePermissionService) Snapshot(ctx context.Context) (coreapi.Permissi
 	return out, nil
 }
 
+func (s remotePermissionService) SetPreset(ctx context.Context, request coreapi.PermissionPresetRequest) (coreapi.PermissionSnapshot, error) {
+	var out coreapi.PermissionSnapshot
+	err := s.engine.call(ctx, protocoljsonrpc.MethodPermissionModeSet, request, &out)
+	return out, err
+}
+func (s remotePermissionService) SnapshotForSession(ctx context.Context, ref coreapi.SessionRef) (coreapi.PermissionSnapshot, error) {
+	var out coreapi.PermissionSnapshot
+	err := s.engine.call(ctx, protocoljsonrpc.MethodPermissionSnapshot, ref, &out)
+	return out, err
+}
+
+func (s remotePermissionService) SetSessionApproval(ctx context.Context, ref coreapi.SessionRef, mode string) error {
+	return s.engine.call(ctx, protocoljsonrpc.MethodPermissionApprovalModeSet, map[string]string{"session_id": ref.SessionID, "mode": mode}, nil)
+}
 func (s remotePermissionService) PendingReview(ctx context.Context) (coreapi.PendingReview, error) {
 	var out coreapi.PendingReview
 	if err := s.engine.call(ctx, protocoljsonrpc.MethodPermissionPendingReview, nil, &out); err != nil {

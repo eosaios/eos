@@ -54,9 +54,10 @@ type GUIWorkspaceSettings struct {
 	PlanPromptStyle string
 	// PromptTimeoutSecs 是询问（审批/问询）等待超时秒数（0 = 一直等待）。
 	// 超时后内核自动响应：审批拒绝、问询选 (Recommended) 项。
-	PromptTimeoutSecs int
-	Trusted           bool
-	TrustedAt         string
+	PromptTimeoutSecs  int
+	RunningMessageMode string
+	Trusted            bool
+	TrustedAt          string
 }
 
 type GUISettingsSnapshot struct {
@@ -87,6 +88,7 @@ type GUISettingsSaveInput struct {
 	PollIntervalSec      int
 	PlanPromptStyle      string
 	PromptTimeoutSecs    int
+	RunningMessageMode   string
 	// UpdateProxyEnabled/UpdateProxyURL 是更新（检查+下载）代理开关，
 	// 写在全局配置 ~/.eos.json（与 CLI 共用 update_proxy_* 字段）。
 	UpdateProxyEnabled bool
@@ -221,6 +223,9 @@ func SaveGUISettings(globalConfigPath, activeWorkspace string, input GUISettings
 	if err := setJSONValueOrDeleteEmptyString(workspaceDoc, "plan_prompt_style", input.PlanPromptStyle); err != nil {
 		return GUISettingsSnapshot{}, err
 	}
+	if err := setJSONValue(workspaceDoc, "running_message_mode", normalizeRunningMessageMode(input.RunningMessageMode)); err != nil {
+		return GUISettingsSnapshot{}, err
+	}
 	if err := setJSONValue(workspaceDoc, "prompt_timeout_secs", input.PromptTimeoutSecs); err != nil {
 		return GUISettingsSnapshot{}, err
 	}
@@ -303,6 +308,7 @@ func decodeWorkspaceSettings(doc map[string]json.RawMessage, defaults GUISetting
 	settings.WatchDebounceMs = loadJSONInt(doc, "watch_debounce_ms", settings.WatchDebounceMs)
 	settings.PollIntervalSec = loadJSONInt(doc, "poll_interval_sec", settings.PollIntervalSec)
 	settings.PlanPromptStyle = loadJSONString(doc, "plan_prompt_style", "")
+	settings.RunningMessageMode = normalizeRunningMessageMode(loadJSONString(doc, "running_message_mode", ""))
 	settings.PromptTimeoutSecs = loadJSONInt(doc, "prompt_timeout_secs", 0)
 	settings.Trusted = loadJSONBool(doc, "trusted", false)
 	settings.TrustedAt = loadJSONString(doc, "trusted_at", "")
@@ -411,6 +417,13 @@ func loadJSONInt(doc map[string]json.RawMessage, key string, fallback int) int {
 // 别名。Shared by the desktop bridge layer (package main) and the settings
 // store to avoid duplicate copies.
 func NormalizeSandboxMode(mode string) string {
+	if value := parseSandboxMode(mode); value != "" {
+		return value
+	}
+	return defaultSandboxMode
+}
+
+func parseSandboxMode(mode string) string {
 	key := strings.ToLower(strings.TrimSpace(mode))
 	key = strings.ReplaceAll(key, "_", "-")
 	switch key {
@@ -421,6 +434,13 @@ func NormalizeSandboxMode(mode string) string {
 	case "workspace-write", "workspacewrite", "workspace", "ww":
 		return "workspace-write"
 	default:
-		return defaultSandboxMode
+		return ""
 	}
+}
+
+func normalizeRunningMessageMode(mode string) string {
+	if strings.EqualFold(strings.TrimSpace(mode), "queue") {
+		return "queue"
+	}
+	return "steer"
 }

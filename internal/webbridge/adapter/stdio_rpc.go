@@ -1332,35 +1332,19 @@ func (g *StdioGateway) CoreApprovalListRPC(ctx context.Context, req coreapi.Pend
 	return out, nil
 }
 
-func (g *StdioGateway) CoreRespondApprovalRPC(ctx context.Context, approvalID string, decision coreapi.ApprovalDecision) error {
-	params := coreapi.ApprovalResponse{
-		ApprovalID: strings.TrimSpace(approvalID),
-		Decision:   decision,
-	}
-	var out struct {
-		OK bool `json:"ok"`
-	}
-	if err := g.client.Call(ctx, protocoljsonrpc.MethodApprovalRespond, params, &out); err != nil {
-		return err
-	}
-	return nil
+func (g *StdioGateway) CoreRespondApprovalRPC(ctx context.Context, id string, decision coreapi.ApprovalDecision) error {
+	return g.CoreRespondApprovalWithReasonRPC(ctx, id, decision, "")
 }
-
-// CoreRespondApprovalWithReasonRPC sends an approval/respond with a reason
-// string. Used by request_user_input resolution: decision=accept,
-// reason=JSON(RequestUserInputResponse) so the core can feed the answers back
-// to the model as a tool output.
-func (g *StdioGateway) CoreRespondApprovalWithReasonRPC(ctx context.Context, approvalID string, decision coreapi.ApprovalDecision, reason string) error {
-	params := coreapi.ApprovalResponse{
-		ApprovalID: strings.TrimSpace(approvalID),
-		Decision:   decision,
-		Reason:     reason,
+func (g *StdioGateway) CoreRespondApprovalWithReasonRPC(ctx context.Context, id string, decision coreapi.ApprovalDecision, reason string) error {
+	req := coreapi.ApprovalResponse{ApprovalID: strings.TrimSpace(id), Decision: decision, Reason: reason}
+	var receipt struct {
+		Accepted bool `json:"accepted"`
 	}
-	var out struct {
-		OK bool `json:"ok"`
-	}
-	if err := g.client.Call(ctx, protocoljsonrpc.MethodApprovalRespond, params, &out); err != nil {
+	if err := g.client.Call(ctx, protocoljsonrpc.MethodApprovalRespond, req, &receipt); err != nil {
 		return err
+	}
+	if !receipt.Accepted {
+		return errors.New("Core did not accept the response")
 	}
 	return nil
 }
@@ -1394,6 +1378,16 @@ func (g *StdioGateway) CorePermissionSnapshotRPC(ctx context.Context) (Permissio
 	return permissionSnapshotFromCoreAPI(out), nil
 }
 
+func (g *StdioGateway) CorePermissionSessionSnapshotRPC(ctx context.Context, sessionID string) (PermissionSnapshot, error) {
+	var out coreapi.PermissionSnapshot
+	err := g.client.Call(ctx, protocoljsonrpc.MethodPermissionSnapshot, coreapi.SessionRef{SessionID: sessionID}, &out)
+	return permissionSnapshotFromCoreAPI(out), err
+}
+func (g *StdioGateway) CoreSetPermissionPresetRPC(ctx context.Context, req coreapi.PermissionPresetRequest) (PermissionSnapshot, error) {
+	var out coreapi.PermissionSnapshot
+	err := g.client.Call(ctx, protocoljsonrpc.MethodPermissionModeSet, req, &out)
+	return permissionSnapshotFromCoreAPI(out), err
+}
 func (g *StdioGateway) PermissionSnapshot() PermissionSnapshot {
 	if snapshot, err := g.CorePermissionSnapshotRPC(rpcCtx()); err == nil {
 		return snapshot

@@ -242,8 +242,8 @@ func TestHandlePermissionsSlashSupportsAccessAndApprovalModes(t *testing.T) {
 	if got := snap.SandboxMode; got != "read-only" {
 		t.Fatalf("sandboxMode=%q, want read-only (snapshot synced)", got)
 	}
-	if got := snap.ApprovalMode; got != "on-request" {
-		t.Fatalf("approvalMode=%q, want on-request (reset on non-danger switch)", got)
+	if got := snap.ApprovalMode; got != "never" {
+		t.Fatalf("approvalMode=%q, want never (read-only prohibits escalation)", got)
 	}
 
 	app.handlePermissionsSlash([]string{"approval", "never"})

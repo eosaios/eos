@@ -12,15 +12,16 @@ func sessionMetasFromCoreAPI(items []coreapi.Session, fallbackWorkspace string) 
 	out := make([]adapter.SessionMeta, 0, len(items))
 	for _, item := range items {
 		meta := adapter.SessionMeta{
-			ID:          strings.TrimSpace(item.ID),
-			SavedAt:     firstNonZeroTime(item.UpdatedAt, item.CreatedAt),
-			Model:       rpcMetadataString(item.Metadata, "model"),
-			Summary:     rpcMetadataString(item.Metadata, "summary"),
-			Preview:     rpcMetadataString(item.Metadata, "preview"),
-			Title:       rpcMetadataString(item.Metadata, "title"),
-			Rounds:      rpcMetadataInt(item.Metadata, "rounds"),
-			Tokens:      rpcMetadataInt(item.Metadata, "tokens"),
-			SandboxMode: rpcMetadataString(item.Metadata, "sandbox_mode"),
+			ID:                   strings.TrimSpace(item.ID),
+			SavedAt:              firstNonZeroTime(item.UpdatedAt, item.CreatedAt),
+			Model:                rpcMetadataString(item.Metadata, "model"),
+			Summary:              rpcMetadataString(item.Metadata, "summary"),
+			Preview:              rpcMetadataString(item.Metadata, "preview"),
+			Title:                rpcMetadataString(item.Metadata, "title"),
+			Rounds:               rpcMetadataInt(item.Metadata, "rounds"),
+			Tokens:               rpcMetadataInt(item.Metadata, "tokens"),
+			PermissionScopeSaved: item.Metadata["tool_permission_scope"] != nil,
+			SandboxMode:          rpcMetadataString(item.Metadata, "sandbox_mode"),
 		}
 		if meta.ID == "" {
 			continue

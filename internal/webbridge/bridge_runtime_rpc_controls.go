@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/eosaios/eos/internal/webbridge/adapter"
@@ -109,20 +108,6 @@ func (s *BridgeService) respondPromptRPC(prompt *promptState, decision, note str
 		return errors.New("prompt id or session id is empty")
 	}
 	decision = strings.TrimSpace(decision)
-	workspace := strings.TrimSpace(prompt.WorkspacePath)
-	if workspace == "" {
-		if resolvedWorkspace, err := gateway.ResolveSessionWorkspace(sessionID); err == nil {
-			workspace = strings.TrimSpace(resolvedWorkspace)
-		}
-	}
-	if workspace != "" {
-		if err := s.activateWorkspaceRPC(workspace); err != nil {
-			slog.Warn("bridge.core_rpc.write_failed", "domain", "activate-workspace", "workspace", workspace, "error", err)
-		}
-		if err := s.setWorkspaceCurrentSessionRPC(workspace, sessionID); err != nil {
-			slog.Warn("bridge.core_rpc.write_failed", "domain", "set-current-session", "workspace", workspace, "session_id", sessionID, "error", err)
-		}
-	}
 	if prompt.Source == "request-user-input" {
 		// request_user_input resolution: answers are fed back via
 		// approval/respond with decision=accept and

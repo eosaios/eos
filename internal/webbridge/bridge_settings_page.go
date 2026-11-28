@@ -1,6 +1,7 @@
 package webbridge
 
 import (
+	"fmt"
 	"log/slog"
 	"strings"
 )
@@ -33,8 +34,9 @@ type GUISettingsContextState struct {
 	UseMemory bool `json:"useMemory"`
 	// PromptTimeoutSecs 是询问（审批/问询）等待超时秒数（0 = 一直等待）。
 	// 超时后内核自动响应：审批拒绝、问询选 (Recommended) 项。
-	PromptTimeoutSecs int `json:"promptTimeoutSecs"`
-	MaxInjectKB       int `json:"maxInjectKB"`
+	PromptTimeoutSecs  int    `json:"promptTimeoutSecs"`
+	RunningMessageMode string `json:"runningMessageMode"`
+	MaxInjectKB        int    `json:"maxInjectKB"`
 }
 
 type GUISettingsWatchPlanState struct {
@@ -67,6 +69,8 @@ type GUISettingsState struct {
 }
 
 type SettingsSaveRequest struct {
+	// Set only by a user-initiated permission selection, scoped to the displayed conversation.
+	PermissionSessionID  string `json:"permissionSessionId,omitempty"`
 	Language             string `json:"language"`
 	LogDir               string `json:"logDir"`
 	Theme                string `json:"theme"`
@@ -84,6 +88,7 @@ type SettingsSaveRequest struct {
 	PollIntervalSec      int    `json:"pollIntervalSec"`
 	PlanPromptStyle      string `json:"planPromptStyle"`
 	PromptTimeoutSecs    int    `json:"promptTimeoutSecs"`
+	RunningMessageMode   string `json:"runningMessageMode"`
 	UpdateProxyEnabled   bool   `json:"updateProxyEnabled"`
 	UpdateProxyURL       string `json:"updateProxyUrl"`
 	// StayInTray 是「驻留系统托盘」开关（默认开）。
@@ -151,6 +156,7 @@ func (s *BridgeService) loadSettings(activeWorkspace string, workspaces []Worksp
 			GitCommitMarker:      snapshot.Workspace.GitCommitMarker,
 			UseMemory:            snapshot.Workspace.UseMemory,
 			PromptTimeoutSecs:    snapshot.Workspace.PromptTimeoutSecs,
+			RunningMessageMode:   normalizeRunningMessageMode(snapshot.Workspace.RunningMessageMode),
 			MaxInjectKB:          snapshot.Workspace.MaxInjectKB,
 		},
 		WatchPlan: GUISettingsWatchPlanState{
@@ -241,8 +247,11 @@ func (s *BridgeService) syncSandboxModeForSession(workspace, sessionID string) s
 	workspace = strings.TrimSpace(workspace)
 	sessionID = strings.TrimSpace(sessionID)
 	mode := ""
-	if sessionID != "" {
-		mode = NormalizeSandboxMode(s.sessionSandboxModeReadOnly(sessionID))
+	if saved, restored, err := s.sessionPermissionForRestore(sessionID); err != nil {
+		slog.Warn("read session permission for restore", "error", err)
+		return "unknown"
+	} else if restored || saved != "" {
+		return s.permissionSnapshotForSessionReadOnly(sessionID).SandboxMode
 	}
 	if mode == "" {
 		fallback := s.settingsReadOnly()
@@ -256,23 +265,29 @@ func (s *BridgeService) syncSandboxModeForSession(workspace, sessionID string) s
 		)
 		if err == nil {
 			mode = NormalizeSandboxMode(snapshot.Workspace.SandboxMode)
+			// A project file can narrow a new conversation, but cannot grant host access.
+			if mode == "danger-full-access" {
+				mode = "workspace-write"
+			}
 		}
 	}
 	if mode == "" {
 		mode = "workspace"
 	}
-	if err := s.applySandboxModeSemantics(workspace, mode); err != nil {
+	if sessionID == "" {
+		return mode
+	}
+	if err := s.applySandboxModeForSession(workspace, mode, sessionID); err != nil {
 		slog.Warn("bridge.settings.sync_sandbox_mode.failed", "workspace", workspace, "mode", mode, "error", err)
+		return "unknown"
 	}
 	return mode
 }
 
-// sessionSandboxModeReadOnly 从内核读取单个会话 metadata 里的 sandbox_mode。
-// 内核是单一数据源（session/set_meta 持久化），壳层只读。找不到会话或无记录返回空串。
-func (s *BridgeService) sessionSandboxModeReadOnly(sessionID string) string {
-	sessionID = strings.TrimSpace(sessionID)
+// Distinguish a missing legacy preset from an unreadable session ledger.
+func (s *BridgeService) sessionPermissionForRestore(sessionID string) (string, bool, error) {
 	if sessionID == "" {
-		return ""
+		return "", false, nil
 	}
 	workspace := s.workspaceForSessionFromSnapshotReadOnly(sessionID, s.runtimeSnapshotReadOnly())
 	if workspace == "" {
@@ -280,14 +295,14 @@ func (s *BridgeService) sessionSandboxModeReadOnly(sessionID string) string {
 	}
 	metas, err := s.listWorkspaceSessionsReadOnly(workspace)
 	if err != nil {
-		return ""
+		return "", false, err
 	}
-	for _, meta := range metas {
-		if meta.ID == sessionID {
-			return strings.TrimSpace(meta.SandboxMode)
+	for _, m := range metas {
+		if m.ID == sessionID {
+			return m.SandboxMode, m.PermissionScopeSaved, nil
 		}
 	}
-	return ""
+	return "", false, fmt.Errorf("session %q was not found while reading its permissions", sessionID)
 }
 
 func normalizeReasoningLevel(level string) string {

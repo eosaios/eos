@@ -11,23 +11,27 @@ import (
 // 仅在 Go 侧用于维护会话、对话流、提示、bootstrap 局部装配与工作区持久化。
 
 type sessionState struct {
-	ID             string
-	Title          string
-	WorkspacePath  string
-	Messages       []ChatMessage
-	Running        bool
-	Persisted      bool
-	NeedsAttention bool
-	UpdatedAt      time.Time
+	QuestionFollowups []string
+	Queue             ChatQueue
+	ID                string
+	Title             string
+	WorkspacePath     string
+	Messages          []ChatMessage
+	Running           bool
+	Persisted         bool
+	NeedsAttention    bool
+	UpdatedAt         time.Time
 }
 
 type runningConversationState struct {
-	AssistantMessageID string
-	WorkspacePath      string
-	Cancel             context.CancelFunc
-	TurnID             string
-	Interrupt          func(context.Context) error
-	Cancelled          bool
+	QuestionResponseID    string
+	completedSuccessfully bool
+	AssistantMessageID    string
+	WorkspacePath         string
+	Cancel                context.CancelFunc
+	TurnID                string
+	Interrupt             func(context.Context) error
+	Cancelled             bool
 }
 
 type conversationStreamHandle struct {

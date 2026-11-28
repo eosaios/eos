@@ -42,7 +42,7 @@ func (svc *ChatService) SendChatWithReasoning(sessionID, workspace, input string
 		}
 		return s.LoadBootstrap(), errors.New("default workspace initialization failed: unable to create session")
 	}
-	if session.Running {
+	if session.Running || s.runningConversations[session.ID] != nil {
 		s.stateMu.Unlock()
 		return s.LoadBootstrap(), errors.New("current session is still processing")
 	}

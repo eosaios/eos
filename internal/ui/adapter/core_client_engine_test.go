@@ -224,6 +224,25 @@ func (s *fakeConfig) SaveSettings(_ context.Context, in coreapi.Settings) error 
 
 type fakePermissions struct{ e *fakeEngine }
 
+func (s *fakePermissions) SnapshotForSession(ctx context.Context, _ coreapi.SessionRef) (coreapi.PermissionSnapshot, error) {
+	return s.Snapshot(ctx)
+}
+func (s *fakePermissions) SetSessionApproval(ctx context.Context, ref coreapi.SessionRef, mode string) error {
+	return s.SetApprovalMode(ctx, coreapi.SetModeRequest{Mode: mode})
+}
+func (s *fakePermissions) SetPreset(ctx context.Context, req coreapi.PermissionPresetRequest) (coreapi.PermissionSnapshot, error) {
+	if req.SessionID == "" {
+		panic("missing session in permission test")
+	}
+
+	s.e.permissionSnap.SandboxMode = req.Mode
+	s.e.permissionSnap.AccessMode = req.Mode
+	s.e.permissionSnap.ApprovalMode = "never"
+	if req.Mode == "workspace-write" {
+		s.e.permissionSnap.ApprovalMode = "on-request"
+	}
+	return s.e.permissionSnap, nil
+}
 func (s *fakePermissions) Snapshot(context.Context) (coreapi.PermissionSnapshot, error) {
 	return s.e.permissionSnap, nil
 }

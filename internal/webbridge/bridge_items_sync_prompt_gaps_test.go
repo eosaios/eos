@@ -59,11 +59,16 @@ func TestConversationItemsPureArms(t *testing.T) {
 
 	t.Run("extractItemToolResult 状态归一", func(t *testing.T) {
 		cases := map[string]string{
-			"ok":     "completed",
-			"":       "completed",
-			"error":  "failed",
-			"denied": "failed",
-			"failed": "failed",
+			"ok":                 "completed",
+			"":                   "completed",
+			"error":              "failed",
+			"denied":             "denied",
+			"precondition_unmet": "precondition_unmet",
+			"paused_by_conflict": "paused_by_conflict",
+			"action_uncertain":   "action_uncertain",
+			"needs_user_action":  "needs_user_action",
+			"cancelled":          "cancelled",
+			"failed":             "failed",
 			// 未知值原样透传（switch 只归一已知词表；running 属进行态透传）。
 			"weird":   "weird",
 			"running": "running",

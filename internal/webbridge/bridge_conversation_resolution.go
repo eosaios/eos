@@ -17,7 +17,7 @@ import (
 // 这里的监听主要兜住"内核侧自行决定"（无人值守自动 deny 等）和"并发入口"两种场景。
 func isPromptResolvedEvent(kind string) bool {
 	switch strings.TrimSpace(kind) {
-	case "tool.approval_approved",
+	case "tool.approval_superseded", "tool.approval_approved",
 		"tool.approval_rejected",
 		"approval.responded",
 		"inquiry.responded":
@@ -132,7 +132,7 @@ func (s *BridgeService) settleSessionPromptsCancelledLocked(session *sessionStat
 	}
 	var pending []*promptState
 	for _, prompt := range s.prompts {
-		if prompt != nil && strings.TrimSpace(prompt.SessionID) == session.ID {
+		if prompt != nil && !prompt.Background && strings.TrimSpace(prompt.SessionID) == session.ID {
 			pending = append(pending, prompt)
 		}
 	}
@@ -200,9 +200,35 @@ func (s *BridgeService) handleConversationResolutionLocked(frame conversationEve
 	if approvalID == "" {
 		return conversationEventResult{}
 	}
-	prompt, ok := s.prompts[approvalID]
-	if !ok {
-		// 已经被 ResolvePrompt RPC 删除，或不在本壳层管辖——幂等，不报错。
+	prompt := s.prompts[approvalID]
+	if prompt != nil && frame.session != nil && frame.session.ID != prompt.SessionID {
+		// Older prompt snapshots have no session ID. Accept the receipt only if
+		// the originating assistant message exists in the event's own session.
+		if prompt.SessionID != "" || findSessionMessageByID(frame.session, prompt.AssistantMessageID) == nil {
+			return conversationEventResult{}
+		}
+	}
+	if frame.session != nil {
+		// Restored prompt indexes can be missing or point to an old call ID.
+		// Relink only the pending item that matches the Core receipt.
+		found := false
+		for i := len(frame.session.Messages) - 1; i >= 0 && !found; i-- {
+			msg := &frame.session.Messages[i]
+			for j := range msg.Items {
+				item := &msg.Items[j]
+				if item.Approval == nil || item.Approval.State != "pending" || item.Approval.ApprovalID != approvalID {
+					continue
+				}
+				if prompt == nil {
+					prompt = &promptState{PromptCard: PromptCard{ID: approvalID, Kind: item.Approval.Kind}}
+				}
+				prompt.SessionID, prompt.CallID, prompt.AssistantMessageID = frame.session.ID, item.ID, msg.ID
+				found = true
+				break
+			}
+		}
+	}
+	if prompt == nil {
 		return conversationEventResult{}
 	}
 	// 内核侧 resolved（切 never 模式 auto-approve、无人值守 auto-deny、CLI 旁路决策）时，
@@ -221,6 +247,8 @@ func (s *BridgeService) handleConversationResolutionLocked(frame conversationEve
 // approved=已允许(success)、rejected=已拒绝(warning)、responded=已处理(info)。
 func (s *BridgeService) resolutionStatusTextAndLevel(kind string) (string, string) {
 	switch strings.TrimSpace(kind) {
+	case "tool.approval_superseded":
+		return s.t("approval.resolved.superseded"), "info"
 	case "tool.approval_approved":
 		return s.t("approval.resolved.allowed"), "success"
 	case "tool.approval_rejected":

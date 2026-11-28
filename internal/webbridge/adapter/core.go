@@ -176,15 +176,16 @@ type WorkspaceSnapshot struct {
 }
 
 type SessionMeta struct {
-	ID          string
-	SavedAt     time.Time
-	Model       string
-	Summary     string
-	Preview     string
-	Title       string
-	Rounds      int
-	Tokens      int
-	SandboxMode string
+	ID                   string
+	SavedAt              time.Time
+	Model                string
+	Summary              string
+	Preview              string
+	Title                string
+	Rounds               int
+	Tokens               int
+	SandboxMode          string
+	PermissionScopeSaved bool
 }
 
 type SessionSnapshot struct {

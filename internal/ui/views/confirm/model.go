@@ -217,16 +217,7 @@ func (m *Model) View() string {
 		label := opt
 		switch m.req.Kind {
 		case "permission":
-			switch opt {
-			case "accept":
-				label = "1. " + i18n.T("approval.accept", m.language)
-			case "acceptForSession":
-				label = "2. " + i18n.T("approval.acceptForSession", m.language)
-			case "decline":
-				label = "3. " + i18n.T("approval.decline", m.language)
-			case "cancel":
-				label = "4. " + i18n.T("approval.cancel", m.language)
-			}
+			label = permissionOptionLabel(m.language, opt, i)
 		default:
 			label = strconvItoa(i+1) + ". " + opt
 		}

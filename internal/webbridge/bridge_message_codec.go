@@ -32,8 +32,15 @@ func chatMessagesFromRuntime(messages []adapter.SessionMessage) []ChatMessage {
 	}
 
 	for _, msg := range messages {
+		if metadataString(msg.Metadata["question_response_id"]) != "" {
+			continue
+		}
 		turnID := metadataTurnID(msg.Metadata)
 		role := strings.TrimSpace(msg.Role)
+		if role == "user" && metadataString(msg.Metadata["steering_turn_id"]) != "" {
+			out = append(out, chatMessageFromRuntime(msg))
+			continue
+		}
 		if strings.EqualFold(role, "tool") {
 			// tool 结果消息归入当前 turn 组（它的 turn_id 与所属 tool_call 相同）。
 			if turnID != "" && turnID == pendingTurnID {
@@ -77,6 +84,7 @@ func chatMessageFromTurnGroup(msgs []adapter.SessionMessage) ChatMessage {
 	// 继承 turn_id，使历史会话再次保存时 sessionMessagesFromChatMessage
 	// 能按 turn_id 展开_items（读写对称）。
 	message.turnID = metadataTurnID(first.Metadata)
+	message.TurnID = message.turnID
 	// 从第一条带 gui metadata 的消息恢复富字段（runtimeEvents/verification 等）。
 	for _, m := range msgs {
 		applyRuntimeMetadataToChatMessage(&message, m.Metadata)
@@ -151,6 +159,8 @@ func threadItemFromSessionMessage(msg adapter.SessionMessage) (ThreadItem, bool)
 		item.Kind = "status"
 		item.Text = strings.TrimSpace(msg.Content)
 		item.Level = metadataString(msg.Metadata["level"])
+		item.QuestionAnswers = decodeQuestionAnswers(msg.Metadata["question_answers"])
+		item.QuestionStatus = metadataString(msg.Metadata["question_status"])
 	default:
 		// agent_message（无 kind 标记）或 tool_call（有 tool_call metadata）。
 		if tc, ok := msg.Metadata["tool_call"]; ok {
@@ -190,16 +200,18 @@ func populateApprovalFromMetadata(item *ThreadItem, raw any) {
 		return
 	}
 	approval := &ItemApprovalState{
-		ApprovalID: metadataString(obj["approvalId"]),
-		Kind:       metadataString(obj["kind"]),
-		State:      state,
-		Title:      metadataString(obj["title"]),
-		Message:    metadataString(obj["message"]),
-		RiskLevel:  metadataString(obj["riskLevel"]),
-		Reason:     metadataString(obj["reason"]),
-		Diff:       metadataString(obj["diff"]),
-		DiffPath:   metadataString(obj["diffPath"]),
-		ResolvedAt: metadataString(obj["resolvedAt"]),
+		CanApproveForSession: obj["canApproveForSession"] == true,
+		Background:           obj["background"] == true,
+		ApprovalID:           metadataString(obj["approvalId"]),
+		Kind:                 metadataString(obj["kind"]),
+		State:                state,
+		Title:                metadataString(obj["title"]),
+		Message:              metadataString(obj["message"]),
+		RiskLevel:            metadataString(obj["riskLevel"]),
+		Reason:               metadataString(obj["reason"]),
+		Diff:                 metadataString(obj["diff"]),
+		DiffPath:             metadataString(obj["diffPath"]),
+		ResolvedAt:           metadataString(obj["resolvedAt"]),
 	}
 	// 按钮选项不落盘也不从 metadata 恢复：前端按 kind 派生（见 ItemApprovalState
 	// 注释），旧数据里的 options 数组（无论字符串还是对象形态）一律忽略。
@@ -236,6 +248,24 @@ func chatMessageFromRuntime(item adapter.SessionMessage) ChatMessage {
 		Attachments: makeAttachments(item.ImagePaths),
 	}
 	applyRuntimeMetadataToChatMessage(&message, item.Metadata)
+	if id := metadataString(item.Metadata["id"]); id != "" {
+		message.ID = id
+	}
+	restoreCommittedMessageDisplay(&message, item.Metadata)
+	if turnID := metadataString(item.Metadata["steering_turn_id"]); turnID != "" {
+		if content, ok := item.Metadata["steering_display_input"].(string); ok {
+			message.Content = content
+		}
+		message.Steering = &SteeringMessageState{
+			TurnID: turnID, AfterItemID: metadataString(item.Metadata["steering_after_item_id"]),
+			Status: metadataString(item.Metadata["steering_state"]),
+		}
+		if data, err := json.Marshal(item.Metadata["steering_display_attachments"]); err == nil && string(data) != "null" {
+			if err := json.Unmarshal(data, &message.Attachments); err != nil {
+				message.Attachments = makeAttachments(item.ImagePaths)
+			}
+		}
+	}
 	// Top-level ChangeSet/Rollback (populated by the Rust core) take
 	// precedence over the legacy metadata["eos_gui"] fallback read above,
 	// which only applies to sessions persisted before the migration.
@@ -346,6 +376,12 @@ func sessionMessageFromThreadItem(
 		if strings.TrimSpace(ti.Level) != "" {
 			msg.Metadata["level"] = ti.Level
 		}
+		if ti.QuestionStatus != "" {
+			msg.Metadata["question_status"] = ti.QuestionStatus
+		}
+		if len(ti.QuestionAnswers) > 0 {
+			msg.Metadata["question_answers"] = encodeQuestionAnswers(ti.QuestionAnswers)
+		}
 		msg.Content = ti.Text
 	default: // agent_message 或 tool_call
 		if ti.Kind == "tool_call" || strings.TrimSpace(ti.ToolName) != "" {
@@ -395,6 +431,10 @@ func requestUserInputQuestionsFromAny(raw []any) []bridgeRequestUserInputQuestio
 			ID:       metadataString(obj["id"]),
 			Header:   metadataString(obj["header"]),
 			Question: metadataString(obj["question"]),
+		}
+		q.Multiple, _ = obj["multiple"].(bool)
+		if allowCustom, ok := obj["allowCustom"].(bool); ok {
+			q.AllowCustom = &allowCustom
 		}
 		if opts, ok := obj["options"].([]any); ok {
 			for _, opt := range opts {
@@ -562,9 +602,21 @@ func runtimeMetadataFromChatMessage(message ChatMessage) map[string]any {
 	if len(gui) == 0 {
 		return nil
 	}
-	return map[string]any{
-		guiRuntimeMetadataKey: gui,
+	metadata := map[string]any{guiRuntimeMetadataKey: gui}
+	if message.Role == "user" && message.Steering != nil {
+		metadata["id"] = message.ID
+		metadata["steering_turn_id"] = message.Steering.TurnID
+		metadata["steering_after_item_id"] = message.Steering.AfterItemID
+		metadata["steering_state"] = message.Steering.Status
+		metadata["steering_display_input"] = message.Content
+		metadata["steering_display_attachments"] = message.Attachments
 	}
+	if message.Role == "user" && strings.HasPrefix(message.ID, "queued-") {
+		metadata["id"] = message.ID
+		metadata["client_display_input"] = message.Content
+		metadata["client_display_attachments"] = message.Attachments
+	}
+	return metadata
 }
 
 func runtimeEventsToMetadata(events []RuntimeEvent) []any {

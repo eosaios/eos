@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/eosaios/eos/pkg/coreapi/generated"
 	"github.com/eosaios/eos/pkg/protocol"
 	"github.com/eosaios/eos/pkg/sandbox"
 )
@@ -106,6 +107,14 @@ type ConfigService interface {
 	GetSettings(context.Context) (Settings, error)
 	SaveSettings(context.Context, Settings) error
 }
+
+// PermissionPresetService is the scoped three-mode interface supported by current Core.
+type PermissionPresetService interface {
+	SetPreset(context.Context, PermissionPresetRequest) (PermissionSnapshot, error)
+	SnapshotForSession(context.Context, SessionRef) (PermissionSnapshot, error)
+	SetSessionApproval(context.Context, SessionRef, string) error
+}
+type PermissionPresetRequest = generated.PermissionModeRequest
 
 type PermissionService interface {
 	Snapshot(context.Context) (PermissionSnapshot, error)
@@ -829,6 +838,7 @@ type PendingApprovalListRequest struct {
 }
 
 type PendingApprovalItem struct {
+	CallID     string         `json:"call_id,omitempty"`
 	ApprovalID string         `json:"approval_id"`
 	SessionID  string         `json:"session_id"`
 	TurnID     string         `json:"turn_id"`

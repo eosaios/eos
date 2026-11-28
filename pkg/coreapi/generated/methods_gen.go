@@ -64,6 +64,7 @@ const (
 	MethodConfigRulesReset              = "config/rules/reset"
 	MethodConfigSettingsGet             = "config/settings/get"
 	MethodConfigSettingsSave            = "config/settings/save"
+	MethodPermissionModeSet             = "permission/mode/set"
 	MethodPermissionSnapshot            = "permission/snapshot"
 	MethodPermissionPendingReview       = "permission/pending_review"
 	MethodPermissionClearPendingReview  = "permission/clear_pending_review"
@@ -72,6 +73,9 @@ const (
 	MethodPermissionEnterFullAccess     = "permission/enter_full_access"
 	MethodExtensionsSkillsList          = "extensions/skills/list"
 	MethodExtensionsSkillsReload        = "extensions/skills/reload"
+	MethodRuntimeStorageSkillsRoot      = "runtime/storage/skills_root"
+	MethodRuntimeStoragePluginsRoot     = "runtime/storage/plugins_root"
+	MethodRuntimeStorageStopWhenIdle    = "runtime/storage/stop_when_idle"
 	MethodExtensionsSkillSetEnabled     = "extensions/skill/set_enabled"
 	MethodExtensionsSkillInvoke         = "extensions/skill/invoke"
 	MethodExtensionsPluginsList         = "extensions/plugins/list"
@@ -106,6 +110,7 @@ const (
 	MethodDesktopHostStatus             = "desktop/host/status"
 	MethodDesktopHostRegister           = "desktop/host/register"
 	MethodDesktopHostUnregister         = "desktop/host/unregister"
+	MethodDesktopHostInvalidate         = "desktop/host/invalidate"
 	MethodDesktopHostRespond            = "desktop/host/respond"
 	MethodContextPreview                = "context/preview"
 	MethodContextStats                  = "context/stats"
@@ -155,6 +160,7 @@ const (
 	MethodModelSyncEnv                  = "model/sync_env"
 	MethodModelReload                   = "model/reload"
 	MethodModelContext                  = "model/context"
+	MethodModelInputBudget              = "model/input_budget"
 	MethodModelWorkspaceSet             = "model/workspace/set"
 	MethodModelWorkspaceClear           = "model/workspace/clear"
 	MethodModelSessionSet               = "model/session/set"
@@ -197,6 +203,7 @@ const (
 	MethodEventSubscribe                = "event/subscribe"
 	MethodEventUnsubscribe              = "event/unsubscribe"
 	MethodTurnStart                     = "turn/start"
+	MethodTurnSteer                     = "turn/steer"
 	MethodTurnInterrupt                 = "turn/interrupt"
 	MethodTurnResume                    = "turn/resume"
 	MethodToolCatalog                   = "tool/catalog"
@@ -280,6 +287,7 @@ func CoreMethods() []string {
 		MethodConfigRulesReset,
 		MethodConfigSettingsGet,
 		MethodConfigSettingsSave,
+		MethodPermissionModeSet,
 		MethodPermissionSnapshot,
 		MethodPermissionPendingReview,
 		MethodPermissionClearPendingReview,
@@ -288,6 +296,9 @@ func CoreMethods() []string {
 		MethodPermissionEnterFullAccess,
 		MethodExtensionsSkillsList,
 		MethodExtensionsSkillsReload,
+		MethodRuntimeStorageSkillsRoot,
+		MethodRuntimeStoragePluginsRoot,
+		MethodRuntimeStorageStopWhenIdle,
 		MethodExtensionsSkillSetEnabled,
 		MethodExtensionsSkillInvoke,
 		MethodExtensionsPluginsList,
@@ -322,6 +333,7 @@ func CoreMethods() []string {
 		MethodDesktopHostStatus,
 		MethodDesktopHostRegister,
 		MethodDesktopHostUnregister,
+		MethodDesktopHostInvalidate,
 		MethodDesktopHostRespond,
 		MethodContextPreview,
 		MethodContextStats,
@@ -371,6 +383,7 @@ func CoreMethods() []string {
 		MethodModelSyncEnv,
 		MethodModelReload,
 		MethodModelContext,
+		MethodModelInputBudget,
 		MethodModelWorkspaceSet,
 		MethodModelWorkspaceClear,
 		MethodModelSessionSet,
@@ -413,6 +426,7 @@ func CoreMethods() []string {
 		MethodEventSubscribe,
 		MethodEventUnsubscribe,
 		MethodTurnStart,
+		MethodTurnSteer,
 		MethodTurnInterrupt,
 		MethodTurnResume,
 		MethodToolCatalog,
@@ -478,6 +492,7 @@ func MethodGroups() map[string][]string {
 			MethodDesktopHostStatus,
 			MethodDesktopHostRegister,
 			MethodDesktopHostUnregister,
+			MethodDesktopHostInvalidate,
 			MethodDesktopHostRespond,
 		},
 		"diagnostics": {
@@ -602,6 +617,7 @@ func MethodGroups() map[string][]string {
 			MethodModelSyncEnv,
 			MethodModelReload,
 			MethodModelContext,
+			MethodModelInputBudget,
 			MethodModelWorkspaceSet,
 			MethodModelWorkspaceClear,
 			MethodModelSessionSet,
@@ -613,6 +629,7 @@ func MethodGroups() map[string][]string {
 			MethodNetworkClear,
 		},
 		"permission": {
+			MethodPermissionModeSet,
 			MethodPermissionSnapshot,
 			MethodPermissionPendingReview,
 			MethodPermissionClearPendingReview,
@@ -632,6 +649,9 @@ func MethodGroups() map[string][]string {
 			MethodRoleResolve,
 		},
 		"runtime": {
+			MethodRuntimeStorageSkillsRoot,
+			MethodRuntimeStoragePluginsRoot,
+			MethodRuntimeStorageStopWhenIdle,
 			MethodRuntimeModesGet,
 			MethodRuntimeExecutionModeSet,
 			MethodRuntimeSandboxModeSet,
@@ -678,6 +698,7 @@ func MethodGroups() map[string][]string {
 		},
 		"turn": {
 			MethodTurnStart,
+			MethodTurnSteer,
 			MethodTurnInterrupt,
 			MethodTurnResume,
 		},

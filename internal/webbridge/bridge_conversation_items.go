@@ -245,7 +245,7 @@ func extractItemToolResult(obj map[string]any) *ItemToolResult {
 	switch result.Status {
 	case "ok", "":
 		result.Status = "completed"
-	case "error", "denied", "failed":
+	case "error", "failed":
 		result.Status = "failed"
 	}
 	result.Output = formatToolResultOutput(obj)

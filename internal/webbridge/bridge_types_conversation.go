@@ -1,5 +1,7 @@
 package webbridge
 
+import "github.com/eosaios/eos/pkg/coreapi"
+
 // Conversation 域 DTO：会话卡片、聊天消息、运行期事件、附件、变更集、回滚快照、提示卡、任务卡。
 // JSON 字段语义与前端契约一致，仅做类型归属拆分。
 
@@ -14,40 +16,43 @@ type TaskCard struct {
 }
 
 type SessionCard struct {
-	ID             string `json:"id"`
-	Title          string `json:"title"`
-	Preview        string `json:"preview"`
-	WorkspacePath  string `json:"workspacePath"`
-	UpdatedAt      string `json:"updatedAt"`
-	Running        bool   `json:"running"`
-	Persisted      bool   `json:"persisted"`
-	NeedsAttention bool   `json:"needsAttention"`
-	MessageCount   int    `json:"messageCount"`
-	PendingPrompts int    `json:"pendingPrompts"`
-	Archived       bool   `json:"archived"`
-	Active         bool   `json:"active"`
+	Queue          *ChatQueue `json:"queue,omitempty"`
+	ID             string     `json:"id"`
+	Title          string     `json:"title"`
+	Preview        string     `json:"preview"`
+	WorkspacePath  string     `json:"workspacePath"`
+	UpdatedAt      string     `json:"updatedAt"`
+	Running        bool       `json:"running"`
+	Persisted      bool       `json:"persisted"`
+	NeedsAttention bool       `json:"needsAttention"`
+	MessageCount   int        `json:"messageCount"`
+	PendingPrompts int        `json:"pendingPrompts"`
+	Archived       bool       `json:"archived"`
+	Active         bool       `json:"active"`
 }
 
 type ChatMessage struct {
-	ID                    string            `json:"id"`
-	Role                  string            `json:"role"`
-	Content               string            `json:"content"`
-	State                 string            `json:"state"`
-	CreatedAt             string            `json:"createdAt"`
-	UpdatedAt             string            `json:"updatedAt"`
-	Attachments           []AttachmentRef   `json:"attachments,omitempty"`
-	RuntimeEvents         []RuntimeEvent    `json:"runtimeEvents,omitempty"`
-	RuntimeSummary        string            `json:"runtimeSummary"`
-	ImplementationResult  string            `json:"implementationResult,omitempty"`
-	VerificationResult    string            `json:"verificationResult,omitempty"`
-	VerificationVerdict   string            `json:"verificationVerdict,omitempty"`
-	VerificationSummary   string            `json:"verificationSummary,omitempty"`
-	VerificationCovered   []string          `json:"verificationCoveredChecks,omitempty"`
-	VerificationOpenRisks []string          `json:"verificationOpenRisks,omitempty"`
-	VerificationEvidence  []string          `json:"verificationEvidence,omitempty"`
-	Prompts               []PromptCard      `json:"prompts,omitempty"`
-	ChangeSet             *MessageChangeSet `json:"changeSet,omitempty"`
-	IsPlaceholder         bool              `json:"isPlaceholder,omitempty"`
+	TurnID                string                `json:"turnId,omitempty"`
+	Steering              *SteeringMessageState `json:"steering,omitempty"`
+	ID                    string                `json:"id"`
+	Role                  string                `json:"role"`
+	Content               string                `json:"content"`
+	State                 string                `json:"state"`
+	CreatedAt             string                `json:"createdAt"`
+	UpdatedAt             string                `json:"updatedAt"`
+	Attachments           []AttachmentRef       `json:"attachments,omitempty"`
+	RuntimeEvents         []RuntimeEvent        `json:"runtimeEvents,omitempty"`
+	RuntimeSummary        string                `json:"runtimeSummary"`
+	ImplementationResult  string                `json:"implementationResult,omitempty"`
+	VerificationResult    string                `json:"verificationResult,omitempty"`
+	VerificationVerdict   string                `json:"verificationVerdict,omitempty"`
+	VerificationSummary   string                `json:"verificationSummary,omitempty"`
+	VerificationCovered   []string              `json:"verificationCoveredChecks,omitempty"`
+	VerificationOpenRisks []string              `json:"verificationOpenRisks,omitempty"`
+	VerificationEvidence  []string              `json:"verificationEvidence,omitempty"`
+	Prompts               []PromptCard          `json:"prompts,omitempty"`
+	ChangeSet             *MessageChangeSet     `json:"changeSet,omitempty"`
+	IsPlaceholder         bool                  `json:"isPlaceholder,omitempty"`
 	// IncompleteReason 非空表示这一轮以「未完成」收尾：输出被长度上限截断、被
 	// 内容安全中止，或达到单轮步数上限。已生成的内容完整保留，消息本身已是终态；
 	// 界面据此在消息底部给说明与「继续」入口，不得按成功展示。
@@ -68,16 +73,18 @@ type ChatMessage struct {
 // ThreadItem 是会话内一个离散输出项（对应内核 TurnItem）。
 // 每个项有独立 ID 和类型，壳层按 ID 累积 delta，不会互相覆盖。
 type ThreadItem struct {
-	ID         string          `json:"id"`
-	Kind       string          `json:"kind"`                 // agent_message | reasoning | tool_call | plan | status
-	Text       string          `json:"text,omitempty"`       // agent_message/plan/status 的文本
-	Reasoning  string          `json:"reasoning,omitempty"`  // reasoning 的完整思考内容（累积拼接）
-	ToolName   string          `json:"toolName,omitempty"`   // tool_call 的工具名
-	ToolArgs   string          `json:"toolArgs,omitempty"`   // tool_call 的参数 JSON
-	ToolResult *ItemToolResult `json:"toolResult,omitempty"` // tool_call 的执行结果
-	Category   string          `json:"category,omitempty"`   // tool_call 的分类（command/shell/file/mcp）
-	Level      string          `json:"level,omitempty"`      // status 的级别（info | warning | error）
-	Status     string          `json:"status,omitempty"`     // streaming | completed | failed
+	QuestionStatus  string           `json:"questionStatus,omitempty"`
+	QuestionAnswers []QuestionAnswer `json:"questionAnswers,omitempty"`
+	ID              string           `json:"id"`
+	Kind            string           `json:"kind"`                 // agent_message | reasoning | tool_call | plan | status
+	Text            string           `json:"text,omitempty"`       // agent_message/plan/status 的文本
+	Reasoning       string           `json:"reasoning,omitempty"`  // reasoning 的完整思考内容（累积拼接）
+	ToolName        string           `json:"toolName,omitempty"`   // tool_call 的工具名
+	ToolArgs        string           `json:"toolArgs,omitempty"`   // tool_call 的参数 JSON
+	ToolResult      *ItemToolResult  `json:"toolResult,omitempty"` // tool_call 的执行结果
+	Category        string           `json:"category,omitempty"`   // tool_call 的分类（command/shell/file/mcp）
+	Level           string           `json:"level,omitempty"`      // status 的级别（info | warning | error）
+	Status          string           `json:"status,omitempty"`     // streaming | completed | failed
 	// Approval 承载审批/计划问题挂起态（审批等待项 = 命令执行项，同一 item id）。
 	// 非 nil 表示该 ToolCall item 正在等待用户决策；resolved 后翻转 State 并保留作为历史记录。
 	// 单一数据源：废弃了独立的 s.prompts 卡片轨 + status item 双轨制，审批浮层从此字段投影。
@@ -88,6 +95,9 @@ type ThreadItem struct {
 // 生命周期跟随命令执行：同一个 call_id 的 item 用 approval.state
 // 表达 pending→approved/denied/executing/done 的流转，单一数据源、单一 delta 同步通道。
 type ItemApprovalState struct {
+	CanApproveForSession bool                                      `json:"canApproveForSession,omitempty"`
+	Background           bool                                      `json:"background,omitempty"`
+	Answers              map[string]coreapi.RequestUserInputAnswer `json:"answers,omitempty"`
 	// ApprovalID 是内核 pending 表的 key（approval_{n}），approval/respond RPC 必须用它。
 	// 注意：它 ≠ item.ID（item.ID = call.id）。内核 respond 只认 approval_id。
 	ApprovalID string `json:"approvalId"`
@@ -260,6 +270,7 @@ type RollbackFileSnapshot struct {
 }
 
 type PromptCard struct {
+	Background         bool   `json:"background,omitempty"`
 	ID                 string `json:"id"`
 	Kind               string `json:"kind"`
 	Title              string `json:"title"`
@@ -290,10 +301,12 @@ type PromptCard struct {
 // bridgeRequestUserInputQuestion mirrors core's RequestUserInputQuestion,
 // used by the request_user_input tool (Plan mode only).
 type bridgeRequestUserInputQuestion struct {
-	ID       string                         `json:"id"`
-	Header   string                         `json:"header"`
-	Question string                         `json:"question"`
-	Options  []bridgeRequestUserInputOption `json:"options,omitempty"`
+	Multiple    bool                           `json:"multiple,omitempty"`
+	AllowCustom *bool                          `json:"allowCustom,omitempty"`
+	ID          string                         `json:"id"`
+	Header      string                         `json:"header"`
+	Question    string                         `json:"question"`
+	Options     []bridgeRequestUserInputOption `json:"options,omitempty"`
 }
 
 type bridgeRequestUserInputOption struct {

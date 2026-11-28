@@ -61,6 +61,8 @@ func LocateRealCore(t testing.TB) Core {
 
 	// 允许测试显式指定内核；但必须要求文件真实存在，不允许“找不到就跳过”。
 	opts := sidecar.ResolveOptions{
+		ManifestPath:        os.Getenv("EOS_TEST_CORE_MANIFEST"),
+		PublicKeyPath:       os.Getenv("EOS_TEST_CORE_PUBLIC_KEY"),
 		VerifyChecksum:      true,
 		AllowDevPlaceholder: !sidecar.ReleaseArtifactCheck(),
 	}

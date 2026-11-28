@@ -170,6 +170,10 @@ func (s *BridgeService) bootstrapForSessionWithSource(sessionID, source string) 
 	}
 
 	state.ActiveWorkspace = local.WorkspacePath
+	if state.CurrentSessionID != local.Session.ID {
+		state.Permission = s.permissionForSession(local.Session.ID)
+	}
+	state.Settings.Runtime.SandboxMode = state.Permission.SandboxMode
 	state.CurrentSessionID = local.Session.ID
 	// 单一数据源：审批/问询 UI 数据全部在 ThreadItem.Approval（前端从 items 投影），
 	// 不再把 prompts attach 到 messages（遗留通道，前端已不读 message.Prompts）。
@@ -215,6 +219,7 @@ func (s *BridgeService) localBootstrapForSession(sessionID string) BootstrapStat
 	return normalizeBootstrapState(BootstrapState{
 		Runtime:          bootstrapRuntimeShell,
 		BridgeMode:       s.bridgeCoreMode(),
+		Permission:       s.permissionForSession(currentSessionID),
 		ActiveWorkspace:  activeWorkspace,
 		WorkspaceCount:   len(workspaces),
 		CurrentSessionID: currentSessionID,

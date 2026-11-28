@@ -327,7 +327,7 @@ func TestSyncApprovedPromptsAfterFullAccessLockedFlipsItemAndEmitsDelta(t *testi
 		AssistantMessageID: "msg-1",
 	}
 
-	s.syncApprovedPromptsAfterFullAccessLocked()
+	s.handleConversationResolutionLocked(conversationEventFrame{session: session, kind: "tool.approval_approved", event: adapter.Event{RequestID: "approval_1"}})
 
 	// prompts 必须被清空。
 	if len(s.prompts) != 0 {
@@ -409,7 +409,7 @@ func TestSyncApprovedPromptsAfterFullAccessLockedSkipsRequestUserInput(t *testin
 		AssistantMessageID: "msg-1",
 	}
 
-	s.syncApprovedPromptsAfterFullAccessLocked()
+	s.handleConversationResolutionLocked(conversationEventFrame{session: session, kind: "tool.approval_approved", event: adapter.Event{RequestID: "unrelated"}})
 
 	// request_user_input 不应被「完全访问」收口——仍 pending。
 	if _, ok := s.prompts["inquiry_1"]; !ok {

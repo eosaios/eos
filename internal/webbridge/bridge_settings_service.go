@@ -38,6 +38,9 @@ func (svc *SettingsService) SaveSettings(req SettingsSaveRequest) (BootstrapStat
 		return BootstrapState{}, errors.New("bridge service is not available")
 	}
 	current := s.settingsReadOnly()
+	if strings.TrimSpace(req.PermissionSessionID) != "" && parseSandboxMode(req.SandboxMode) == "" {
+		return s.LoadBootstrap(), fmt.Errorf("unknown permission preset %q", req.SandboxMode)
+	}
 	normalized := SettingsSaveRequest{
 		Language:             fallbackText(strings.TrimSpace(req.Language), fallbackText(strings.TrimSpace(current.Language), "zh")),
 		LogDir:               strings.TrimSpace(req.LogDir),
@@ -57,6 +60,7 @@ func (svc *SettingsService) SaveSettings(req SettingsSaveRequest) (BootstrapStat
 		PollIntervalSec:      req.PollIntervalSec,
 		PlanPromptStyle:      strings.TrimSpace(req.PlanPromptStyle),
 		PromptTimeoutSecs:    normalizePromptTimeoutSecs(req.PromptTimeoutSecs),
+		RunningMessageMode:   normalizeRunningMessageMode(req.RunningMessageMode),
 		UpdateProxyEnabled:   req.UpdateProxyEnabled,
 		UpdateProxyURL:       strings.TrimSpace(req.UpdateProxyURL),
 	}
@@ -93,6 +97,7 @@ func (svc *SettingsService) SaveSettings(req SettingsSaveRequest) (BootstrapStat
 			PollIntervalSec:      normalized.PollIntervalSec,
 			PlanPromptStyle:      normalized.PlanPromptStyle,
 			PromptTimeoutSecs:    normalized.PromptTimeoutSecs,
+			RunningMessageMode:   normalized.RunningMessageMode,
 			UpdateProxyEnabled:   normalized.UpdateProxyEnabled,
 			UpdateProxyURL:       normalized.UpdateProxyURL,
 		},
@@ -113,8 +118,16 @@ func (svc *SettingsService) SaveSettings(req SettingsSaveRequest) (BootstrapStat
 	// 沙箱模式走 applySandboxModeSemantics 单一入口：设置里选"完全访问权限"
 	// 是复合态（approval=never + danger policy + 收口待审卡），此前单推沙箱轴
 	// 会让完全访问态下审批卡继续弹；切回工作区时审批轴同步复位。
-	if err := s.applySandboxModeSemantics(s.activeWorkspaceValue(), normalized.SandboxMode); err != nil {
-		return s.LoadBootstrap(), err
+	if id := strings.TrimSpace(req.PermissionSessionID); id != "" {
+		s.stateMu.RLock()
+		session, workspace := s.currentSessionID, s.activeWorkspace
+		s.stateMu.RUnlock()
+		if session != id {
+			return s.LoadBootstrap(), errors.New("the selected conversation changed")
+		}
+		if err := s.applySandboxModeForSession(workspace, normalized.SandboxMode, id); err != nil {
+			return s.LoadBootstrap(), err
+		}
 	}
 	if err := s.setReasoningLevelRPC(normalized.ReasoningLevel); err != nil {
 		return s.LoadBootstrap(), err

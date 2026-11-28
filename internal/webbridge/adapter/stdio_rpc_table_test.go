@@ -353,7 +353,7 @@ func TestGatewayGitVersionsSettingsInsightSweep(t *testing.T) {
 		protocoljsonrpc.MethodConfigSettingsGet:          map[string]any{},
 		protocoljsonrpc.MethodConfigSettingsSave:         map[string]any{},
 		protocoljsonrpc.MethodApprovalList:               map[string]any{"approvals": []any{}},
-		protocoljsonrpc.MethodApprovalRespond:            map[string]any{},
+		protocoljsonrpc.MethodApprovalRespond:            map[string]any{"accepted": true},
 		protocoljsonrpc.MethodPermissionSnapshot:         map[string]any{},
 		protocoljsonrpc.MethodWorkspaceRollbackApply:     map[string]any{},
 		protocoljsonrpc.MethodInsightPlanSnapshot:        map[string]any{},

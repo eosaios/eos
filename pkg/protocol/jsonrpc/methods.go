@@ -48,6 +48,13 @@ const (
 	MethodConfigRulesReset           = "config/rules/reset"
 	MethodConfigSettingsGet          = "config/settings/get"
 	MethodConfigSettingsSave         = "config/settings/save"
+	MethodDesktopHostInvalidate      = "desktop/host/invalidate"
+	MethodModelInputBudget           = "model/input_budget"
+	MethodRuntimeStoragePluginsRoot  = "runtime/storage/plugins_root"
+	MethodRuntimeStorageSkillsRoot   = "runtime/storage/skills_root"
+	MethodRuntimeStorageStopWhenIdle = "runtime/storage/stop_when_idle"
+	MethodTurnSteer                  = "turn/steer"
+	MethodPermissionModeSet          = "permission/mode/set"
 	MethodPermissionSnapshot         = "permission/snapshot"
 	MethodPermissionPendingReview    = "permission/pending_review"
 	MethodPermissionClearReview      = "permission/clear_pending_review"
@@ -262,6 +269,13 @@ func AllCoreMethods() []string {
 		MethodConfigRulesReset,
 		MethodConfigSettingsGet,
 		MethodConfigSettingsSave,
+		MethodDesktopHostInvalidate,
+		MethodModelInputBudget,
+		MethodRuntimeStoragePluginsRoot,
+		MethodRuntimeStorageSkillsRoot,
+		MethodRuntimeStorageStopWhenIdle,
+		MethodTurnSteer,
+		MethodPermissionModeSet,
 		MethodPermissionSnapshot,
 		MethodPermissionPendingReview,
 		MethodPermissionClearReview,

@@ -481,7 +481,18 @@ func (a *CoreClientAdapter) PermissionSnapshot(ctx context.Context) (coreapi.Per
 	if a == nil || a.engine == nil {
 		return coreapi.PermissionSnapshot{}, errors.New("core client is not available")
 	}
-	return a.engine.Permissions().Snapshot(ctx)
+	id, err := a.CurrentSessionID(ctx)
+	if err != nil {
+		return coreapi.PermissionSnapshot{}, err
+	}
+	if id == "" {
+		return a.engine.Permissions().Snapshot(ctx)
+	}
+	svc, ok := a.engine.Permissions().(coreapi.PermissionPresetService)
+	if !ok {
+		return coreapi.PermissionSnapshot{}, errors.New("Core does not support scoped permission snapshots")
+	}
+	return svc.SnapshotForSession(ctx, coreapi.SessionRef{SessionID: id})
 }
 
 // === Goal（目标模式）===
@@ -580,88 +591,48 @@ func (a *CoreClientAdapter) SetAccessMode(ctx context.Context, mode string) erro
 	return a.engine.Permissions().SetAccessMode(ctx, coreapi.SetModeRequest{Mode: mode})
 }
 
-// ApplyAccessMode 是 TUI 切换访问/沙箱模式的语义入口，与桌面端
-// applySandboxModeSemantics 维护同一套双轴不变式：
-//   - danger-full-access：走内核 permission/enter_full_access 原子推进双轴
-//     （approval=never + danger policy）并自动放行待审项；
-//   - 其余（read-only / workspace-write）：同步快照字符串 + sandbox/derive_policy
-//   - sandbox/set_policy 让真实裁决路径生效，并把审批轴复位内核默认 on-request
-//     ——离开完全访问时若不复位，中高风险工具会被 Never→Deny 静默拒绝。
-//
-// 历史问题：permission/access_mode/set 只写 UI 快照不影响裁决；单独调用会让
-// /permissions 显示已切换而沙箱策略未变（UI 与内核脱节）。
+// ApplyAccessMode installs the sandbox and approval policy in one Core transaction.
 func (a *CoreClientAdapter) ApplyAccessMode(ctx context.Context, mode string) error {
-	mode = strings.TrimSpace(mode)
-	if mode == "" {
+	if strings.TrimSpace(mode) == "" {
 		return nil
 	}
 	if a == nil || a.engine == nil {
 		return errors.New("core client is not available")
 	}
-	workspace := ""
-	if cwd, err := os.Getwd(); err == nil {
-		workspace = strings.TrimSpace(cwd)
+	svc, ok := a.engine.Permissions().(coreapi.PermissionPresetService)
+	if !ok {
+		return errors.New("Core does not support scoped permission presets")
 	}
-	if mode == "danger-full-access" {
-		if err := a.engine.Permissions().EnterFullAccess(ctx, coreapi.EnterFullAccessRequest{WorkspaceRoot: workspace}); err != nil {
-			return err
-		}
-		return nil
-	}
-	if err := a.engine.Modes().SetSandboxMode(ctx, coreapi.SetModeRequest{Mode: mode}); err != nil {
-		return err
-	}
-	if err := a.engine.Permissions().SetAccessMode(ctx, coreapi.SetModeRequest{Mode: mode}); err != nil {
-		return err
-	}
-	policy, err := a.engine.Sandbox().DerivePolicy(ctx, coreapi.DeriveSandboxPolicyRequest{Mode: mode, WorkspaceRoot: workspace})
+	id, err := a.ensureSessionID(ctx)
 	if err != nil {
-		return fmt.Errorf("derive sandbox policy: %w", err)
+		return err
 	}
-	if err := a.engine.Sandbox().SetPolicy(ctx, coreapi.SessionRef{}, policy); err != nil {
-		return fmt.Errorf("set sandbox policy: %w", err)
+	workspace := a.ActiveWorkspace(ctx)
+	if workspace == "" {
+		workspace, err = os.Getwd()
+		if err != nil {
+			return err
+		}
 	}
-	return a.engine.Permissions().SetApprovalMode(ctx, coreapi.SetModeRequest{Mode: "on-request"})
+	_, err = svc.SetPreset(ctx, coreapi.PermissionPresetRequest{SessionID: id, WorkspaceRoot: workspace, Mode: mode})
+	return err
 }
-
 func (a *CoreClientAdapter) SetApprovalMode(ctx context.Context, mode string) error {
-	mode = strings.TrimSpace(mode)
-	if mode == "" {
+	if strings.TrimSpace(mode) == "" {
 		return nil
 	}
 	if a == nil || a.engine == nil {
 		return errors.New("core client is not available")
 	}
-	return a.engine.Permissions().SetApprovalMode(ctx, coreapi.SetModeRequest{Mode: mode})
-}
-
-// SyncModeSnapshots 把启动期已由 env（EOS_SANDBOX_MODE/EOS_APPROVAL_MODE）在
-// 内核生效的模式同步进 UI 快照（mode_snapshot / permission_snapshot）。内核
-// ConfigState 不会自动反映启动 env——不同步会让 /status、/permissions 回显
-// 空值，造成壳层与内核感知脱节。
-//
-// 与 ApplyAccessMode 不同：这里不动真实裁决状态（沙箱策略与审批已由 env
-// 生效），只做显示层对齐；approval 用同值重放是幂等的。
-func (a *CoreClientAdapter) SyncModeSnapshots(ctx context.Context, sandboxMode, accessMode, approvalMode string) error {
-	if a == nil || a.engine == nil {
-		return errors.New("core client is not available")
+	svc, ok := a.engine.Permissions().(coreapi.PermissionPresetService)
+	if !ok {
+		return errors.New("Core does not support scoped approval policy")
 	}
-	if v := strings.TrimSpace(sandboxMode); v != "" {
-		if err := a.engine.Modes().SetSandboxMode(ctx, coreapi.SetModeRequest{Mode: v}); err != nil {
-			return err
-		}
+	id, err := a.ensureSessionID(ctx)
+	if err != nil {
+		return err
 	}
-	if v := strings.TrimSpace(accessMode); v != "" {
-		if err := a.engine.Permissions().SetAccessMode(ctx, coreapi.SetModeRequest{Mode: v}); err != nil {
-			return err
-		}
-	}
-	if v := strings.TrimSpace(approvalMode); v != "" {
-		if err := a.engine.Permissions().SetApprovalMode(ctx, coreapi.SetModeRequest{Mode: v}); err != nil {
-			return err
-		}
-	}
-	return nil
+	return svc.SetSessionApproval(ctx, coreapi.SessionRef{SessionID: id}, mode)
 }
 
 func (a *CoreClientAdapter) PendingReview(ctx context.Context) (coreapi.PendingReview, error) {

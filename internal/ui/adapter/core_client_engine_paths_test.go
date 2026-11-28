@@ -111,7 +111,6 @@ func TestCoreClientAdapterEngineHappyPaths(t *testing.T) {
 		{"access", func() error { return adapter.SetAccessMode(ctx, "read-only") }},
 		{"apply", func() error { return adapter.ApplyAccessMode(ctx, "workspace-write") }},
 		{"approval", func() error { return adapter.SetApprovalMode(ctx, "never") }},
-		{"sync", func() error { return adapter.SyncModeSnapshots(ctx, "read-only", "workspace-write", "default") }},
 	} {
 		if err := setMode.call(); err != nil {
 			t.Errorf("%s mode: %v", setMode.name, err)

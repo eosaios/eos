@@ -39,9 +39,13 @@ func normalizeBootstrapState(state BootstrapState) BootstrapState {
 	state.ExecutionMode = normalizeExecutionMode(state.ExecutionMode)
 	state.Permission.ExecutionMode = normalizeExecutionMode(state.Permission.ExecutionMode)
 	state.Settings.Runtime.ExecutionMode = normalizeExecutionMode(state.Settings.Runtime.ExecutionMode)
-	state.Permission.SandboxMode = NormalizeSandboxMode(state.Permission.SandboxMode)
+	switch state.Permission.SandboxMode {
+	case "read-only", "workspace-write", "danger-full-access":
+	default:
+		state.Permission.SandboxMode = "unknown"
+	}
 	state.Settings.Runtime.SandboxMode = NormalizeSandboxMode(state.Settings.Runtime.SandboxMode)
-	state.Permission.AllowAll = state.Permission.SandboxMode == "danger-full-access"
+	state.Permission.AllowAll = state.Permission.AllowAll && state.Permission.SandboxMode == "danger-full-access" && state.Permission.ApprovalMode == "never"
 
 	state.Permission.AllowedCategories = nonNilSlice(state.Permission.AllowedCategories)
 	state.Bash.Output = nonNilSlice(state.Bash.Output)

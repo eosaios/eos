@@ -371,6 +371,9 @@ func serveMockServerWithWriteMethods(t *testing.T, conn net.Conn, workspace stri
 					},
 				})
 
+			case protocoljsonrpc.MethodApprovalRespond:
+				resp, _ = protocoljsonrpc.NewResultResponse(req.ID, map[string]bool{"accepted": true})
+
 			// Write methods — return {"ok": true}
 			case protocoljsonrpc.MethodWorkspaceAdd,
 				protocoljsonrpc.MethodWorkspaceRemove,
@@ -382,7 +385,6 @@ func serveMockServerWithWriteMethods(t *testing.T, conn net.Conn, workspace stri
 				protocoljsonrpc.MethodRuntimeReasoningLevelSet,
 				protocoljsonrpc.MethodSessionDelete,
 				protocoljsonrpc.MethodSessionSetCurrent,
-				protocoljsonrpc.MethodApprovalRespond,
 				protocoljsonrpc.MethodInquiryRespond,
 				protocoljsonrpc.MethodModelUpsert,
 				protocoljsonrpc.MethodModelSave,

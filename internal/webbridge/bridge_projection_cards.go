@@ -12,7 +12,14 @@ func sessionCardFromState(session *sessionState, pendingCount int) SessionCard {
 	if session == nil {
 		return SessionCard{}
 	}
+	var queue *ChatQueue
+	if len(session.Queue.Messages) != 0 {
+		snapshot := session.Queue
+		snapshot.Messages = slices.Clone(snapshot.Messages)
+		queue = &snapshot
+	}
 	return SessionCard{
+		Queue:          queue,
 		ID:             strings.TrimSpace(session.ID),
 		Title:          fallbackText(strings.TrimSpace(session.Title), "新对话"),
 		Preview:        fallbackText(previewFromMessages(session.Messages), "等待发送第一条消息"),
@@ -86,6 +93,7 @@ func mergeSessionCard(base, overlay SessionCard) SessionCard {
 	}
 	base.MessageCount = overlay.MessageCount
 	base.Running = overlay.Running
+	base.Queue = overlay.Queue
 	base.Persisted = overlay.Persisted
 	base.NeedsAttention = overlay.NeedsAttention
 	base.PendingPrompts = overlay.PendingPrompts

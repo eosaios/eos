@@ -92,8 +92,7 @@ eos mcp serve --transport sse --listen 127.0.0.1:8765 --workspace "/abs/workspac
  │◀────── completed + reply ─────│
 ```
 
-内核的 prompt timeout 自动拒绝兜底仍然生效：宿主始终不回应时，按设置自动
-decline/推荐项，turn 不会永久挂起。
+普通工具审批可按设置在超时后自动拒绝。问答需要明确答复；宿主未答时保持未回答状态。
 
 ### 4. 原子工具直通（MVP 行为保留）
 

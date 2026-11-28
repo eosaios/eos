@@ -2,6 +2,7 @@ package webbridge
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"strings"
@@ -134,6 +135,22 @@ func (s *BridgeService) callStartTurnStreamRPC(ctx context.Context, sessionID, i
 		Input:       input,
 		ImagePaths:  imagePaths,
 		Attachments: encoded,
+	}
+	s.stateMu.RLock()
+	if session := s.sessions[sessionID]; session != nil && session.Queue.Starting != "" && len(session.Queue.Messages) != 0 {
+		entry := session.Queue.Messages[0]
+		req.Options, err = json.Marshal(map[string]any{
+			"client_message_id":          entry.ID,
+			"client_display_input":       entry.Content,
+			"client_display_attachments": entry.Attachments,
+		})
+	}
+	if running := s.runningConversations[sessionID]; running != nil && running.QuestionResponseID != "" {
+		req.Options, err = json.Marshal(map[string]string{"question_response_id": running.QuestionResponseID})
+	}
+	s.stateMu.RUnlock()
+	if err != nil {
+		return nil, coreapi.Turn{}, err
 	}
 	if s.executionModeReadOnly() == "plan" {
 		req.CollaborationMode = &coreapi.CollaborationMode{Mode: coreapi.ModePlan}

@@ -15,7 +15,6 @@ type bootstrapDeferredState struct {
 	usageSummary   UsageSummaryCard
 	costItems      []CostItemCard
 	versions       []VersionCard
-	permission     PermissionState
 	tasks          []TaskCard
 	clipboard      ClipboardState
 	diagnostics    DiagnosticsState
@@ -47,7 +46,6 @@ func (p *StateProjectionService) loadDeferredState(scope BootstrapLoadScope, run
 	deferred.usageSummary = s.loadUsageSummary()
 	deferred.costItems = s.loadCostItems()
 	deferred.versions = s.loadVersions()
-	deferred.permission = s.loadPermission()
 	deferred.tasks = s.loadTasksFromSnapshot(runtimeSnapshot)
 	deferred.clipboard = s.readClipboardState()
 	deferred.diagnostics = s.loadDiagnostics()

@@ -28,18 +28,17 @@ type harness struct {
 
 // newHarness 建立隔离环境 + 真实内核 + 脚本模型服务。
 //
-// 产品决策（default low friction）：默认 on-request——普通工作区 medium
-// 操作（如 mkdir）不弹审批，与 internal/modes 描述一致。审批流用例请用
-// newApprovalHarness（untrusted），才能练到 approval_required。
+// In the workspace preset, ordinary workspace writes run directly. The
+// approval-specific cases use disposable targets outside that workspace.
 func newHarness(t *testing.T, scripts ...*testsupport.ModelScript) *harness {
 	t.Helper()
 	return newHarnessWithApproval(t, "on-request", scripts...)
 }
 
-// newApprovalHarness 显式 untrusted，专供 IT-03/04/06 等审批流。
+// Approval tests bind a real workspace and exercise one scoped outside write.
 func newApprovalHarness(t *testing.T, scripts ...*testsupport.ModelScript) *harness {
 	t.Helper()
-	return newHarnessWithApproval(t, "untrusted", scripts...)
+	return newHarnessWithApproval(t, "on-request", scripts...)
 }
 
 func newHarnessWithApproval(t *testing.T, approvalMode string, scripts ...*testsupport.ModelScript) *harness {
@@ -51,9 +50,10 @@ func newHarnessWithApproval(t *testing.T, approvalMode string, scripts ...*tests
 	}
 	model := testsupport.NewModelServer(t, scripts...)
 	conn, err := testsupport.StartCore(t, core, env.CoreEnv(map[string]string{
-		"EOS_SANDBOX_MODE":  string(testsupport.SandboxWorkspaceWrite),
-		"EOS_APPROVAL_MODE": approvalMode,
-		"EOS_LOG_LEVEL":     "warn",
+		"EOS_SANDBOX_WORKSPACE_ROOT": env.WorkspaceRoot,
+		"EOS_SANDBOX_MODE":           string(testsupport.SandboxWorkspaceWrite),
+		"EOS_APPROVAL_MODE":          approvalMode,
+		"EOS_LOG_LEVEL":              "warn",
 	}))
 	if err != nil {
 		t.Fatalf("启动真实内核失败：%v", err)
@@ -88,6 +88,9 @@ func (h *harness) newSession(t *testing.T, title string) string {
 	}
 	if s.ID == "" {
 		t.Fatalf("session/create 未返回 id")
+	}
+	if _, err := h.conn.Call("permission/mode/set", map[string]any{"mode": "workspace-write", "session_id": s.ID, "workspace_root": h.env.WorkspaceRoot}); err != nil {
+		t.Fatal(err)
 	}
 	if err := h.conn.SubscribeTurn(s.ID, ""); err != nil {
 		t.Fatalf("event/subscribe: %v", err)
@@ -217,11 +220,11 @@ func TestIT03_ApprovalAcceptCreatesTargetOnce(t *testing.T) {
 		testsupport.NewBackgroundScript(),
 	)
 
-	// 目标必须落在真实工作区内：tool/execute 的相对路径就是相对 workspace_root 解析的。
-	target := filepath.Join(h.env.WorkspaceRoot, dirName)
+	// This disposable target is outside the workspace and needs one explicit grant.
+	target := filepath.Join(t.TempDir(), dirName)
 
 	sessID := h.newSession(t, "it03")
-	res := h.execTool(t, sessID, "file_mkdir", map[string]any{"path": dirName}, "call_mkdir")
+	res := h.execTool(t, sessID, "file_mkdir", map[string]any{"path": target}, "call_mkdir")
 	if res.Status != "approval_required" {
 		t.Fatalf("status = %q，want approval_required (display=%q)", res.Status, res.Display)
 	}
@@ -283,10 +286,10 @@ func TestIT04_ApprovalRejectLeavesNoSideEffect(t *testing.T) {
 		testsupport.NewBackgroundScript(),
 	)
 
-	target := filepath.Join(h.env.WorkspaceRoot, dirName)
+	target := filepath.Join(t.TempDir(), dirName)
 
 	sessID := h.newSession(t, "it04")
-	res := h.execTool(t, sessID, "file_mkdir", map[string]any{"path": dirName}, "call_mkdir")
+	res := h.execTool(t, sessID, "file_mkdir", map[string]any{"path": target}, "call_mkdir")
 	if res.Status != "approval_required" {
 		t.Fatalf("status = %q，want approval_required", res.Status)
 	}

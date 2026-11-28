@@ -24,15 +24,15 @@ func (svc *ChatService) CreateSession(workspacePath string) (BootstrapState, err
 	if err := s.activateWorkspaceRPC(workspace); err != nil {
 		return s.LoadBootstrap(), err
 	}
-	s.syncSandboxModeForWorkspace(workspace)
 	s.stateMu.Lock()
-	_, err := s.createWorkspaceSessionLocked(workspace, "New Chat", SessionCreateNotifyUser)
+	created, err := s.createWorkspaceSessionLocked(workspace, "New Chat", SessionCreateNotifyUser)
 	if err != nil {
 		s.stateMu.Unlock()
 		return s.LoadBootstrap(), err
 	}
 	s.emitShellUpdated()
 	s.stateMu.Unlock()
+	s.syncSandboxModeForSession(workspace, created.ID)
 	return s.LoadBootstrap(), nil
 }
 
@@ -166,6 +166,8 @@ func (svc *ChatService) DeleteSession(workspacePath, sessionID string) (Bootstra
 		s.stateMu.Unlock()
 		return s.LoadBootstrap(), deleteErr
 	}
+	session.Queue = ChatQueue{}
+	s.recordChatQueueLocked(session)
 	delete(s.sessions, sessionID)
 	if s.currentSessionID == sessionID {
 		s.currentSessionID = ""
@@ -211,7 +213,13 @@ func (svc *ChatService) ArchiveSession(sessionID string, archived bool) (Bootstr
 		return s.LoadBootstrap(), err
 	}
 	s.stateMu.Lock()
-	delete(s.sessions, sessionID)
+	if session := s.sessions[sessionID]; session != nil && len(session.Queue.Messages) != 0 {
+		session.Queue.Paused = true
+		s.recordChatQueueLocked(session)
+	}
+	if s.runningConversations[sessionID] == nil {
+		delete(s.sessions, sessionID)
+	}
 	if archived && s.currentSessionID == sessionID {
 		s.currentSessionID = ""
 		if next := s.latestSessionForWorkspaceLocked(""); next != nil {

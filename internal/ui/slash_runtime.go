@@ -411,7 +411,7 @@ func (m *AppModel) handlePermissionsSlash(args []string) tea.Cmd {
 	lines := []string{
 		m.localize("权限与审批状态", "Permissions and approvals"),
 		fmt.Sprintf("%s: %s", m.localize("执行模式", "Execution mode"), m.executionModeLabel(snap.ExecutionMode)),
-		fmt.Sprintf("%s: %s", m.localize("访问模式", "Access mode"), snap.AccessMode),
+		fmt.Sprintf("%s: %s", m.localize("访问模式", "Access mode"), snap.SandboxMode),
 		fmt.Sprintf("%s: %s", m.localize("审批模式", "Approval mode"), snap.ApprovalMode),
 		fmt.Sprintf("%s: %s", m.localize("沙箱模式", "Sandbox mode"), snap.SandboxMode),
 		fmt.Sprintf("%s: %t", m.localize("全局放行", "Allow all"), snap.AllowAll),

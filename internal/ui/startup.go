@@ -117,20 +117,6 @@ func StartInteractiveTUIWithOptions(opts TUIOptions) {
 
 	m := NewAppModelFromCoreClient(client, strings.TrimSpace(opts.SessionID))
 	applyTUIStartupModel(m, opts.ModelOverride)
-	// 启动模式快照同步：沙箱/审批裁决已由 env 在内核生效，这里只把解析后的
-	// 模式对齐到 UI 快照，避免 /status、/permissions 回显空值（壳层与内核
-	// 感知脱节）。失败只告警不阻断进入 TUI。
-	if m != nil && m.adapter != nil {
-		mode := strings.TrimSpace(opts.SandboxMode)
-		if mode == "" {
-			mode = strings.TrimSpace(opts.AccessMode)
-		}
-		if mode != "" || strings.TrimSpace(opts.ApprovalMode) != "" {
-			if err := m.adapter.SyncModeSnapshots(ctx, mode, mode, opts.ApprovalMode); err != nil {
-				slog.Warn("ui.startup.permissions.snapshot_sync_failed", "sandbox_mode", mode, "approval_mode", opts.ApprovalMode, "error", err)
-			}
-		}
-	}
 	slog.Info("ui.startup.app.run")
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		slog.Error("ui.startup.app.run.error", "error", err)

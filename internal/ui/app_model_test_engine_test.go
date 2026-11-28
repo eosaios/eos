@@ -433,6 +433,30 @@ func (s *testConfigService) SaveSettings(_ context.Context, settings coreapi.Set
 // === Permission ===
 type testPermissionService struct{ e *testEngine }
 
+func (s *testPermissionService) SnapshotForSession(ctx context.Context, _ coreapi.SessionRef) (coreapi.PermissionSnapshot, error) {
+	return s.Snapshot(ctx)
+}
+func (s *testPermissionService) SetSessionApproval(ctx context.Context, ref coreapi.SessionRef, mode string) error {
+	return s.SetApprovalMode(ctx, coreapi.SetModeRequest{Mode: mode})
+}
+func (s *testPermissionService) SetPreset(ctx context.Context, req coreapi.PermissionPresetRequest) (coreapi.PermissionSnapshot, error) {
+	if req.SessionID == "" {
+		panic("missing session in permission test")
+	}
+	if s.e.setSandboxModeErr != nil {
+		return coreapi.PermissionSnapshot{}, s.e.setSandboxModeErr
+	}
+	if req.Mode == "danger-full-access" && s.e.enterFullAccessErr != nil {
+		return coreapi.PermissionSnapshot{}, s.e.enterFullAccessErr
+	}
+	s.e.permissionSnap.SandboxMode = req.Mode
+	s.e.permissionSnap.AccessMode = req.Mode
+	s.e.permissionSnap.ApprovalMode = "never"
+	if req.Mode == "workspace-write" {
+		s.e.permissionSnap.ApprovalMode = "on-request"
+	}
+	return s.e.permissionSnap, nil
+}
 func (s *testPermissionService) Snapshot(context.Context) (coreapi.PermissionSnapshot, error) {
 	if s.e != nil && s.e.permissionSnapErr != nil {
 		return coreapi.PermissionSnapshot{}, s.e.permissionSnapErr

@@ -1,6 +1,7 @@
 package webbridge
 
 import (
+	"github.com/eosaios/eos/internal/webbridge/adapter"
 	"testing"
 )
 
@@ -9,9 +10,10 @@ import (
 func fullAccessSettleFixture() (*BridgeService, *[]ConversationDeltaPayload) {
 	var deltas []ConversationDeltaPayload
 	s := &BridgeService{
-		runtimeGateway: &sandboxModeGatewayStub{},
-		prompts:        map[string]*promptState{},
-		sessions:       map[string]*sessionState{},
+		runtimeGateway:   &sandboxModeGatewayStub{},
+		currentSessionID: "session-1",
+		prompts:          map[string]*promptState{},
+		sessions:         map[string]*sessionState{},
 		emitEvent: func(name string, payload any) {
 			if delta, ok := payload.(ConversationDeltaPayload); ok {
 				deltas = append(deltas, delta)
@@ -23,8 +25,8 @@ func fullAccessSettleFixture() (*BridgeService, *[]ConversationDeltaPayload) {
 
 // TestApplySandboxModeSemanticsFullAccessFlipsPendingItemsWithoutPrompts 复现用户
 // 报告的卡死形态：prompt 已被其它路径删除（停止 fallback / 回滚 / 会话加载），
-// 仅剩 item 层的 pending 审批态。进入完全访问必须直接翻转 item（内核对全部
-// pending 一律 accept），否则横幅永久残留且点按钮幂等空转。
+// 仅剩 item 层的 pending 审批态。切换模式后等待对应回执（内核对
+// pending 逐条决策，壳层仅凭已解决回执翻转对应项）。
 func TestApplySandboxModeSemanticsFullAccessFlipsPendingItemsWithoutPrompts(t *testing.T) {
 	s, deltas := fullAccessSettleFixture()
 	s.sessions["session-1"] = &sessionState{
@@ -50,6 +52,10 @@ func TestApplySandboxModeSemanticsFullAccessFlipsPendingItemsWithoutPrompts(t *t
 		t.Fatalf("applySandboxModeSemantics(danger-full-access) error = %v", err)
 	}
 
+	if s.sessions["session-1"].Messages[0].Items[0].Approval.State != "pending" {
+		t.Fatal("mode switch resolved a pending prompt before its receipt")
+	}
+	s.handleConversationResolutionLocked(conversationEventFrame{session: s.sessions["session-1"], kind: "tool.approval_approved", event: adapter.Event{RequestID: "approval_1"}})
 	items := s.sessions["session-1"].Messages[0].Items
 	if got := items[0].Approval.State; got != "approved" {
 		t.Errorf("approval item state = %q, want approved", got)
@@ -147,6 +153,7 @@ func TestApplySandboxModeSemanticsFullAccessFlipsItemWhenCallIDLinkBroken(t *tes
 		t.Fatalf("applySandboxModeSemantics(danger-full-access) error = %v", err)
 	}
 
+	s.handleConversationResolutionLocked(conversationEventFrame{session: s.sessions["session-1"], kind: "tool.approval_approved", event: adapter.Event{RequestID: "approval_1"}})
 	item := s.sessions["session-1"].Messages[0].Items[0]
 	if got := item.Approval.State; got != "approved" {
 		t.Fatalf("item state = %q, want approved (sweep rescues broken CallID link)", got)

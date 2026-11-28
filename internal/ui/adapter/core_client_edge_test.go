@@ -64,7 +64,6 @@ func TestCoreClientAdapterNotAvailableGuards(t *testing.T) {
 		{"SetAccessMode", func() error { return nilAdapter.SetAccessMode(ctx, "workspace-write") }},
 		{"ApplyAccessMode", func() error { return nilAdapter.ApplyAccessMode(ctx, "workspace-write") }},
 		{"SetApprovalMode", func() error { return nilAdapter.SetApprovalMode(ctx, "default") }},
-		{"SyncModeSnapshots", func() error { return nilAdapter.SyncModeSnapshots(ctx, "read-only", "workspace-write", "default") }},
 		{"PendingReview", func() error { _, err := nilAdapter.PendingReview(ctx); return err }},
 		{"ListSessions", func() error { _, err := nilAdapter.ListSessions(ctx); return err }},
 		{"SaveSessionMessages", func() error { _, err := nilAdapter.SaveSessionMessages(ctx, "s", nil); return err }},

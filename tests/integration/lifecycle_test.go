@@ -358,17 +358,21 @@ func TestIT06_SessionAuthorizationDoesNotLeakAcrossSessions(t *testing.T) {
 		testsupport.NewBackgroundScript(),
 	)
 
-	// 目标落在真实工作区内：相对路径按 workspace_root 解析。
-	targetA := filepath.Join(h.env.WorkspaceRoot, dirName+"_a")
-	targetB := filepath.Join(h.env.WorkspaceRoot, dirName+"_b")
+	// Each target is outside the workspace, where a write needs its own grant.
+	targetA := filepath.Join(t.TempDir(), dirName+"_a")
+	targetB := filepath.Join(t.TempDir(), dirName+"_b")
 
 	sessA := h.newSession(t, "it06-A")
-	res := h.execTool(t, sessA, "file_mkdir", map[string]any{"path": dirName + "_a"}, "call_scoped")
+	res := h.execTool(t, sessA, "file_mkdir", map[string]any{"path": targetA}, "call_scoped")
 	if res.Status != "approval_required" {
 		t.Fatalf("第一次请求 status = %q，want approval_required", res.Status)
 	}
 	approvalID := outputString(t, res.Output, "approval_id")
-	h.respond(t, approvalID, "acceptForSession")
+	if _, err := h.conn.Call("approval/respond", map[string]string{"approval_id": approvalID, "decision": "acceptForSession"}); err == nil {
+		t.Fatal("unscoped session approval accepted for outside write")
+	}
+	testsupport.MustNotExist(t, targetA, "out-of-scope reusable answer must not write")
+	h.respond(t, approvalID, "accept")
 
 	// 等第一次执行完成（直接 tool/execute 无 turn 终态）。
 	h.waitToolExecuted(t, "call_scoped", "ok", 30*time.Second)
@@ -376,7 +380,7 @@ func TestIT06_SessionAuthorizationDoesNotLeakAcrossSessions(t *testing.T) {
 
 	// 新会话：同类请求必须重新需要审批，授权不跨会话。
 	sessB := h.newSession(t, "it06-B")
-	resB := h.execTool(t, sessB, "file_mkdir", map[string]any{"path": dirName + "_b"}, "call_scoped_b")
+	resB := h.execTool(t, sessB, "file_mkdir", map[string]any{"path": targetB}, "call_scoped_b")
 	if resB.Status != "approval_required" {
 		t.Errorf("SECURITY: 新会话的同类写请求 status = %q，want approval_required（会话授权泄漏到了别的会话）", resB.Status)
 	}

@@ -69,7 +69,9 @@ func (p *StateProjectionService) LoadBootstrap(source string, scope BootstrapLoa
 	rules := s.capabilityService().ActiveRulesContent(rulesState, activeWorkspace)
 	// 单一数据源：审批/问询 UI 数据在 ThreadItem.Approval，不再 attach prompts 到 messages。
 	messages := s.bootstrapMessages(currentSessionID, activeWorkspace, runtimeSnapshot)
+	permission := s.permissionForSession(currentSessionID)
 	settings := s.loadSettings(activeWorkspace, workspaces, mode, reasoningLevel, window)
+	settings.Runtime.SandboxMode = permission.SandboxMode
 	modelContext := s.loadModelContext(activeWorkspace, currentSessionID)
 	plan := s.planSnapshot()
 	goal := s.goalSnapshotReadOnly()
@@ -117,7 +119,7 @@ func (p *StateProjectionService) LoadBootstrap(source string, scope BootstrapLoa
 		UsageSummary:       deferred.usageSummary,
 		CostItems:          deferred.costItems,
 		Versions:           deferred.versions,
-		Permission:         deferred.permission,
+		Permission:         permission,
 		Settings:           settings,
 		RulesState:         rulesState,
 		Rules:              rules,

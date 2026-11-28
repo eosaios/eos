@@ -128,7 +128,10 @@ func (s *BridgeService) restoreRuntimeSessionFromMetaLocked(meta adapter.Session
 	// 应用退出时进行中的 turn 被杀死，streaming/waiting 的 assistant 消息是永远
 	// 不会再推进的死状态（重启后残留"思考中"占位）。归一为中断终态并回写持久化，
 	// 让消息流显示明确的"已中断"而不是无限等待的假象。
-	if normalizeInterruptedAssistantMessages(session.Messages, s.t("conversation.interrupted")) {
+	s.restoreChatQueueLocked(session)
+	s.restoreAsyncQuestionsLocked(session)
+	steeringInterrupted := markRestoredSteeringInterrupted(session.Messages)
+	if normalizeInterruptedAssistantMessages(session.Messages, s.t("conversation.interrupted")) || steeringInterrupted {
 		s.cancelPendingApprovalsForSessionLocked(session.ID)
 		if err := s.persistSessionLocked(session); err != nil {
 			slog.Warn("bridge.session.normalize_interrupted.persist_failed", "session", session.ID, "error", err)
@@ -143,7 +146,7 @@ func (s *BridgeService) cancelPendingApprovalsForSessionLocked(sessionID string)
 		return
 	}
 	for promptID, prompt := range s.prompts {
-		if strings.TrimSpace(prompt.SessionID) != sessionID {
+		if strings.TrimSpace(prompt.SessionID) != sessionID || prompt.Background {
 			continue
 		}
 		delete(s.prompts, promptID)
@@ -154,6 +157,9 @@ func (s *BridgeService) cancelPendingApprovalsForSessionLocked(sessionID string)
 		return
 	}
 	for _, approval := range pending {
+		if metadataString(approval.Metadata["kind"]) == "async_question" {
+			continue
+		}
 		approvalID := strings.TrimSpace(approval.ApprovalID)
 		if approvalID == "" {
 			continue
@@ -182,7 +188,7 @@ func normalizeInterruptedAssistantMessages(messages []ChatMessage, notice string
 			// 终态历史消息：只归一遗留的 pending 审批（幂等），不加中断提示。
 			for j := range msg.Items {
 				it := &msg.Items[j]
-				if it.Approval != nil && strings.ToLower(strings.TrimSpace(it.Approval.State)) == "pending" {
+				if it.Approval != nil && !it.Approval.Background && strings.ToLower(strings.TrimSpace(it.Approval.State)) == "pending" {
 					it.Approval.State = "cancelled"
 					it.Approval.ResolvedAt = time.Now().Format(time.RFC3339)
 					changed = true
@@ -202,7 +208,7 @@ func normalizeInterruptedAssistantMessages(messages []ChatMessage, notice string
 			// 前端浮层只按 approval.state=="pending" 投影卡片（workbench-approvals-logic.ts），
 			// 这里把 pending 翻成 cancelled 终态并落盘，重启后卡片不再出现。
 			// （只归一一次：本函数仅在被中断的 streaming/waiting 消息上跑，幂等。）
-			if it.Approval != nil && strings.ToLower(strings.TrimSpace(it.Approval.State)) == "pending" {
+			if it.Approval != nil && !it.Approval.Background && strings.ToLower(strings.TrimSpace(it.Approval.State)) == "pending" {
 				it.Approval.State = "cancelled"
 				it.Approval.ResolvedAt = time.Now().Format(time.RFC3339)
 			}

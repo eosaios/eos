@@ -437,7 +437,7 @@ func (m *AppModel) handlePromptRequestMsg(msg PromptRequestMsg) (tea.Model, tea.
 	}
 	if len(req.Options) == 0 {
 		if req.Kind == "permission" {
-			req.Options = []string{"accept", "acceptForSession", "decline", "cancel"}
+			req.Options = []string{"accept", "decline", "cancel"}
 		} else {
 			req.Options = []string{"OK"}
 		}

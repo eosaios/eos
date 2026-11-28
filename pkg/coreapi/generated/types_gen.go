@@ -185,13 +185,21 @@ type Turn struct {
 }
 
 type Agent struct {
-	ID            string `json:"id"`
-	ParentAgentID string `json:"parent_agent_id,omitempty"`
-	RoleID        string `json:"role_id"`
-	Task          string `json:"task,omitempty"`
-	Status        string `json:"status"`
-	CreatedAt     string `json:"created_at"`
-	UpdatedAt     string `json:"updated_at"`
+	Delegation    *AgentDelegation `json:"delegation,omitempty"`
+	ID            string           `json:"id"`
+	ParentAgentID string           `json:"parent_agent_id,omitempty"`
+	RoleID        string           `json:"role_id"`
+	Task          string           `json:"task,omitempty"`
+	Status        string           `json:"status"`
+	CreatedAt     string           `json:"created_at"`
+	UpdatedAt     string           `json:"updated_at"`
+}
+
+type AgentDelegation struct {
+	SessionID     string    `json:"session_id"`
+	WorkspaceRoot string    `json:"workspace_root"`
+	AllowedTools  *[]string `json:"allowed_tools,omitempty"`
+	PlanOnly      bool      `json:"plan_only"`
 }
 
 type RoleConfig struct {
@@ -234,6 +242,7 @@ type AgentControlRequest struct {
 }
 
 type AgentControlResponse struct {
+	Output         string  `json:"output,omitempty"`
 	AgentID        string  `json:"agent_id,omitempty"`
 	Status         string  `json:"status,omitempty"`
 	PreviousStatus string  `json:"previous_status,omitempty"`
@@ -398,6 +407,19 @@ type ApprovalPreviewResponse struct {
 	Reason           string                     `json:"reason,omitempty"`
 }
 
+type SandboxPolicy struct {
+	Mode            string   `json:"mode"`
+	WorkspaceRoot   string   `json:"workspace_root,omitempty"`
+	WritableRoots   []string `json:"writable_roots,omitempty"`
+	AllowNetwork    bool     `json:"allow_network,omitempty"`
+	LandlockEnforce bool     `json:"landlock_enforce,omitempty"`
+}
+
+type SetSandboxPolicyRequest struct {
+	SessionID string        `json:"session_id,omitempty"`
+	Policy    SandboxPolicy `json:"policy"`
+}
+
 type DeriveSandboxPolicyRequest struct {
 	Mode          string `json:"mode"`
 	WorkspaceRoot string `json:"workspace_root,omitempty"`
@@ -405,6 +427,7 @@ type DeriveSandboxPolicyRequest struct {
 
 type EnterFullAccessRequest struct {
 	WorkspaceRoot string `json:"workspace_root,omitempty"`
+	SessionID     string `json:"session_id,omitempty"`
 }
 
 type InquiryResponse struct {
@@ -1072,6 +1095,21 @@ type SetModeRequest struct {
 	Mode string `json:"mode"`
 }
 
+type PermissionModeRequest struct {
+	Mode          string `json:"mode"`
+	WorkspaceRoot string `json:"workspace_root"`
+	SessionID     string `json:"session_id"`
+}
+
+type PermissionScopeRequest struct {
+	SessionID string `json:"session_id,omitempty"`
+}
+
+type SetApprovalModeRequest struct {
+	Mode      string `json:"mode"`
+	SessionID string `json:"session_id,omitempty"`
+}
+
 type ModelConfig struct {
 	Name                    string   `json:"name"`
 	APIBase                 string   `json:"api_base,omitempty"`
@@ -1167,6 +1205,17 @@ type ModelSaveRequest struct {
 
 type ModelNameRequest struct {
 	Name string `json:"name"`
+}
+
+type ModelInputBudgetRequest struct {
+	ModelName string `json:"model_name"`
+	Text      string `json:"text"`
+}
+
+type ModelInputBudget struct {
+	ModelName       string `json:"model_name"`
+	EstimatedTokens uint64 `json:"estimated_tokens"`
+	MaxInputTokens  uint64 `json:"max_input_tokens,omitempty"`
 }
 
 type ModelVerifyResponse struct {
@@ -1360,9 +1409,8 @@ type GitAbortMergeRequest struct {
 	WorkspaceRoot string `json:"workspace_root,omitempty"`
 }
 
-// GitSuggestRouting 是 git/suggest_message 的辅助任务路由：由内核决定用谁的模型、由谁付费。
 type GitSuggestRouting struct {
-	Policy        string `json:"policy"`
+	Policy        string `json:"policy,omitempty"`
 	ByokModel     string `json:"byok_model,omitempty"`
 	SessionID     string `json:"session_id,omitempty"`
 	NoSessionMode string `json:"no_session_mode,omitempty"`
@@ -1372,7 +1420,6 @@ type GitSuggestRouting struct {
 	ExpectedPayer string `json:"expected_payer,omitempty"`
 }
 
-// GitSuggestConsent 是托管生成前须由用户确认的告知：文案、可回传的确认凭据与单次费用上限。
 type GitSuggestConsent struct {
 	Disclosure             string `json:"disclosure"`
 	Ack                    string `json:"ack"`
@@ -1582,6 +1629,16 @@ type DesktopHostRespondRequest struct {
 	Ok               bool   `json:"ok"`
 	Result           any    `json:"result"`
 	Error            string `json:"error"`
+}
+
+type DesktopHostInvalidateRequest struct {
+	HostID           string `json:"host_id"`
+	Epoch            string `json:"epoch"`
+	ChatSessionID    string `json:"chat_session_id"`
+	TurnID           string `json:"turn_id"`
+	DesktopSessionID string `json:"desktop_session_id"`
+	NativeSessionID  string `json:"native_session_id"`
+	Generation       uint64 `json:"generation"`
 }
 
 type DesktopHostCancel struct {

@@ -41,6 +41,10 @@ func (svc *ChatService) CancelSession(sessionID string) (BootstrapState, error) 
 		return s.LoadBootstrap(), os.ErrNotExist
 	}
 	running := s.runningConversations[trimmed]
+	if len(session.Queue.Messages) != 0 {
+		session.Queue.Paused = true
+		s.recordChatQueueLocked(session)
+	}
 	if !session.Running {
 		s.stateMu.Unlock()
 		return s.LoadBootstrap(), errors.New("current session has no active request")
