@@ -555,3 +555,14 @@ func TestCoreClientAdapterReloadAndExport(t *testing.T) {
 	}
 	adapter.ClearTokenHistory() // 只要求不 panic
 }
+
+func TestApplyAccessModeRejectsAnInconsistentCoreReceipt(t *testing.T) {
+	adapter, engine := newFakeAdapter(t)
+	engine.presetReceipt = &coreapi.PermissionSnapshot{
+		SandboxMode: "read-only", ApprovalMode: "never", AllowAll: true,
+	}
+	err := adapter.ApplyAccessMode(context.Background(), "read-only")
+	if err == nil || !strings.Contains(err.Error(), "Core confirmed permission") {
+		t.Fatalf("expected inconsistent receipt to be rejected, got %v", err)
+	}
+}

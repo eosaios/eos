@@ -27,6 +27,7 @@ type fakeEngine struct {
 	modelContext     coreapi.ModelContextSnapshot
 	settings         coreapi.Settings
 	permissionSnap   coreapi.PermissionSnapshot
+	presetReceipt    *coreapi.PermissionSnapshot
 	modeSnap         coreapi.ModeSnapshot
 	usageSummary     coreapi.UsageSummary
 	costItems        []coreapi.CostItem
@@ -234,9 +235,13 @@ func (s *fakePermissions) SetPreset(ctx context.Context, req coreapi.PermissionP
 	if req.SessionID == "" {
 		panic("missing session in permission test")
 	}
+	if s.e.presetReceipt != nil {
+		return *s.e.presetReceipt, nil
+	}
 
 	s.e.permissionSnap.SandboxMode = req.Mode
 	s.e.permissionSnap.AccessMode = req.Mode
+	s.e.permissionSnap.AllowAll = req.Mode == "danger-full-access"
 	s.e.permissionSnap.ApprovalMode = "never"
 	if req.Mode == "workspace-write" {
 		s.e.permissionSnap.ApprovalMode = "on-request"

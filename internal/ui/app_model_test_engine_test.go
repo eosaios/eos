@@ -451,6 +451,7 @@ func (s *testPermissionService) SetPreset(ctx context.Context, req coreapi.Permi
 	}
 	s.e.permissionSnap.SandboxMode = req.Mode
 	s.e.permissionSnap.AccessMode = req.Mode
+	s.e.permissionSnap.AllowAll = req.Mode == "danger-full-access"
 	s.e.permissionSnap.ApprovalMode = "never"
 	if req.Mode == "workspace-write" {
 		s.e.permissionSnap.ApprovalMode = "on-request"

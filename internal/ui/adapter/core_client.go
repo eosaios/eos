@@ -593,7 +593,8 @@ func (a *CoreClientAdapter) SetAccessMode(ctx context.Context, mode string) erro
 
 // ApplyAccessMode installs the sandbox and approval policy in one Core transaction.
 func (a *CoreClientAdapter) ApplyAccessMode(ctx context.Context, mode string) error {
-	if strings.TrimSpace(mode) == "" {
+	mode = strings.TrimSpace(mode)
+	if mode == "" {
 		return nil
 	}
 	if a == nil || a.engine == nil {
@@ -614,8 +615,19 @@ func (a *CoreClientAdapter) ApplyAccessMode(ctx context.Context, mode string) er
 			return err
 		}
 	}
-	_, err = svc.SetPreset(ctx, coreapi.PermissionPresetRequest{SessionID: id, WorkspaceRoot: workspace, Mode: mode})
-	return err
+	actual, err := svc.SetPreset(ctx, coreapi.PermissionPresetRequest{SessionID: id, WorkspaceRoot: workspace, Mode: mode})
+	if err != nil {
+		return err
+	}
+	approval := "never"
+	if mode == "workspace-write" {
+		approval = "on-request"
+	}
+	if actual.SandboxMode != mode || actual.ApprovalMode != approval || actual.AllowAll != (mode == "danger-full-access") {
+		return fmt.Errorf("Core confirmed permission %s/%s (allow_all=%t), requested %s/%s",
+			actual.SandboxMode, actual.ApprovalMode, actual.AllowAll, mode, approval)
+	}
+	return nil
 }
 func (a *CoreClientAdapter) SetApprovalMode(ctx context.Context, mode string) error {
 	if strings.TrimSpace(mode) == "" {
