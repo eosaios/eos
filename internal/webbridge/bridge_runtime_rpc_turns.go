@@ -137,16 +137,26 @@ func (s *BridgeService) callStartTurnStreamRPC(ctx context.Context, sessionID, i
 		Attachments: encoded,
 	}
 	s.stateMu.RLock()
-	if session := s.sessions[sessionID]; session != nil && session.Queue.Starting != "" && len(session.Queue.Messages) != 0 {
+	session, running := s.sessions[sessionID], s.runningConversations[sessionID]
+	switch {
+	case running != nil && running.QuestionResponseID != "":
+		req.Options, err = json.Marshal(map[string]string{"question_response_id": running.QuestionResponseID})
+	case session != nil && session.Queue.Starting != "" && len(session.Queue.Messages) != 0:
 		entry := session.Queue.Messages[0]
 		req.Options, err = json.Marshal(map[string]any{
 			"client_message_id":          entry.ID,
 			"client_display_input":       entry.Content,
 			"client_display_attachments": entry.Attachments,
 		})
-	}
-	if running := s.runningConversations[sessionID]; running != nil && running.QuestionResponseID != "" {
-		req.Options, err = json.Marshal(map[string]string{"question_response_id": running.QuestionResponseID})
+	case session != nil && running != nil && len(session.Messages) >= 2:
+		user := session.Messages[len(session.Messages)-2]
+		assistant := session.Messages[len(session.Messages)-1]
+		if user.Role == "user" && assistant.ID == running.AssistantMessageID && assistant.IsPlaceholder {
+			req.Options, err = json.Marshal(map[string]string{
+				"client_draft_user_id":      user.ID,
+				"client_draft_assistant_id": assistant.ID,
+			})
+		}
 	}
 	s.stateMu.RUnlock()
 	if err != nil {
