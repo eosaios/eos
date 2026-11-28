@@ -748,6 +748,13 @@ type LoadSessionMessagesRequest struct {
 	WorkspaceRoot string `json:"workspace_root,omitempty"`
 }
 
+type ProjectSessionMessagesRequest struct {
+	SessionID     string           `json:"session_id"`
+	TurnID        string           `json:"turn_id"`
+	WorkspaceRoot string           `json:"workspace_root,omitempty"`
+	Messages      []SessionMessage `json:"messages,omitempty"`
+}
+
 type SaveSessionMessagesRequest struct {
 	SessionID     string           `json:"session_id,omitempty"`
 	WorkspaceRoot string           `json:"workspace_root,omitempty"`

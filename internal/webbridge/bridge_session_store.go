@@ -1,6 +1,7 @@
 package webbridge
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"strings"
@@ -249,7 +250,39 @@ func (s *BridgeService) createWorkspaceSessionLocked(workspace, title string, no
 }
 
 func (s *BridgeService) persistSessionLocked(session *sessionState) error {
+	return s.persistSessionForTurnLocked(session, "")
+}
+
+func (s *BridgeService) persistSessionForTurnLocked(session *sessionState, turnID string) error {
 	if session == nil {
+		return nil
+	}
+	if turnID == "" {
+		if running := s.runningConversations[session.ID]; running != nil {
+			turnID = strings.TrimSpace(running.TurnID)
+		}
+	}
+	// Test and embedded bridges without a Core event stream keep their local store.
+	if turnID != "" && s.saveSessionMessages == nil {
+		gateway, ok := s.runtimeGatewayClient().(interface {
+			CoreProjectSessionMessagesRPC(context.Context, string, string, string, []adapter.SessionMessage) error
+		})
+		if ok {
+			var projection []adapter.SessionMessage
+			for _, item := range session.Messages {
+				if item.Role != "assistant" || item.turnID != turnID {
+					continue
+				}
+				for _, row := range sessionMessagesFromChatMessage(item) {
+					if row.Metadata == nil {
+						row.Metadata = make(map[string]any)
+					}
+					row.Metadata["turn_id"] = turnID
+					projection = append(projection, row)
+				}
+			}
+			return gateway.CoreProjectSessionMessagesRPC(coreCtx(), session.WorkspacePath, session.ID, turnID, projection)
+		}
 		return nil
 	}
 	oldID := strings.TrimSpace(session.ID)

@@ -78,7 +78,7 @@ func (s *BridgeService) showRequestUserInputAnswerLocked(prompt *promptState, an
 	}
 	session.UpdatedAt = time.Now()
 	s.emitPromptStatusDeltaLocked(session, message.ID, statusKey)
-	return s.persistSessionLocked(session)
+	return s.persistSessionForTurnLocked(session, message.turnID)
 }
 
 func encodeQuestionAnswers(answers []QuestionAnswer) []any {

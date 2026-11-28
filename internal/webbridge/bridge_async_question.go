@@ -54,7 +54,11 @@ func (s *BridgeService) resolveAsyncQuestionLocked(prompt *promptState, note str
 	}
 	receipt := *response.Question
 	s.projectAsyncQuestionLocked(session, prompt, receipt)
-	if err := s.persistSessionLocked(session); err != nil {
+	var projectedTurn string
+	if message := findSessionMessageByID(session, prompt.AssistantMessageID); message != nil {
+		projectedTurn = message.turnID
+	}
+	if err := s.persistSessionForTurnLocked(session, projectedTurn); err != nil {
 		s.pushNotificationLocked(s.t("notification.request_failed.title"), err.Error(), "danger")
 	}
 	if receipt.FollowupID != "" && !slices.Contains(session.QuestionFollowups, receipt.FollowupID) {

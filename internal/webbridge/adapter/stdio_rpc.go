@@ -704,6 +704,21 @@ func (g *StdioGateway) LoadWorkspaceSessionMessages(workspaceRoot string, sessio
 	return g.CoreLoadSessionMessagesRPC(rpcCtx(), workspaceRoot, sessionID)
 }
 
+// CoreProjectSessionMessagesRPC never falls back to replacing the entire transcript.
+func (g *StdioGateway) CoreProjectSessionMessagesRPC(ctx context.Context, workspace, sessionID, turnID string, messages []SessionMessage) error {
+	params := coreapi.ProjectSessionMessagesRequest{
+		SessionID: sessionID, TurnID: turnID, WorkspaceRoot: workspace, Messages: coreAPISessionMessages(messages),
+	}
+	var out coreapi.Session
+	err := g.client.Call(ctx, protocoljsonrpc.MethodSessionMessagesProject, params, &out)
+	var rpcErr *protocoljsonrpc.RPCError
+	if errors.As(err, &rpcErr) && rpcErr.Code == protocoljsonrpc.CodeMethodNotFound {
+		// Older Core commits its own history. The bridge still renders the projection live.
+		return nil
+	}
+	return err
+}
+
 func (g *StdioGateway) CoreSaveSessionMessagesRPC(ctx context.Context, workspaceRoot string, sessionID string, messages []SessionMessage) (SessionMeta, error) {
 	coreMsgs := coreAPISessionMessages(messages)
 	params := coreapi.SaveSessionMessagesRequest{

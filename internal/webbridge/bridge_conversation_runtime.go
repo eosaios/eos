@@ -154,6 +154,14 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 		return
 	}
 	session := s.sessions[sessionKey]
+	var projectedTurn string
+	if running != nil {
+		projectedTurn = running.TurnID
+	} else if session != nil {
+		if message := findSessionMessageByID(session, assistantMessageID); message != nil {
+			projectedTurn = message.turnID
+		}
+	}
 	defer func() {
 		s.settleSteeringLocked(session, running)
 		if session != nil && running != nil {
@@ -161,7 +169,7 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 				s.startQuestionFollowupLocked(session)
 			} else {
 				if s.closeAsyncQuestionsLocked(session, assistantMessageID, running) {
-					if err := s.persistSessionLocked(session); err != nil {
+					if err := s.persistSessionForTurnLocked(session, projectedTurn); err != nil {
 						slog.Warn("persist closed questions", "error", err)
 					}
 				}
@@ -183,7 +191,7 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 			if running != nil && running.AssistantMessageID == assistantMessageID {
 				delete(s.runningConversations, sessionKey)
 			}
-			if persistErr := s.persistSessionLocked(session); persistErr != nil {
+			if persistErr := s.persistSessionForTurnLocked(session, projectedTurn); persistErr != nil {
 				s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 			}
 			return
@@ -222,7 +230,7 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 		if running != nil && running.AssistantMessageID == assistantMessageID {
 			delete(s.runningConversations, sessionKey)
 		}
-		if persistErr := s.persistSessionLocked(session); persistErr != nil {
+		if persistErr := s.persistSessionForTurnLocked(session, projectedTurn); persistErr != nil {
 			s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 		}
 	} else {
@@ -233,7 +241,7 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 			s.setMessageStatus(session, assistantMessageID, runtimeClosedStreamMessage(session, assistantMessageID), "error", "failed")
 			s.dismissPendingPromptsLocked(sessionID)
 			session.UpdatedAt = time.Now()
-			if persistErr := s.persistSessionLocked(session); persistErr != nil {
+			if persistErr := s.persistSessionForTurnLocked(session, projectedTurn); persistErr != nil {
 				s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 			}
 			s.pushNotificationLocked(s.t("notification.request_failed.title"), "流式响应异常结束", "danger")
@@ -241,7 +249,7 @@ func (s *BridgeService) finishConversation(sessionID, assistantMessageID string,
 		if running != nil && running.AssistantMessageID == assistantMessageID {
 			delete(s.runningConversations, sessionKey)
 			if session != nil {
-				if persistErr := s.persistSessionLocked(session); persistErr != nil {
+				if persistErr := s.persistSessionForTurnLocked(session, projectedTurn); persistErr != nil {
 					s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 				}
 			}

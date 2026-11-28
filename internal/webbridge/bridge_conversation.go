@@ -134,7 +134,7 @@ func (s *BridgeService) runConversation(ctx context.Context, sessionID, assistan
 			kind == string(protocol.EventTypeTurnError)
 		s.stateMu.Lock()
 		if running := s.runningConversations[strings.TrimSpace(sessionID)]; running != nil &&
-			(running.AssistantMessageID != assistantMessageID || (running.Cancelled && kind != "turn.started" && kind != "turn.steering")) {
+			(running.AssistantMessageID != assistantMessageID || (running.TurnID != "" && event.TurnID != "" && running.TurnID != event.TurnID) || (running.Cancelled && kind != "turn.started" && kind != "turn.steering")) {
 			s.stateMu.Unlock()
 			return
 		}
@@ -177,7 +177,11 @@ func (s *BridgeService) runConversation(ctx context.Context, sessionID, assistan
 		})
 		session.UpdatedAt = time.Now()
 		if result.persist && session.Queue.Starting == "" {
-			if persistErr := s.persistSessionLocked(session); persistErr != nil {
+			projectedTurn := event.TurnID
+			if projectedTurn == "" && assistantMessage != nil {
+				projectedTurn = assistantMessage.turnID
+			}
+			if persistErr := s.persistSessionForTurnLocked(session, projectedTurn); persistErr != nil {
 				session.NeedsAttention = true
 				s.pushNotificationLocked(s.t("notification.request_failed.title"), persistErr.Error(), "danger")
 			}

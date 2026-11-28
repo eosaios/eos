@@ -93,7 +93,7 @@ func (s *BridgeService) settleSteeringLocked(session *sessionState, running *run
 		}
 	}
 	if changed {
-		if err := s.persistSessionLocked(session); err != nil {
+		if err := s.persistSessionForTurnLocked(session, running.TurnID); err != nil {
 			s.pushNotificationLocked(s.t("notification.request_failed.title"), err.Error(), "danger")
 		}
 	}

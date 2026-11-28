@@ -155,6 +155,13 @@ type SaveSessionMessagesRequest struct {
 	Messages      []SessionMessage `json:"messages,omitempty"`
 }
 
+type ProjectSessionMessagesRequest struct {
+	SessionID     string           `json:"session_id"`
+	TurnID        string           `json:"turn_id"`
+	WorkspaceRoot string           `json:"workspace_root,omitempty"`
+	Messages      []SessionMessage `json:"messages,omitempty"`
+}
+
 type StartTurnRequest struct {
 	SessionID   string          `json:"session_id"`
 	TurnID      string          `json:"turn_id,omitempty"`

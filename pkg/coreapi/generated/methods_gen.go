@@ -46,6 +46,7 @@ const (
 	MethodSessionSetMeta                = "session/set_meta"
 	MethodSessionMessagesLoad           = "session/messages/load"
 	MethodSessionMessagesSave           = "session/messages/save"
+	MethodSessionMessagesProject        = "session/messages/project"
 	MethodSessionSearch                 = "session/search"
 	MethodMCPList                       = "mcp/list"
 	MethodMCPUpsert                     = "mcp/upsert"
@@ -269,6 +270,7 @@ func CoreMethods() []string {
 		MethodSessionSetMeta,
 		MethodSessionMessagesLoad,
 		MethodSessionMessagesSave,
+		MethodSessionMessagesProject,
 		MethodSessionSearch,
 		MethodMCPList,
 		MethodMCPUpsert,
@@ -674,6 +676,7 @@ func MethodGroups() map[string][]string {
 			MethodSessionSetMeta,
 			MethodSessionMessagesLoad,
 			MethodSessionMessagesSave,
+			MethodSessionMessagesProject,
 			MethodSessionSearch,
 		},
 		"state": {

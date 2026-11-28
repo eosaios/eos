@@ -29,6 +29,7 @@ const (
 	MethodSessionRename              = "session/rename"
 	MethodSessionSetMeta             = "session/set_meta"
 	MethodSessionMessagesLoad        = "session/messages/load"
+	MethodSessionMessagesProject     = "session/messages/project"
 	MethodSessionMessagesSave        = "session/messages/save"
 	MethodSessionSearch              = "session/search"
 	MethodMCPList                    = "mcp/list"
@@ -251,6 +252,7 @@ func AllCoreMethods() []string {
 		MethodSessionSetMeta,
 		MethodSessionMessagesLoad,
 		MethodSessionMessagesSave,
+		MethodSessionMessagesProject,
 		MethodSessionSearch,
 		MethodMCPList,
 		MethodMCPUpsert,
